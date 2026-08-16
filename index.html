@@ -102,16 +102,16 @@
 
       <!-- Mobile header -->
       <sc-if value="{{ isMobile }}" hint-placeholder-val="{{ false }}">
-        <div style="display: flex; align-items: center; gap: 12px; padding: 13px 16px; background: #0D0D1A; border-bottom: 1px solid #151525; flex-shrink: 0;">
-          <button onClick="{{ toggleSidebar }}" style="background: none; border: none; color: #64748B; cursor: pointer; padding: 3px; display: flex; align-items: center;">
-            <i class="ph ph-list" style="font-size: 22px;"></i>
-          </button>
-          <span style="font-size: 16px; font-weight: 600; color: #E2E8F0;">{{ currentScreenTitle }}</span>
+        <div style="display: flex; align-items: center; gap: 10px; padding: 13px 16px; background: #0D0D1A; border-bottom: 1px solid #151525; flex-shrink: 0;">
+          <div style="width: 28px; height: 28px; border-radius: 7px; background: linear-gradient(135deg, #2563EB, #06B6D4); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+            <i class="ph ph-chart-line" style="font-size: 15px; color: white;"></i>
+          </div>
+          <span style="font-size: 16px; font-weight: 600; color: #E2E8F0; flex: 1;">{{ currentScreenTitle }}</span>
         </div>
       </sc-if>
 
       <!-- Screens -->
-      <div style="flex: 1; overflow-y: auto; overflow-x: hidden;">
+      <div style="{{ contentStyle }}">
 
         <!-- ═══ DASHBOARD ═══ -->
         <sc-if value="{{ isDashboard }}" hint-placeholder-val="{{ true }}">
@@ -158,7 +158,7 @@
             <div style="background: linear-gradient(135deg, #0F1B3E 0%, #0D1828 100%); border: 1px solid #2563EB44; border-radius: 16px; padding: 24px 28px; position: relative; overflow: hidden; box-shadow: 0 8px 48px #2563EB18, inset 0 1px 0 #2563EB22;">
               <div style="position: absolute; top: -40px; right: -40px; width: 180px; height: 180px; background: radial-gradient(circle, #2563EB14 0%, transparent 70%); pointer-events: none;"></div>
               <div style="font-size: 10px; color: #334155; font-weight: 600; text-transform: uppercase; letter-spacing: 1.5px;">Saldo do Mês</div>
-              <div style="font-size: 50px; font-weight: 800; letter-spacing: -3px; margin-top: 8px; color: {{ balanceColor }}; line-height: 1;">{{ balanceFormatted }}</div>
+              <div style="font-size: clamp(28px, 8vw, 50px); font-weight: 800; letter-spacing: -2px; margin-top: 8px; color: {{ balanceColor }}; line-height: 1; word-break: break-all;">{{ balanceFormatted }}</div>
               <div style="font-size: 11px; color: #1E2A3A; margin-top: 6px;">Receitas menos despesas · {{ currentMonthLabel }}</div>
             </div>
             <!-- Stats -->
@@ -656,6 +656,15 @@
               <div style="font-size: 13px; color: #334155; margin-bottom: 14px; line-height: 1.6;">Restaura os dados padrão de demonstração. Todos os seus lançamentos serão removidos.</div>
               <button onClick="{{ clearData }}" style="padding: 9px 18px; background: transparent; border: 1px solid #EF444444; border-radius: 8px; color: #EF4444; font-size: 13px; font-weight: 500; cursor: pointer; font-family: inherit;">Restaurar Dados</button>
             </div>
+            <!-- Conta / Logout -->
+            <div style="background: #111118; border: 1px solid #151525; border-radius: 12px; padding: 20px;">
+              <div style="font-size: 10px; font-weight: 600; color: #334155; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px;">Conta</div>
+              <div style="font-size: 13px; font-weight: 500; color: #94A3B8; margin-bottom: 2px;">{{ userName }}</div>
+              <div style="font-size: 11px; color: #334155; margin-bottom: 14px;">{{ userEmail }}</div>
+              <button onClick="{{ handleLogout }}" style="display: flex; align-items: center; gap: 7px; padding: 9px 18px; background: transparent; border: 1px solid #1E2A45; border-radius: 8px; color: #64748B; font-size: 13px; font-weight: 500; cursor: pointer; font-family: inherit;">
+                <i class="ph ph-sign-out" style="font-size: 15px;"></i>Sair da conta
+              </button>
+            </div>
           </div>
         </sc-if>
 
@@ -664,9 +673,21 @@
 
     <!-- ── FAB ── -->
     <sc-if value="{{ showFab }}" hint-placeholder-val="{{ false }}">
-      <button onClick="{{ openNewTxn }}" style="position: fixed; bottom: 24px; right: 24px; width: 54px; height: 54px; border-radius: 50%; background: linear-gradient(135deg, #2563EB, #06B6D4); border: none; color: white; cursor: pointer; box-shadow: 0 4px 20px #2563EB55; z-index: 50; display: flex; align-items: center; justify-content: center; transition: transform 0.15s;">
+      <button onClick="{{ openNewTxn }}" style="{{ fabStyle }}">
         <i class="ph ph-plus" style="font-size: 24px;"></i>
       </button>
+    </sc-if>
+
+    <!-- ── Bottom Navigation (mobile) ── -->
+    <sc-if value="{{ isMobile }}" hint-placeholder-val="{{ false }}">
+      <nav style="position: fixed; bottom: 0; left: 0; right: 0; z-index: 100; background: #0D0D1A; border-top: 1px solid #1E2A45; display: flex; padding-bottom: env(safe-area-inset-bottom, 0px);">
+        <sc-for list="{{ navItems }}" as="nav" hint-placeholder-count="5">
+          <button onClick="{{ nav.onClick }}" style="{{ nav.bottomNavStyle }}">
+            <i class="{{ nav.iconClass }}" style="font-size: 21px;"></i>
+            <span style="font-size: 10px; line-height: 1; margin-top: 2px; font-weight: inherit;">{{ nav.label }}</span>
+          </button>
+        </sc-for>
+      </nav>
     </sc-if>
 
     <!-- ── Transaction Modal ── -->
@@ -1247,6 +1268,13 @@ class Component extends DCLogic {
           borderLeft: '2px solid ' + (active ? '#2563EB' : 'transparent'),
           borderRadius: '0 6px 6px 0', transition: 'all 0.15s', fontWeight: active ? '500' : '400',
         },
+        bottomNavStyle: {
+          flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+          gap: '2px', padding: '10px 4px', border: 'none', background: 'none', cursor: 'pointer',
+          color: active ? '#60A5FA' : '#475569',
+          fontFamily: 'inherit', fontSize: '10px', fontWeight: active ? '600' : '400',
+          minHeight: '56px', transition: 'color 0.15s',
+        },
         onClick: () => this.setState({ screen: n.id, sidebarOpen: false }),
       };
     });
@@ -1605,6 +1633,15 @@ class Component extends DCLogic {
       showOverlay: isMobile && sidebarOpen,
       toggleSidebar: () => this.setState(st => ({ sidebarOpen: !st.sidebarOpen })),
       closeSidebar: () => this.setState({ sidebarOpen: false }),
+      contentStyle: { flex: 1, overflowY: 'auto', overflowX: 'hidden', paddingBottom: isMobile ? '72px' : '0' },
+      fabStyle: {
+        position: 'fixed', bottom: isMobile ? '84px' : '24px', right: '24px',
+        width: '54px', height: '54px', borderRadius: '50%',
+        background: 'linear-gradient(135deg, #2563EB, #06B6D4)', border: 'none',
+        color: 'white', cursor: 'pointer', boxShadow: '0 4px 20px #2563EB55',
+        zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center',
+        transition: 'transform 0.15s',
+      },
       userName: s.user?.name || 'Usuário', userEmail: s.user?.email || '',
       handleLogout: this.handleLogout,
       // login

@@ -610,10 +610,17 @@
                   </button>
                 </div>
               </sc-if>
-              <!-- Active filter count -->
-              <sc-if value="{{ hasActiveFilters }}" hint-placeholder-val="{{ false }}">
-                <div style="font-size: 11px; color: #475569;">{{ filteredTxnsCount }} lançamento(s) encontrado(s)</div>
-              </sc-if>
+              <!-- Export button + count -->
+              <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+                <sc-if value="{{ hasActiveFilters }}" hint-placeholder-val="{{ false }}">
+                  <div style="font-size: 11px; color: #475569;">{{ filteredTxnsCount }} lançamento(s)</div>
+                </sc-if>
+                <sc-if value="{{ hasTxns }}" hint-placeholder-val="{{ false }}">
+                  <button onClick="{{ exportXlsx }}" style="display: flex; align-items: center; gap: 5px; padding: 7px 12px; background: #22C55E14; border: 1px solid #22C55E33; border-radius: 8px; color: #4ADE80; font-size: 12px; font-weight: 600; font-family: inherit; cursor: pointer; margin-left: auto;">
+                    <i class="ph ph-file-xls" style="font-size: 14px;"></i>Exportar Excel
+                  </button>
+                </sc-if>
+              </div>
             </div>
             <!-- List -->
             <div style="background: #111118; border: 1px solid #151525; border-radius: 12px; overflow: hidden;">
@@ -776,6 +783,12 @@
         <!-- ═══ CATEGORIAS ═══ -->
         <sc-if value="{{ isCategorias }}" hint-placeholder-val="{{ false }}">
           <div class="fade-in" style="padding: 20px; display: flex; flex-direction: column; gap: 16px;">
+            <sc-if value="{{ hasBudgetAlert }}" hint-placeholder-val="{{ false }}">
+              <div style="display: flex; align-items: center; gap: 10px; padding: 12px 16px; background: #EF444412; border: 1px solid #EF444430; border-radius: 10px;">
+                <i class="ph ph-warning" style="font-size: 16px; color: #EF4444; flex-shrink: 0;"></i>
+                <span style="font-size: 12px; color: #FCA5A5; line-height: 1.5;"><b>{{ budgetAlertCount }} categoria(s) acima do orçamento:</b> {{ budgetAlertNames }}</span>
+              </div>
+            </sc-if>
             <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
               <div style="font-size: 20px; font-weight: 600; color: #E2E8F0; letter-spacing: -0.3px;">Categorias</div>
               <button onClick="{{ openNewCat }}" style="display: flex; align-items: center; gap: 6px; padding: 9px 16px; background: linear-gradient(135deg, #2563EB, #06B6D4); border: none; border-radius: 9px; color: white; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; box-shadow: 0 2px 12px #2563EB33;">
@@ -1277,6 +1290,19 @@ class Component extends DCLogic {
     window.addEventListener('resize', this._resize = () =>
       this.setState({ isMobile: window.innerWidth < 768 })
     );
+    window.addEventListener('keydown', this._hotkey = (e) => {
+      const tag = document.activeElement?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+      const s = this.state;
+      if (e.key === 'Escape') {
+        if (s.showTxnModal) this.setState({ showTxnModal: false, editTxnId: null });
+        else if (s.showCatModal) this.setState({ showCatModal: false, editCatId: null });
+        else if (s.showGoalModal) this.setState({ showGoalModal: false });
+        else if (s.showFiltersSheet) this.setState({ showFiltersSheet: false });
+      } else if ((e.key === 'n' || e.key === 'N') && !e.ctrlKey && !e.metaKey) {
+        if (s.screen === 'lancamentos' && !s.showTxnModal) { e.preventDefault(); this.openTxnModal(null); }
+      }
+    });
     const user = this._load('user');
     const cats = this._load('cats') || this.defCats();
     const txns = this._load('txns') || this.defTxns();
@@ -1296,6 +1322,7 @@ class Component extends DCLogic {
 
   componentWillUnmount() {
     window.removeEventListener('resize', this._resize);
+    window.removeEventListener('keydown', this._hotkey);
   }
 
   _autoRecurring = () => {
@@ -1517,6 +1544,27 @@ class Component extends DCLogic {
   }
 
   _saveGoals = () => this._save('goals', this.state.goals);
+
+  exportXlsx = (txns) => {
+    if (!window.XLSX) return alert('SheetJS não carregado. Verifique sua conexão.');
+    const { categories } = this.state;
+    const catMap = {};
+    categories.forEach(c => { catMap[c.id] = c.name; });
+    const rows = txns.map(t => ({
+      'Data': t.date,
+      'Tipo': t.type === 'income' ? 'Receita' : 'Despesa',
+      'Descrição': t.description,
+      'Categoria': catMap[t.categoryId] || '-',
+      'Valor': t.amount,
+      'Recorrente': t.recurring ? 'Sim' : 'Não',
+    }));
+    const ws = XLSX.utils.json_to_sheet(rows);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Lançamentos');
+    const now = new Date();
+    const fname = `TDV_${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}.xlsx`;
+    XLSX.writeFile(wb, fname);
+  }
 
   undoDelete = () => {
     if (this.state.undoTimer) clearTimeout(this.state.undoTimer);
@@ -2177,6 +2225,7 @@ class Component extends DCLogic {
       filteredTxns, noTxns: filteredTxns.length === 0, hasTxns: filteredTxns.length > 0,
       filteredTxnsCount, hasActiveFilters, activeFilterCount,
       emptyTxnHint: hasActiveFilters ? 'Nenhum lançamento corresponde aos filtros aplicados.' : 'Toque no + para registrar sua primeira transação deste mês.',
+      exportXlsx: () => this.exportXlsx(filteredTxns),
       isDesktop: !isMobile,
       showFiltersSheet: s.showFiltersSheet,
       openFiltersSheet: () => this.setState({ showFiltersSheet: true }),
@@ -2280,6 +2329,9 @@ class Component extends DCLogic {
       budgetItems, hasBudgets, budgetChartItems,
       // categorias
       catList, openNewCat: () => this.openCatModal(null),
+      budgetAlertCount: exceededCats.length,
+      hasBudgetAlert: exceededCats.length > 0,
+      budgetAlertNames: exceededCats.map(c => c.name).join(', '),
       showCatModal: s.showCatModal,
       catModalTitle: s.editCatId ? 'Editar Categoria' : 'Nova Categoria',
       catName: s.catName, catIcon: s.catIcon, catColor: s.catColor, catBudget: s.catBudget || '',

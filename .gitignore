@@ -1,0 +1,4 @@
+deploy.bat
+.vercel/
+node_modules/
+*.output

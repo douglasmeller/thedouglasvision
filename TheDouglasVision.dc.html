@@ -661,7 +661,21 @@
         <!-- ═══ PLANEJAMENTO ═══ -->
         <sc-if value="{{ isPlanejamento }}" hint-placeholder-val="{{ false }}">
           <div class="fade-in" style="padding: 20px; display: flex; flex-direction: column; gap: 18px;">
-            <div style="font-size: 20px; font-weight: 600; color: #E2E8F0; letter-spacing: -0.3px;">Planejamento</div>
+            <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+              <div style="font-size: 20px; font-weight: 600; color: #E2E8F0; letter-spacing: -0.3px;">Planejamento</div>
+              <sc-if value="{{ isTabMetas }}" hint-placeholder-val="{{ false }}">
+                <button onClick="{{ openNewGoal }}" style="display: flex; align-items: center; gap: 6px; padding: 9px 16px; background: linear-gradient(135deg, #2563EB, #06B6D4); border: none; border-radius: 9px; color: white; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit;">
+                  <i class="ph ph-plus" style="font-size: 15px;"></i>Nova meta
+                </button>
+              </sc-if>
+            </div>
+            <!-- Tabs -->
+            <div style="display: flex; background: #111118; border-radius: 10px; padding: 4px; gap: 2px;">
+              <button onClick="{{ setPlanTabRec }}" style="flex: 1; padding: 8px; border: none; border-radius: 7px; font-size: 13px; font-weight: 600; font-family: inherit; cursor: pointer; background: {{ isTabRec ? '#1E2A45' : 'transparent' }}; color: {{ isTabRec ? '#60A5FA' : '#475569' }}; transition: all 0.15s;">Recorrentes</button>
+              <button onClick="{{ setPlanTabMetas }}" style="flex: 1; padding: 8px; border: none; border-radius: 7px; font-size: 13px; font-weight: 600; font-family: inherit; cursor: pointer; background: {{ isTabMetas ? '#1E2A45' : 'transparent' }}; color: {{ isTabMetas ? '#60A5FA' : '#475569' }}; transition: all 0.15s;">Metas</button>
+            </div>
+            <!-- Recorrentes tab -->
+            <sc-if value="{{ isTabRec }}" hint-placeholder-val="{{ true }}">
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px;">
               <div style="background: #111118; border: 1px solid #151525; border-radius: 12px; padding: 16px;">
                 <div style="font-size: 10px; color: #334155; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;">Realizados</div>
@@ -704,6 +718,57 @@
                   </div>
                 </sc-for>
               </div>
+            </sc-if>
+            </sc-if>
+            <!-- Metas tab -->
+            <sc-if value="{{ isTabMetas }}" hint-placeholder-val="{{ false }}">
+              <sc-if value="{{ noGoals }}" hint-placeholder-val="{{ false }}">
+                <div style="background: #111118; border: 1px solid #151525; border-radius: 12px; padding: 48px 24px; display: flex; flex-direction: column; align-items: center; gap: 0; text-align: center;">
+                  <div style="width: 56px; height: 56px; border-radius: 14px; background: #1A1A2A; display: flex; align-items: center; justify-content: center; margin-bottom: 14px;">
+                    <i class="ph ph-target" style="font-size: 26px; color: #2A3A55;"></i>
+                  </div>
+                  <div style="font-size: 15px; font-weight: 600; color: #334155; margin-bottom: 6px;">Nenhuma meta criada</div>
+                  <div style="font-size: 12px; color: #1E2A3A; line-height: 1.6; max-width: 240px; margin-bottom: 16px;">Defina objetivos financeiros e acompanhe seu progresso aqui.</div>
+                  <button onClick="{{ openNewGoal }}" style="padding: 9px 20px; background: linear-gradient(135deg, #2563EB, #06B6D4); border: none; border-radius: 9px; color: white; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit;">Criar primeira meta</button>
+                </div>
+              </sc-if>
+              <sc-if value="{{ hasGoals }}" hint-placeholder-val="{{ false }}">
+                <div style="display: flex; flex-direction: column; gap: 12px;">
+                  <sc-for list="{{ goalItems }}" as="g" hint-placeholder-count="3">
+                    <div style="background: #111118; border: 1px solid #151525; border-radius: 14px; padding: 18px 20px;">
+                      <div style="display: flex; align-items: flex-start; gap: 12px;">
+                        <div style="width: 40px; height: 40px; border-radius: 10px; background: {{ g.color }}20; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                          <i class="{{ g.iconClass }}" style="font-size: 20px; color: {{ g.color }};"></i>
+                        </div>
+                        <div style="flex: 1; min-width: 0;">
+                          <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 4px;">
+                            <div style="font-size: 14px; font-weight: 600; color: #CBD5E1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ g.name }}</div>
+                            <div style="display: flex; gap: 4px; flex-shrink: 0;">
+                              <button onClick="{{ g.onEdit }}" style="background: none; border: 1px solid #1A1A28; border-radius: 6px; color: #334155; cursor: pointer; padding: 5px 7px; font-size: 13px; display: flex; align-items: center; line-height: 1;"><i class="ph ph-pencil-simple"></i></button>
+                              <button onClick="{{ g.onDelete }}" style="background: none; border: 1px solid #1A1A28; border-radius: 6px; color: #EF444455; cursor: pointer; padding: 5px 7px; font-size: 13px; display: flex; align-items: center; line-height: 1;"><i class="ph ph-trash"></i></button>
+                            </div>
+                          </div>
+                          <div style="display: flex; align-items: baseline; gap: 6px; margin-bottom: 10px;">
+                            <span style="font-size: 20px; font-weight: 800; color: {{ g.barColor }}; letter-spacing: -0.5px;">{{ g.fmtCurrent }}</span>
+                            <span style="font-size: 12px; color: #334155;">de {{ g.fmtTarget }}</span>
+                            <span style="font-size: 11px; color: {{ g.barColor }}; font-weight: 600; margin-left: auto;">{{ g.pct }}%</span>
+                          </div>
+                          <div style="height: 8px; background: #1A1A28; border-radius: 4px; overflow: hidden; margin-bottom: 10px;">
+                            <div style="height: 100%; border-radius: 4px; background: {{ g.barColor }}; width: {{ g.pct }}%; transition: width 0.5s ease;"></div>
+                          </div>
+                          <div style="display: flex; align-items: center; justify-content: space-between;">
+                            <sc-if value="{{ g.hasDl }}" hint-placeholder-val="{{ false }}">
+                              <span style="font-size: 11px; color: #334155;"><i class="ph ph-clock" style="font-size: 11px;"></i> {{ g.dlLabel }}</span>
+                            </sc-if>
+                            <span style="font-size: 11px; color: #334155; margin-left: auto;">Faltam {{ g.fmtRemaining }}</span>
+                            <button onClick="{{ g.onContrib }}" style="margin-left: 10px; padding: 5px 12px; background: #22C55E18; border: 1px solid #22C55E33; border-radius: 7px; color: #22C55E; font-size: 11px; font-weight: 600; font-family: inherit; cursor: pointer; white-space: nowrap;">+ Aportar</button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </sc-for>
+                </div>
+              </sc-if>
             </sc-if>
           </div>
         </sc-if>
@@ -978,6 +1043,33 @@
       </div>
     </sc-if>
 
+    <!-- ── Goal Modal ── -->
+    <sc-if value="{{ showGoalModal }}" hint-placeholder-val="{{ false }}">
+      <div style="position: fixed; inset: 0; background: #00000099; z-index: 200; display: flex; align-items: center; justify-content: center; padding: 16px;">
+        <div class="modal-in" style="background: #111118; border: 1px solid #1E2A45; border-radius: 16px; padding: 24px; width: 100%; max-width: 380px; max-height: 90vh; overflow-y: auto;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
+            <div style="font-size: 16px; font-weight: 600; color: #E2E8F0;">Nova Meta</div>
+            <button onClick="{{ closeGoalModal }}" style="background: none; border: none; color: #334155; cursor: pointer; font-size: 22px; line-height: 1; padding: 0; display: flex;">×</button>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 14px;">
+            <div>
+              <label style="display: block; font-size: 11px; color: #475569; margin-bottom: 6px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Nome da meta</label>
+              <input type="text" value="{{ goalName }}" onInput="{{ setGoalName }}" placeholder="Ex: Viagem para Europa" style="width: 100%; background: #0D0D1A; border: 1px solid #1E2A45; border-radius: 8px; padding: 11px 14px; color: #E2E8F0; font-size: 14px; font-family: inherit;">
+            </div>
+            <div>
+              <label style="display: block; font-size: 11px; color: #475569; margin-bottom: 6px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Valor alvo (R$)</label>
+              <input type="number" inputmode="decimal" value="{{ goalTarget }}" onInput="{{ setGoalTarget }}" placeholder="0,00" min="0" step="0.01" style="width: 100%; background: #0D0D1A; border: 1px solid #1E2A45; border-radius: 8px; padding: 11px 14px; color: #E2E8F0; font-size: 14px; font-family: inherit;">
+            </div>
+            <div>
+              <label style="display: block; font-size: 11px; color: #475569; margin-bottom: 6px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Prazo (opcional)</label>
+              <input type="date" value="{{ goalDeadline }}" onInput="{{ setGoalDeadline }}" style="width: 100%; background: #0D0D1A; border: 1px solid #1E2A45; border-radius: 8px; padding: 11px 14px; color: #E2E8F0; font-size: 14px; font-family: inherit;">
+            </div>
+          </div>
+          <button onClick="{{ saveGoal }}" style="margin-top: 20px; width: 100%; padding: 14px; background: linear-gradient(135deg, #2563EB, #06B6D4); border: none; border-radius: 10px; color: white; font-size: 15px; font-weight: 600; font-family: inherit; cursor: pointer; letter-spacing: -0.3px;">Salvar Meta</button>
+        </div>
+      </div>
+    </sc-if>
+
     <!-- ── Category Modal ── -->
     <sc-if value="{{ showCatModal }}" hint-placeholder-val="{{ false }}">
       <div style="position: fixed; inset: 0; background: #00000099; z-index: 200; display: flex; align-items: center; justify-content: center; padding: 16px;">
@@ -1152,6 +1244,15 @@ class Component extends DCLogic {
     showFiltersSheet: false,
     undoTxn: null,
     undoTimer: null,
+    planTab: 'recorrentes',
+    goals: [],
+    showGoalModal: false,
+    editGoalId: null,
+    goalName: '',
+    goalTarget: '',
+    goalIcon: 'target',
+    goalColor: '#22C55E',
+    goalDeadline: '',
     quickType: 'expense',
     quickAmount: '',
     quickCategoryId: '',
@@ -1180,8 +1281,9 @@ class Component extends DCLogic {
     const cats = this._load('cats') || this.defCats();
     const txns = this._load('txns') || this.defTxns();
     const cfg = this._load('cfg') || {};
+    const goals = this._load('goals') || [];
     this.setState({
-      user, categories: cats, transactions: txns,
+      user, categories: cats, transactions: txns, goals,
       cfgCurrency: cfg.currency || 'BRL',
       savingsGoal: cfg.savingsGoal || 0,
       cfgSavingsGoal: cfg.savingsGoal ? String(cfg.savingsGoal) : '',
@@ -1380,6 +1482,41 @@ class Component extends DCLogic {
     this._save('obDismissed', true);
     this.setState({ onboardingDismissed: true });
   }
+
+  openGoalModal = (goal) => {
+    if (goal) {
+      this.setState({ showGoalModal: true, editGoalId: goal.id, goalName: goal.name, goalTarget: String(goal.target), goalIcon: goal.icon, goalColor: goal.color, goalDeadline: goal.deadline || '' });
+    } else {
+      this.setState({ showGoalModal: true, editGoalId: null, goalName: '', goalTarget: '', goalIcon: 'target', goalColor: '#22C55E', goalDeadline: '' });
+    }
+  }
+
+  closeGoalModal = () => this.setState({ showGoalModal: false });
+
+  saveGoal = () => {
+    const { goalName, goalTarget, goalIcon, goalColor, goalDeadline, editGoalId, goals } = this.state;
+    const name = goalName.trim();
+    const target = parseFloat(goalTarget);
+    if (!name || !target || target <= 0) return;
+    let newGoals;
+    if (editGoalId) {
+      newGoals = goals.map(g => g.id === editGoalId ? { ...g, name, target, icon: goalIcon, color: goalColor, deadline: goalDeadline } : g);
+    } else {
+      newGoals = [...goals, { id: 'g' + Date.now(), name, target, current: 0, icon: goalIcon, color: goalColor, deadline: goalDeadline }];
+    }
+    this.setState({ goals: newGoals, showGoalModal: false }, () => this._saveGoals());
+  }
+
+  deleteGoal = (id) => {
+    this.setState({ goals: this.state.goals.filter(g => g.id !== id) }, () => this._saveGoals());
+  }
+
+  addGoalContrib = (id, amount) => {
+    const goals = this.state.goals.map(g => g.id === id ? { ...g, current: Math.min(g.current + amount, g.target) } : g);
+    this.setState({ goals }, () => this._saveGoals());
+  }
+
+  _saveGoals = () => this._save('goals', this.state.goals);
 
   undoDelete = () => {
     if (this.state.undoTimer) clearTimeout(this.state.undoTimer);
@@ -2089,6 +2226,34 @@ class Component extends DCLogic {
       forecastBalance: this.fmt(forecast), forecastColor: forecast >= 0 ? '#4ADE80' : '#F87171',
       paidCount: recurringItems.filter(r => r.isPaid).length,
       pendingCount: recurringItems.filter(r => !r.isPaid).length,
+      planTab: s.planTab,
+      setPlanTabRec: () => this.setState({ planTab: 'recorrentes' }),
+      setPlanTabMetas: () => this.setState({ planTab: 'metas' }),
+      isTabRec: s.planTab === 'recorrentes',
+      isTabMetas: s.planTab === 'metas',
+      showGoalModal: s.showGoalModal,
+      goalName: s.goalName, goalTarget: s.goalTarget, goalIcon: s.goalIcon, goalColor: s.goalColor, goalDeadline: s.goalDeadline,
+      setGoalName: e => this.setState({ goalName: e.target.value }),
+      setGoalTarget: e => this.setState({ goalTarget: e.target.value }),
+      setGoalDeadline: e => this.setState({ goalDeadline: e.target.value }),
+      saveGoal: this.saveGoal, closeGoalModal: this.closeGoalModal,
+      openNewGoal: () => this.openGoalModal(null),
+      goalItems: s.goals.map(g => {
+        const pct = g.target > 0 ? Math.min(100, Math.round((g.current / g.target) * 100)) : 0;
+        const color = pct >= 100 ? '#22C55E' : pct >= 50 ? '#F97316' : '#3B82F6';
+        const dl = g.deadline ? new Date(g.deadline + 'T12:00:00') : null;
+        const daysLeft = dl ? Math.max(0, Math.ceil((dl - now) / (1000 * 60 * 60 * 24))) : null;
+        return { ...g, iconClass: 'ph ph-' + g.icon, pct, barColor: color,
+          fmtCurrent: this.fmt(g.current), fmtTarget: this.fmt(g.target),
+          fmtRemaining: this.fmt(Math.max(0, g.target - g.current)),
+          daysLeft, hasDl: dl !== null,
+          dlLabel: dl ? (daysLeft === 0 ? 'hoje' : daysLeft + ' dias') : '',
+          onEdit: () => this.openGoalModal(g), onDelete: () => this.deleteGoal(g.id),
+          onContrib: () => { const a = parseFloat(prompt('Valor a adicionar (R$):')); if (a > 0) this.addGoalContrib(g.id, a); },
+        };
+      }),
+      hasGoals: s.goals.length > 0,
+      noGoals: s.goals.length === 0,
       // dashboard – quick widget
       quickType: s.quickType, quickAmount: s.quickAmount, quickCategoryId: s.quickCategoryId,
       setQuickExpense: () => this.setState({ quickType: 'expense' }),

@@ -427,51 +427,71 @@
             </div>
             <!-- Filters -->
             <div style="display: flex; flex-direction: column; gap: 8px;">
-              <!-- Search bar -->
+              <!-- Search bar (always visible) -->
               <div style="position: relative;">
                 <i class="ph ph-magnifying-glass" style="position: absolute; left: 11px; top: 50%; transform: translateY(-50%); font-size: 14px; color: #334155; pointer-events: none;"></i>
                 <input type="text" value="{{ filterSearch }}" onInput="{{ setFilterSearch }}" placeholder="Buscar por descrição ou categoria…" style="width: 100%; box-sizing: border-box; background: #111118; border: 1px solid #1A1A28; border-radius: 8px; padding: 9px 12px 9px 34px; color: #CBD5E1; font-size: 13px; font-family: inherit;" />
               </div>
-              <!-- Row 2: dropdowns + clear -->
-              <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
-                <select value="{{ filterType }}" onChange="{{ setFilterType }}" style="background: #111118; border: 1px solid #1A1A28; border-radius: 8px; padding: 8px 10px; color: #64748B; font-size: 12px; font-family: inherit; cursor: pointer;">
-                  <option value="all">Todos os tipos</option>
-                  <option value="income">Receitas</option>
-                  <option value="expense">Despesas</option>
-                </select>
-                <select value="{{ filterCategoryId }}" onChange="{{ setFilterCat }}" style="background: #111118; border: 1px solid #1A1A28; border-radius: 8px; padding: 8px 10px; color: #64748B; font-size: 12px; font-family: inherit; cursor: pointer;">
-                  <sc-for list="{{ catFilterOptions }}" as="cfo" hint-placeholder-count="9">
-                    <option value="{{ cfo.id }}">{{ cfo.name }}</option>
-                  </sc-for>
-                </select>
-                <select value="{{ filterMonth }}" onChange="{{ setFilterMonth }}" style="background: #111118; border: 1px solid #1A1A28; border-radius: 8px; padding: 8px 10px; color: #64748B; font-size: 12px; font-family: inherit; cursor: pointer;">
-                  <option value="">Todos os meses</option>
-                  <sc-for list="{{ monthOptions }}" as="mo" hint-placeholder-count="12">
-                    <option value="{{ mo.key }}">{{ mo.label }}</option>
-                  </sc-for>
-                </select>
-                <select value="{{ filterRecurring }}" onChange="{{ setFilterRecurring }}" style="background: #111118; border: 1px solid #1A1A28; border-radius: 8px; padding: 8px 10px; color: #64748B; font-size: 12px; font-family: inherit; cursor: pointer;">
-                  <option value="all">Recorrência: todas</option>
-                  <option value="yes">Só recorrentes</option>
-                  <option value="no">Não recorrentes</option>
-                </select>
-                <select value="{{ filterPlanned }}" onChange="{{ setFilterPlanned }}" style="background: #111118; border: 1px solid #1A1A28; border-radius: 8px; padding: 8px 10px; color: #64748B; font-size: 12px; font-family: inherit; cursor: pointer;">
-                  <option value="all">Status: todos</option>
-                  <option value="yes">Só planejados</option>
-                  <option value="no">Só realizados</option>
-                </select>
-                <select value="{{ sortOrder }}" onChange="{{ setSortOrder }}" style="background: #111118; border: 1px solid #1A1A28; border-radius: 8px; padding: 8px 10px; color: #64748B; font-size: 12px; font-family: inherit; cursor: pointer;">
-                  <option value="date_desc">Mais recentes</option>
-                  <option value="date_asc">Mais antigos</option>
-                  <option value="amount_desc">Maior valor</option>
-                  <option value="amount_asc">Menor valor</option>
-                </select>
-                <sc-if value="{{ hasActiveFilters }}" hint-placeholder-val="{{ false }}">
-                  <button onClick="{{ clearFilters }}" style="background: #EF444414; border: 1px solid #EF444433; border-radius: 8px; color: #F87171; font-size: 12px; font-family: inherit; cursor: pointer; padding: 8px 12px; display: flex; align-items: center; gap: 5px; white-space: nowrap;">
-                    <i class="ph ph-x" style="font-size: 12px;"></i>Limpar filtros
+              <!-- Desktop: all dropdowns -->
+              <sc-if value="{{ isDesktop }}" hint-placeholder-val="{{ false }}">
+                <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+                  <select value="{{ filterType }}" onChange="{{ setFilterType }}" style="background: #111118; border: 1px solid #1A1A28; border-radius: 8px; padding: 8px 10px; color: #64748B; font-size: 12px; font-family: inherit; cursor: pointer;">
+                    <option value="all">Todos os tipos</option>
+                    <option value="income">Receitas</option>
+                    <option value="expense">Despesas</option>
+                  </select>
+                  <select value="{{ filterCategoryId }}" onChange="{{ setFilterCat }}" style="background: #111118; border: 1px solid #1A1A28; border-radius: 8px; padding: 8px 10px; color: #64748B; font-size: 12px; font-family: inherit; cursor: pointer;">
+                    <sc-for list="{{ catFilterOptions }}" as="cfo" hint-placeholder-count="9">
+                      <option value="{{ cfo.id }}">{{ cfo.name }}</option>
+                    </sc-for>
+                  </select>
+                  <select value="{{ filterMonth }}" onChange="{{ setFilterMonth }}" style="background: #111118; border: 1px solid #1A1A28; border-radius: 8px; padding: 8px 10px; color: #64748B; font-size: 12px; font-family: inherit; cursor: pointer;">
+                    <option value="">Todos os meses</option>
+                    <sc-for list="{{ monthOptions }}" as="mo" hint-placeholder-count="12">
+                      <option value="{{ mo.key }}">{{ mo.label }}</option>
+                    </sc-for>
+                  </select>
+                  <select value="{{ filterRecurring }}" onChange="{{ setFilterRecurring }}" style="background: #111118; border: 1px solid #1A1A28; border-radius: 8px; padding: 8px 10px; color: #64748B; font-size: 12px; font-family: inherit; cursor: pointer;">
+                    <option value="all">Recorrência: todas</option>
+                    <option value="yes">Só recorrentes</option>
+                    <option value="no">Não recorrentes</option>
+                  </select>
+                  <select value="{{ filterPlanned }}" onChange="{{ setFilterPlanned }}" style="background: #111118; border: 1px solid #1A1A28; border-radius: 8px; padding: 8px 10px; color: #64748B; font-size: 12px; font-family: inherit; cursor: pointer;">
+                    <option value="all">Status: todos</option>
+                    <option value="yes">Só planejados</option>
+                    <option value="no">Só realizados</option>
+                  </select>
+                  <select value="{{ sortOrder }}" onChange="{{ setSortOrder }}" style="background: #111118; border: 1px solid #1A1A28; border-radius: 8px; padding: 8px 10px; color: #64748B; font-size: 12px; font-family: inherit; cursor: pointer;">
+                    <option value="date_desc">Mais recentes</option>
+                    <option value="date_asc">Mais antigos</option>
+                    <option value="amount_desc">Maior valor</option>
+                    <option value="amount_asc">Menor valor</option>
+                  </select>
+                  <sc-if value="{{ hasActiveFilters }}" hint-placeholder-val="{{ false }}">
+                    <button onClick="{{ clearFilters }}" style="background: #EF444414; border: 1px solid #EF444433; border-radius: 8px; color: #F87171; font-size: 12px; font-family: inherit; cursor: pointer; padding: 8px 12px; display: flex; align-items: center; gap: 5px; white-space: nowrap;">
+                      <i class="ph ph-x" style="font-size: 12px;"></i>Limpar filtros
+                    </button>
+                  </sc-if>
+                </div>
+              </sc-if>
+              <!-- Mobile: month + Filtros button -->
+              <sc-if value="{{ isMobile }}" hint-placeholder-val="{{ false }}">
+                <div style="display: flex; gap: 8px; align-items: center;">
+                  <select value="{{ filterMonth }}" onChange="{{ setFilterMonth }}" style="flex: 1; min-width: 0; background: #111118; border: 1px solid #1A1A28; border-radius: 8px; padding: 9px 10px; color: #64748B; font-size: 13px; font-family: inherit; cursor: pointer;">
+                    <option value="">Todos os meses</option>
+                    <sc-for list="{{ monthOptions }}" as="mo" hint-placeholder-count="12">
+                      <option value="{{ mo.key }}">{{ mo.label }}</option>
+                    </sc-for>
+                  </select>
+                  <button onClick="{{ openFiltersSheet }}" style="{{ filtersButtonStyle }}">
+                    <i class="ph ph-sliders-horizontal" style="font-size: 15px;"></i>
+                    Filtros
+                    <sc-if value="{{ hasActiveFilters }}" hint-placeholder-val="{{ false }}">
+                      <span style="background: #2563EB; color: white; font-size: 9px; font-weight: 700; width: 16px; height: 16px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">{{ activeFilterCount }}</span>
+                    </sc-if>
                   </button>
-                </sc-if>
-              </div>
+                </div>
+              </sc-if>
               <!-- Active filter count -->
               <sc-if value="{{ hasActiveFilters }}" hint-placeholder-val="{{ false }}">
                 <div style="font-size: 11px; color: #475569;">{{ filteredTxnsCount }} lançamento(s) encontrado(s)</div>
@@ -682,6 +702,75 @@
       <button onClick="{{ openNewTxn }}" style="{{ fabStyle }}">
         <i class="ph ph-plus" style="font-size: 24px;"></i>
       </button>
+    </sc-if>
+
+    <!-- ── Undo Toast ── -->
+    <sc-if value="{{ showUndo }}" hint-placeholder-val="{{ false }}">
+      <div style="position: fixed; bottom: 80px; left: 16px; right: 16px; z-index: 140; background: #1E293B; border: 1px solid #334155; border-radius: 12px; padding: 14px 16px; display: flex; align-items: center; gap: 12px; box-shadow: 0 8px 32px #00000077; animation: fadeIn 0.2s ease both;">
+        <i class="ph ph-trash" style="font-size: 16px; color: #F87171; flex-shrink: 0;"></i>
+        <span style="flex: 1; font-size: 13px; color: #CBD5E1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">"{{ undoDescription }}" removido</span>
+        <button onClick="{{ undoDelete }}" style="flex-shrink: 0; background: none; border: 1px solid #475569; border-radius: 7px; color: #94A3B8; font-size: 12px; font-weight: 600; padding: 5px 12px; cursor: pointer; font-family: inherit; transition: color 0.15s;">Desfazer</button>
+      </div>
+    </sc-if>
+
+    <!-- ── Filter Sheet (mobile) ── -->
+    <sc-if value="{{ showFiltersSheet }}" hint-placeholder-val="{{ false }}">
+      <div onClick="{{ closeFiltersSheet }}" style="position: fixed; inset: 0; background: #00000099; z-index: 150;"></div>
+      <div style="position: fixed; bottom: 0; left: 0; right: 0; z-index: 151; background: #0D0D1A; border-radius: 20px 20px 0 0; border-top: 1px solid #1E2A45; padding-bottom: env(safe-area-inset-bottom, 16px);">
+        <div style="display: flex; align-items: center; justify-content: space-between; padding: 16px 20px 14px; border-bottom: 1px solid #151525;">
+          <span style="font-size: 15px; font-weight: 600; color: #E2E8F0;">Filtros</span>
+          <button onClick="{{ closeFiltersSheet }}" style="background: none; border: none; color: #475569; cursor: pointer; padding: 4px; display: flex; align-items: center;">
+            <i class="ph ph-x" style="font-size: 18px;"></i>
+          </button>
+        </div>
+        <div style="padding: 16px 20px; display: flex; flex-direction: column; gap: 14px; max-height: 60vh; overflow-y: auto;">
+          <div>
+            <div style="font-size: 10px; font-weight: 600; color: #334155; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;">Tipo</div>
+            <select value="{{ filterType }}" onChange="{{ setFilterType }}" style="width: 100%; background: #111118; border: 1px solid #1E2A45; border-radius: 8px; padding: 10px 14px; color: #CBD5E1; font-size: 14px; font-family: inherit; cursor: pointer;">
+              <option value="all">Todos os tipos</option>
+              <option value="income">Receitas</option>
+              <option value="expense">Despesas</option>
+            </select>
+          </div>
+          <div>
+            <div style="font-size: 10px; font-weight: 600; color: #334155; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;">Categoria</div>
+            <select value="{{ filterCategoryId }}" onChange="{{ setFilterCat }}" style="width: 100%; background: #111118; border: 1px solid #1E2A45; border-radius: 8px; padding: 10px 14px; color: #CBD5E1; font-size: 14px; font-family: inherit; cursor: pointer;">
+              <sc-for list="{{ catFilterOptions }}" as="cfo" hint-placeholder-count="9">
+                <option value="{{ cfo.id }}">{{ cfo.name }}</option>
+              </sc-for>
+            </select>
+          </div>
+          <div>
+            <div style="font-size: 10px; font-weight: 600; color: #334155; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;">Recorrência</div>
+            <select value="{{ filterRecurring }}" onChange="{{ setFilterRecurring }}" style="width: 100%; background: #111118; border: 1px solid #1E2A45; border-radius: 8px; padding: 10px 14px; color: #CBD5E1; font-size: 14px; font-family: inherit; cursor: pointer;">
+              <option value="all">Todas</option>
+              <option value="yes">Só recorrentes</option>
+              <option value="no">Não recorrentes</option>
+            </select>
+          </div>
+          <div>
+            <div style="font-size: 10px; font-weight: 600; color: #334155; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;">Status</div>
+            <select value="{{ filterPlanned }}" onChange="{{ setFilterPlanned }}" style="width: 100%; background: #111118; border: 1px solid #1E2A45; border-radius: 8px; padding: 10px 14px; color: #CBD5E1; font-size: 14px; font-family: inherit; cursor: pointer;">
+              <option value="all">Todos</option>
+              <option value="yes">Só planejados</option>
+              <option value="no">Só realizados</option>
+            </select>
+          </div>
+          <div>
+            <div style="font-size: 10px; font-weight: 600; color: #334155; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;">Ordenar por</div>
+            <select value="{{ sortOrder }}" onChange="{{ setSortOrder }}" style="width: 100%; background: #111118; border: 1px solid #1E2A45; border-radius: 8px; padding: 10px 14px; color: #CBD5E1; font-size: 14px; font-family: inherit; cursor: pointer;">
+              <option value="date_desc">Mais recentes primeiro</option>
+              <option value="date_asc">Mais antigos primeiro</option>
+              <option value="amount_desc">Maior valor primeiro</option>
+              <option value="amount_asc">Menor valor primeiro</option>
+            </select>
+          </div>
+        </div>
+        <div style="display: flex; gap: 10px; padding: 14px 20px; border-top: 1px solid #151525;">
+          <button onClick="{{ clearFilters }}" style="flex: 1; padding: 12px; background: transparent; border: 1px solid #1E2A45; border-radius: 10px; color: #64748B; font-size: 14px; font-weight: 500; font-family: inherit; cursor: pointer;">Limpar</button>
+          <button onClick="{{ closeFiltersSheet }}" style="flex: 2; padding: 12px; background: linear-gradient(135deg, #2563EB, #06B6D4); border: none; border-radius: 10px; color: white; font-size: 14px; font-weight: 600; font-family: inherit; cursor: pointer;">Aplicar</button>
+        </div>
+      </div>
     </sc-if>
 
     <!-- ── Bottom Navigation (mobile) ── -->
@@ -936,6 +1025,9 @@ class Component extends DCLogic {
     showCatModal: false,
     showPieModal: false,
     showBarModal: false,
+    showFiltersSheet: false,
+    undoTxn: null,
+    undoTimer: null,
     quickType: 'expense',
     quickAmount: '',
     quickCategoryId: '',
@@ -972,11 +1064,41 @@ class Component extends DCLogic {
       screen: user ? 'dashboard' : 'login',
       cfgName: user?.name || '',
       cfgEmail: user?.email || '',
-    });
+    }, () => { if (user) this._autoRecurring(); });
   }
 
   componentWillUnmount() {
     window.removeEventListener('resize', this._resize);
+  }
+
+  _autoRecurring = () => {
+    const { transactions } = this.state;
+    const now = new Date();
+    const curKey = this.mKey(now);
+    if (this._load('autoMonth') === curKey) return;
+    const recurring = transactions.filter(t => t.recurring && t.recurringFreq === 'monthly');
+    const curMonthTxns = transactions.filter(t => t.date && t.date.startsWith(curKey));
+    const toCreate = recurring.filter(orig =>
+      !curMonthTxns.some(cur =>
+        cur.description === orig.description &&
+        cur.categoryId === orig.categoryId &&
+        cur.type === orig.type
+      )
+    ).map(orig => {
+      const origDay = parseInt(orig.date.split('-')[2]);
+      const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+      const day = Math.min(origDay, lastDay);
+      return {
+        id: 't' + Date.now() + Math.random().toString(36).slice(2, 7),
+        type: orig.type, amount: orig.amount, description: orig.description,
+        categoryId: orig.categoryId,
+        date: curKey + '-' + String(day).padStart(2, '0'),
+        recurring: true, recurringFreq: orig.recurringFreq, planned: true,
+      };
+    });
+    this._save('autoMonth', curKey);
+    if (toCreate.length === 0) return;
+    this.setState({ transactions: [...transactions, ...toCreate] }, () => this.persist());
   }
 
   _load(k) {
@@ -1122,8 +1244,19 @@ class Component extends DCLogic {
   }
 
   deleteTxn = (id) => {
+    if (this.state.undoTimer) clearTimeout(this.state.undoTimer);
+    const txn = this.state.transactions.find(t => t.id === id);
     const transactions = this.state.transactions.filter(t => t.id !== id);
-    this.setState({ transactions }, () => this.persist());
+    const timer = setTimeout(() => this.setState({ undoTxn: null, undoTimer: null }), 5000);
+    this.setState({ transactions, undoTxn: txn, undoTimer: timer }, () => this.persist());
+  }
+
+  undoDelete = () => {
+    if (this.state.undoTimer) clearTimeout(this.state.undoTimer);
+    const { undoTxn } = this.state;
+    if (!undoTxn) return;
+    const transactions = [...this.state.transactions, undoTxn].sort((a, b) => new Date(b.date) - new Date(a.date));
+    this.setState({ transactions, undoTxn: null, undoTimer: null }, () => this.persist());
   }
 
   quickLaunch = () => {
@@ -1417,6 +1550,13 @@ class Component extends DCLogic {
       !!s.filterSearch.trim() || s.filterRecurring !== 'all' || s.filterPlanned !== 'all' ||
       s.sortOrder !== 'date_desc';
     const filteredTxnsCount = filteredTxns.length;
+    const activeFilterCount = [
+      s.filterType !== 'all',
+      s.filterCategoryId && s.filterCategoryId !== 'all',
+      s.filterRecurring !== 'all',
+      s.filterPlanned !== 'all',
+      s.sortOrder !== 'date_desc',
+    ].filter(Boolean).length;
 
     const catFilterOptions = [{ id: 'all', name: 'Todas as categorias' }, ...s.categories];
     const monthOptions = [];
@@ -1640,6 +1780,9 @@ class Component extends DCLogic {
       toggleSidebar: () => this.setState(st => ({ sidebarOpen: !st.sidebarOpen })),
       closeSidebar: () => this.setState({ sidebarOpen: false }),
       contentStyle: { flex: 1, overflowY: 'auto', overflowX: 'hidden', paddingBottom: isMobile ? '72px' : '0' },
+      showUndo: !!s.undoTxn,
+      undoDescription: s.undoTxn?.description || '',
+      undoDelete: this.undoDelete,
       fabStyle: {
         position: 'fixed', bottom: isMobile ? '84px' : '24px', right: '24px',
         width: '54px', height: '54px', borderRadius: '50%',
@@ -1679,7 +1822,20 @@ class Component extends DCLogic {
       barModalItems, barModalViewBox, barModalSvgWidth, barModalMonths,
       // lancamentos
       filteredTxns, noTxns: filteredTxns.length === 0, hasTxns: filteredTxns.length > 0,
-      filteredTxnsCount, hasActiveFilters,
+      filteredTxnsCount, hasActiveFilters, activeFilterCount,
+      isDesktop: !isMobile,
+      showFiltersSheet: s.showFiltersSheet,
+      openFiltersSheet: () => this.setState({ showFiltersSheet: true }),
+      closeFiltersSheet: () => this.setState({ showFiltersSheet: false }),
+      filtersButtonStyle: {
+        display: 'flex', alignItems: 'center', gap: '6px',
+        padding: '8px 14px', flexShrink: 0,
+        background: hasActiveFilters ? '#2563EB18' : '#111118',
+        border: '1px solid ' + (hasActiveFilters ? '#2563EB55' : '#1A1A28'),
+        borderRadius: '8px', color: hasActiveFilters ? '#60A5FA' : '#64748B',
+        fontSize: '13px', fontWeight: '500', fontFamily: 'inherit', cursor: 'pointer',
+        whiteSpace: 'nowrap',
+      },
       filterType: s.filterType, filterCategoryId: s.filterCategoryId, filterMonth: s.filterMonth || '',
       filterSearch: s.filterSearch, filterRecurring: s.filterRecurring, filterPlanned: s.filterPlanned, sortOrder: s.sortOrder,
       setFilterType: e => this.setState({ filterType: e.target.value }),

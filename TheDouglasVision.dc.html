@@ -160,6 +160,37 @@
               </sc-if>
             </div>
 
+            <!-- Onboarding card -->
+            <sc-if value="{{ showOnboarding }}" hint-placeholder-val="{{ false }}">
+              <div class="fade-in" style="background: linear-gradient(135deg, #0D1A2A 0%, #0D120E 100%); border: 1px solid #22C55E33; border-radius: 14px; padding: 18px 20px; position: relative;">
+                <button onClick="{{ dismissOnboarding }}" style="position: absolute; top: 12px; right: 12px; background: none; border: none; color: #334155; cursor: pointer; display: flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 6px;" title="Dispensar">
+                  <i class="ph ph-x" style="font-size: 14px;"></i>
+                </button>
+                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 14px;">
+                  <i class="ph ph-rocket-launch" style="font-size: 16px; color: #22C55E;"></i>
+                  <span style="font-size: 13px; font-weight: 700; color: #E2E8F0;">Primeiros passos</span>
+                  <span style="margin-left: auto; font-size: 11px; color: #22C55E; font-weight: 600; padding-right: 28px;">{{ obDone }}/3</span>
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 8px;">
+                  <sc-for list="{{ obSteps }}" as="ob" hint-placeholder-count="3">
+                    <button onClick="{{ ob.onClick }}" style="display: flex; align-items: center; gap: 10px; background: none; border: none; cursor: pointer; text-align: left; padding: 8px 10px; border-radius: 8px; width: 100%;" onMouseOver="this.style.background='#1A2A1A'" onMouseOut="this.style.background='none'">
+                      <div style="width: 18px; height: 18px; border-radius: 50%; border: 2px solid {{ ob.circleBorder }}; background: {{ ob.circleColor }}; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                        <sc-if value="{{ ob.done }}" hint-placeholder-val="{{ false }}">
+                          <i class="ph ph-check" style="font-size: 10px; color: #0D0D1A;"></i>
+                        </sc-if>
+                      </div>
+                      <span style="font-size: 12px; color: {{ ob.labelColor }}; text-decoration: {{ ob.labelDecor }};">{{ ob.label }}</span>
+                      <sc-if value="{{ ob.notDone }}" hint-placeholder-val="{{ false }}">
+                        <i class="ph ph-caret-right" style="font-size: 12px; color: #334155; margin-left: auto;"></i>
+                      </sc-if>
+                    </button>
+                  </sc-for>
+                </div>
+                <div style="height: 4px; background: #1A2A1A; border-radius: 2px; overflow: hidden; margin-top: 12px;">
+                  <div style="height: 100%; background: #22C55E; width: {{ obPct }}%; transition: width 0.5s ease; border-radius: 2px;"></div>
+                </div>
+              </div>
+            </sc-if>
             <!-- Balance card -->
             <div style="background: linear-gradient(135deg, #0F1B3E 0%, #0D1828 100%); border: 1px solid #2563EB44; border-radius: 16px; padding: 24px 28px; position: relative; overflow: hidden; box-shadow: 0 8px 48px #2563EB18, inset 0 1px 0 #2563EB22;">
               <div style="position: absolute; top: -40px; right: -40px; width: 180px; height: 180px; background: radial-gradient(circle, #2563EB14 0%, transparent 70%); pointer-events: none;"></div>
@@ -1157,6 +1188,7 @@ class Component extends DCLogic {
       screen: user ? 'dashboard' : 'login',
       cfgName: user?.name || '',
       cfgEmail: user?.email || '',
+      onboardingDismissed: this._load('obDismissed') || false,
     }, () => { if (user) this._autoRecurring(); });
   }
 
@@ -1344,6 +1376,11 @@ class Component extends DCLogic {
     this.setState({ transactions, undoTxn: txn, undoTimer: timer }, () => this.persist());
   }
 
+  dismissOnboarding = () => {
+    this._save('obDismissed', true);
+    this.setState({ onboardingDismissed: true });
+  }
+
   undoDelete = () => {
     if (this.state.undoTimer) clearTimeout(this.state.undoTimer);
     const { undoTxn } = this.state;
@@ -1457,6 +1494,24 @@ class Component extends DCLogic {
   renderVals() {
     const s = this.state;
     const { screen, isMobile, sidebarOpen } = s;
+
+    // Onboarding steps
+    const defCatIds = new Set(['c1','c2','c3','c4','c5','c6','c7','c8']);
+    const _obStep = (label, done, onClick) => ({
+      label, done, notDone: !done, onClick,
+      circleColor: done ? '#22C55E' : 'transparent',
+      circleBorder: done ? '#22C55E' : '#2A3A2A',
+      labelColor: done ? '#475569' : '#94A3B8',
+      labelDecor: done ? 'line-through' : 'none',
+    });
+    const obSteps = [
+      _obStep('Registre sua primeira transação', s.transactions.filter(t => !t.planned).length > 0, () => { this.setState({ screen: 'lancamentos' }); setTimeout(() => this.openTxnModal(null), 100); }),
+      _obStep('Configure uma meta de poupança', s.savingsGoal > 0, () => this.setState({ screen: 'configuracoes' })),
+      _obStep('Defina o orçamento de uma categoria', s.categories.some(c => c.budget && c.budget > 0), () => this.setState({ screen: 'categorias' })),
+    ];
+    const obDone = obSteps.filter(o => o.done).length;
+    const showOnboarding = !s.onboardingDismissed && obDone < obSteps.length;
+    const obPct = Math.round((obDone / obSteps.length) * 100);
 
     const isLogin = screen === 'login';
     const isApp = !isLogin;
@@ -2053,6 +2108,7 @@ class Component extends DCLogic {
       hasSavingsGoal, savingsGoalPct, savingsGoalBarW, savingsGoalColor,
       savingsCurrentFmt, savingsGoalFmt, savingsProjectedFmt, savingsGoalStatusText,
       hmCells, hmHasData,
+      showOnboarding, obSteps, obDone, obPct, dismissOnboarding: this.dismissOnboarding,
       // dashboard – line chart
       linePoints, lineViewBox, linePadX, lineZeroY, lineMaxX, lineLabY, lineChartDots, lineChartSummary,
       // dashboard – budget overview + chart

@@ -167,6 +167,19 @@
               <div style="font-size: clamp(28px, 8vw, 50px); font-weight: 800; letter-spacing: -2px; margin-top: 8px; color: {{ balanceColor }}; line-height: 1; word-break: break-all;">{{ balanceFormatted }}</div>
               <div style="font-size: 11px; color: #1E2A3A; margin-top: 6px;">Receitas menos despesas · {{ currentMonthLabel }}</div>
             </div>
+            <!-- Forecast card -->
+            <sc-if value="{{ hasUpcoming }}" hint-placeholder-val="{{ false }}">
+              <div style="background: #111118; border: 1px solid #151525; border-radius: 14px; padding: 16px 20px; display: flex; align-items: center; gap: 16px;">
+                <div style="width: 40px; height: 40px; border-radius: 10px; background: #2563EB16; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                  <i class="ph ph-trend-up" style="font-size: 20px; color: #60A5FA;"></i>
+                </div>
+                <div style="flex: 1; min-width: 0;">
+                  <div style="font-size: 10px; font-weight: 600; color: #334155; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 3px;">Projeção de fechamento</div>
+                  <div style="font-size: 22px; font-weight: 800; letter-spacing: -1px; color: {{ forecastDashColor }}; line-height: 1;">{{ forecastDash }}</div>
+                  <div style="font-size: 11px; color: #334155; margin-top: 3px;">Pendentes: <span style="color: #4ADE80;">+{{ upIncFmt }}</span> receitas, <span style="color: #F87171;">-{{ upExpFmt }}</span> despesas</div>
+                </div>
+              </div>
+            </sc-if>
             <!-- Stats -->
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px;">
               <div style="background: #111118; border: 1px solid #151525; border-radius: 12px; padding: 16px;">
@@ -195,6 +208,41 @@
                   <span style="font-size: 10px; color: #334155; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Patrimônio</span>
                 </div>
                 <div style="font-size: 28px; font-weight: 800; color: #06B6D4; letter-spacing: -1.5px; line-height: 1;">{{ totalBalance }}</div>
+              </div>
+            </div>
+            <!-- Score Financeiro -->
+            <div style="background: #111118; border: 1px solid #151525; border-radius: 12px; padding: 18px 20px;">
+              <div style="display: flex; align-items: center; gap: 7px; margin-bottom: 14px;">
+                <i class="ph ph-seal-check" style="font-size: 14px; color: {{ scoreColor }};"></i>
+                <span style="font-size: 12px; font-weight: 600; color: #64748B; text-transform: uppercase; letter-spacing: 0.8px;">Score Financeiro</span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 20px;">
+                <div style="flex-shrink: 0; text-align: center;">
+                  <div style="font-size: 42px; font-weight: 900; letter-spacing: -2px; color: {{ scoreColor }}; line-height: 1;">{{ score }}</div>
+                  <div style="font-size: 11px; font-weight: 600; color: {{ scoreColor }}; margin-top: 2px; text-transform: uppercase; letter-spacing: 0.5px;">{{ scoreLabel }}</div>
+                </div>
+                <div style="flex: 1;">
+                  <div style="display: flex; flex-direction: column; gap: 7px;">
+                    <div style="display: flex; align-items: center; gap: 8px; font-size: 11px; color: #475569;">
+                      <i class="ph ph-piggy-bank" style="font-size: 12px; flex-shrink: 0;"></i>
+                      <span style="flex: 1;">Taxa de poupança</span>
+                      <span style="font-weight: 600; color: #64748B; font-variant-numeric: tabular-nums;">{{ scoreSavings }}/40</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 8px; font-size: 11px; color: #475569;">
+                      <i class="ph ph-chart-bar" style="font-size: 12px; flex-shrink: 0;"></i>
+                      <span style="flex: 1;">Orçamentos</span>
+                      <span style="font-weight: 600; color: #64748B; font-variant-numeric: tabular-nums;">{{ scoreBudget }}/30</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 8px; font-size: 11px; color: #475569;">
+                      <i class="ph ph-calendar-check" style="font-size: 12px; flex-shrink: 0;"></i>
+                      <span style="flex: 1;">Regularidade</span>
+                      <span style="font-weight: 600; color: #64748B; font-variant-numeric: tabular-nums;">{{ scoreRegularity }}/30</span>
+                    </div>
+                  </div>
+                  <div style="height: 6px; background: #1A1A28; border-radius: 3px; overflow: hidden; margin-top: 10px;">
+                    <div style="height: 100%; border-radius: 3px; background: {{ scoreColor }}; width: {{ scoreBarW }}%; transition: width 0.6s ease;"></div>
+                  </div>
+                </div>
               </div>
             </div>
             <!-- Insights -->
@@ -1668,6 +1716,30 @@ class Component extends DCLogic {
     }
     const hasInsights = insights.length > 0;
 
+    // Score financeiro (0-100)
+    let scoreSavings = 0, scoreBudget = 0, scoreRegularity = 0;
+    if (income > 0) {
+      const rate = (income - expense) / income;
+      if (rate >= 0.30) scoreSavings = 40;
+      else if (rate >= 0.20) scoreSavings = 30;
+      else if (rate >= 0.10) scoreSavings = 20;
+      else if (rate > 0) scoreSavings = 10;
+    }
+    const budgetCats = catList.filter(c => c.hasBudget);
+    if (budgetCats.length === 0) {
+      scoreBudget = 20;
+    } else {
+      const withinBudget = budgetCats.filter(c => c.pct < 100).length;
+      scoreBudget = Math.round((withinBudget / budgetCats.length) * 30);
+    }
+    if (curTxns.length >= 5) scoreRegularity = 30;
+    else if (curTxns.length >= 2) scoreRegularity = 20;
+    else if (curTxns.length >= 1) scoreRegularity = 10;
+    const score = scoreSavings + scoreBudget + scoreRegularity;
+    const scoreColor = score >= 80 ? '#22C55E' : score >= 60 ? '#06B6D4' : score >= 40 ? '#F97316' : '#EF4444';
+    const scoreLabel = score >= 80 ? 'Ótimo' : score >= 60 ? 'Bom' : score >= 40 ? 'Regular' : 'Atenção';
+    const scoreBarW = score;
+
     // Savings goal
     const savingsGoal = s.savingsGoal || 0;
     const savingsCurrent = Math.max(0, income - expense);
@@ -1883,6 +1955,10 @@ class Component extends DCLogic {
       quickExpStyle, quickIncStyle, quickCatOptions, quickSuccess, quickSuccessMsg,
       // dashboard – insights
       insights, hasInsights,
+      score, scoreColor, scoreLabel, scoreBarW, scoreSavings, scoreBudget, scoreRegularity,
+      forecastDash: this.fmt(forecast), forecastDashColor: forecast >= 0 ? '#4ADE80' : '#F87171',
+      upExpFmt: this.fmt(upExp), upIncFmt: this.fmt(upInc),
+      hasUpcoming: upExp > 0 || upInc > 0,
       // dashboard – savings goal
       hasSavingsGoal, savingsGoalPct, savingsGoalBarW, savingsGoalColor,
       savingsCurrentFmt, savingsGoalFmt, savingsProjectedFmt, savingsGoalStatusText,

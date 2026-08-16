@@ -190,6 +190,12 @@
                   <span style="font-size: 10px; color: #334155; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Receitas</span>
                 </div>
                 <div style="font-size: 28px; font-weight: 800; color: #22C55E; letter-spacing: -1.5px; line-height: 1;">{{ incomeFormatted }}</div>
+                <sc-if value="{{ hasPrevData }}" hint-placeholder-val="{{ false }}">
+                  <div style="display: flex; align-items: center; gap: 3px; margin-top: 5px; font-size: 11px; color: {{ incDeltaColor }}; font-weight: 600;">
+                    <i class="ph {{ incDeltaIcon }}" style="font-size: 11px;"></i>
+                    <span>{{ incDeltaTxt }} vs. mês ant.</span>
+                  </div>
+                </sc-if>
               </div>
               <div style="background: #111118; border: 1px solid #151525; border-radius: 12px; padding: 16px;">
                 <div style="display: flex; align-items: center; gap: 7px; margin-bottom: 10px;">
@@ -199,6 +205,12 @@
                   <span style="font-size: 10px; color: #334155; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Despesas</span>
                 </div>
                 <div style="font-size: 28px; font-weight: 800; color: #EF4444; letter-spacing: -1.5px; line-height: 1;">{{ expenseFormatted }}</div>
+                <sc-if value="{{ hasPrevData }}" hint-placeholder-val="{{ false }}">
+                  <div style="display: flex; align-items: center; gap: 3px; margin-top: 5px; font-size: 11px; color: {{ expDeltaColor }}; font-weight: 600;">
+                    <i class="ph {{ expDeltaIcon }}" style="font-size: 11px;"></i>
+                    <span>{{ expDeltaTxt }} vs. mês ant.</span>
+                  </div>
+                </sc-if>
               </div>
               <div style="background: #111118; border: 1px solid #151525; border-radius: 12px; padding: 16px;">
                 <div style="display: flex; align-items: center; gap: 7px; margin-bottom: 10px;">
@@ -258,6 +270,33 @@
                       <span style="font-size: 12px; color: #94A3B8; line-height: 1.6;">{{ ins.text }}</span>
                     </div>
                   </sc-for>
+                </div>
+              </div>
+            </sc-if>
+            <!-- Heatmap de gastos por dia -->
+            <sc-if value="{{ hmHasData }}" hint-placeholder-val="{{ false }}">
+              <div style="background: #111118; border: 1px solid #151525; border-radius: 12px; padding: 18px 20px;">
+                <div style="display: flex; align-items: center; gap: 7px; margin-bottom: 14px;">
+                  <i class="ph ph-fire" style="font-size: 14px; color: #F97316;"></i>
+                  <span style="font-size: 12px; font-weight: 600; color: #64748B; text-transform: uppercase; letter-spacing: 0.8px;">Intensidade de Gastos</span>
+                </div>
+                <div style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px;">
+                  <sc-for list="{{ hmCells }}" as="hm" hint-placeholder-count="35">
+                    <div title="{{ hm.amt }}" style="aspect-ratio: 1; border-radius: 3px; background: {{ hm.color }}; display: flex; align-items: center; justify-content: center; position: relative; outline: {{ hm.isToday ? '2px solid #60A5FA' : 'none' }}; outline-offset: -1px;">
+                      <span style="font-size: 8px; color: rgba(255,255,255,0.35); font-weight: 600; line-height: 1; pointer-events: none;">{{ hm.label }}</span>
+                    </div>
+                  </sc-for>
+                </div>
+                <div style="display: flex; align-items: center; gap: 6px; margin-top: 10px; justify-content: flex-end;">
+                  <span style="font-size: 10px; color: #334155;">Menos</span>
+                  <div style="display: flex; gap: 2px;">
+                    <div style="width: 10px; height: 10px; border-radius: 2px; background: #1A1A2A;"></div>
+                    <div style="width: 10px; height: 10px; border-radius: 2px; background: rgba(239,68,68,0.25);"></div>
+                    <div style="width: 10px; height: 10px; border-radius: 2px; background: rgba(239,68,68,0.50);"></div>
+                    <div style="width: 10px; height: 10px; border-radius: 2px; background: rgba(239,68,68,0.75);"></div>
+                    <div style="width: 10px; height: 10px; border-radius: 2px; background: rgba(239,68,68,1.00);"></div>
+                  </div>
+                  <span style="font-size: 10px; color: #334155;">Mais</span>
                 </div>
               </div>
             </sc-if>
@@ -548,9 +587,15 @@
             <!-- List -->
             <div style="background: #111118; border: 1px solid #151525; border-radius: 12px; overflow: hidden;">
               <sc-if value="{{ noTxns }}" hint-placeholder-val="{{ false }}">
-                <div style="display: flex; flex-direction: column; align-items: center; padding: 40px 20px; gap: 8px;">
-                  <i class="ph ph-receipt" style="font-size: 36px; color: #1E2A3A;"></i>
-                  <span style="font-size: 14px; color: #1E2A3A;">Nenhuma transação encontrada</span>
+                <div style="display: flex; flex-direction: column; align-items: center; padding: 48px 24px 40px; gap: 0; text-align: center;">
+                  <div style="width: 56px; height: 56px; border-radius: 14px; background: #1A1A2A; display: flex; align-items: center; justify-content: center; margin-bottom: 14px;">
+                    <i class="ph ph-receipt" style="font-size: 26px; color: #2A3A55;"></i>
+                  </div>
+                  <div style="font-size: 15px; font-weight: 600; color: #334155; margin-bottom: 6px;">Nenhum lançamento</div>
+                  <div style="font-size: 12px; color: #1E2A3A; line-height: 1.6; max-width: 240px;">{{ emptyTxnHint }}</div>
+                  <sc-if value="{{ hasActiveFilters }}" hint-placeholder-val="{{ false }}">
+                    <button onClick="{{ clearFilters }}" style="margin-top: 16px; padding: 8px 18px; background: #2563EB18; border: 1px solid #2563EB44; border-radius: 8px; color: #60A5FA; font-size: 12px; font-weight: 600; font-family: inherit; cursor: pointer;">Limpar filtros</button>
+                  </sc-if>
                 </div>
               </sc-if>
               <sc-if value="{{ hasTxns }}" hint-placeholder-val="{{ true }}">
@@ -1476,6 +1521,24 @@ class Component extends DCLogic {
     const allIncome  = s.transactions.filter(t => t.type === 'income').reduce((a, t) => a + t.amount, 0);
     const allExpense = s.transactions.filter(t => t.type === 'expense').reduce((a, t) => a + t.amount, 0);
 
+    // Previous month comparison
+    const prevDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const prevKey = this.mKey(prevDate);
+    const prevTxns = s.transactions.filter(t => t.date && t.date.startsWith(prevKey));
+    const prevIncome  = prevTxns.filter(t => t.type === 'income').reduce((a, t) => a + t.amount, 0);
+    const prevExpense = prevTxns.filter(t => t.type === 'expense').reduce((a, t) => a + t.amount, 0);
+    const _pct = (cur, prev) => prev === 0 ? null : Math.round(((cur - prev) / prev) * 100);
+    const incDelta = _pct(income, prevIncome);
+    const expDelta = _pct(expense, prevExpense);
+    const _deltaFmt = (d, isExpense) => {
+      if (d === null) return { txt: '', color: '#475569', icon: '' };
+      const up = d > 0;
+      const good = isExpense ? !up : up;
+      return { txt: (up ? '+' : '') + d + '%', color: good ? '#22C55E' : '#F87171', icon: up ? 'ph-trend-up' : 'ph-trend-down' };
+    };
+    const incDeltaFmt = _deltaFmt(incDelta, false);
+    const expDeltaFmt = _deltaFmt(expDelta, true);
+
     const hr = now.getHours();
     const greeting = hr < 12 ? 'Bom dia' : hr < 18 ? 'Boa tarde' : 'Boa noite';
     const firstName = (s.user?.name || 'Usuário').split(' ')[0];
@@ -1740,6 +1803,29 @@ class Component extends DCLogic {
     const scoreLabel = score >= 80 ? 'Ótimo' : score >= 60 ? 'Bom' : score >= 40 ? 'Regular' : 'Atenção';
     const scoreBarW = score;
 
+    // Heatmap de gastos por dia
+    const hmDays = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+    const hmFirstDow = new Date(now.getFullYear(), now.getMonth(), 1).getDay(); // 0=Sun
+    const hmDailyExp = {};
+    curTxns.filter(t => t.type === 'expense').forEach(t => {
+      const d = parseInt((t.date || '').split('-')[2]);
+      if (d) hmDailyExp[d] = (hmDailyExp[d] || 0) + t.amount;
+    });
+    const hmMaxDay = Math.max(...Object.values(hmDailyExp), 1);
+    const hmCells = [];
+    for (let i = 0; i < hmFirstDow; i++) hmCells.push({ empty: true, day: 0, label: '', color: 'transparent', amt: '' });
+    for (let d = 1; d <= hmDays; d++) {
+      const amt = hmDailyExp[d] || 0;
+      const intensity = amt > 0 ? 0.15 + (amt / hmMaxDay) * 0.85 : 0;
+      const isFuture = d > now.getDate() && curKey === this.mKey(now);
+      const base = amt > 0 ? '#EF4444' : '#1A1A2A';
+      const alpha = amt > 0 ? Math.round(intensity * 255).toString(16).padStart(2, '0') : 'ff';
+      const color = amt > 0 ? `rgba(239,68,68,${intensity.toFixed(2)})` : isFuture ? '#12121C' : '#1A1A2A';
+      const isToday = d === now.getDate() && curKey === this.mKey(now);
+      hmCells.push({ empty: false, day: d, label: String(d), color, isToday, amt: amt > 0 ? this.fmt(amt) : '' });
+    }
+    const hmHasData = Object.keys(hmDailyExp).length > 0;
+
     // Savings goal
     const savingsGoal = s.savingsGoal || 0;
     const savingsCurrent = Math.max(0, income - expense);
@@ -1879,6 +1965,9 @@ class Component extends DCLogic {
       totalBalance: this.fmt(allIncome - allExpense),
       incomeFormatted: this.fmt(income),
       expenseFormatted: this.fmt(expense),
+      incDeltaTxt: incDeltaFmt.txt, incDeltaColor: incDeltaFmt.color, incDeltaIcon: incDeltaFmt.icon,
+      expDeltaTxt: expDeltaFmt.txt, expDeltaColor: expDeltaFmt.color, expDeltaIcon: expDeltaFmt.icon,
+      hasPrevData: prevIncome > 0 || prevExpense > 0,
       expTotal: this.fmt(expense),
       pieSectors, pieLegend, pieEmpty: pieData.length === 0, pieHasData: pieData.length > 0,
       barItems, barViewBox, barSvgWidth,
@@ -1895,6 +1984,7 @@ class Component extends DCLogic {
       // lancamentos
       filteredTxns, noTxns: filteredTxns.length === 0, hasTxns: filteredTxns.length > 0,
       filteredTxnsCount, hasActiveFilters, activeFilterCount,
+      emptyTxnHint: hasActiveFilters ? 'Nenhum lançamento corresponde aos filtros aplicados.' : 'Toque no + para registrar sua primeira transação deste mês.',
       isDesktop: !isMobile,
       showFiltersSheet: s.showFiltersSheet,
       openFiltersSheet: () => this.setState({ showFiltersSheet: true }),
@@ -1962,6 +2052,7 @@ class Component extends DCLogic {
       // dashboard – savings goal
       hasSavingsGoal, savingsGoalPct, savingsGoalBarW, savingsGoalColor,
       savingsCurrentFmt, savingsGoalFmt, savingsProjectedFmt, savingsGoalStatusText,
+      hmCells, hmHasData,
       // dashboard – line chart
       linePoints, lineViewBox, linePadX, lineZeroY, lineMaxX, lineLabY, lineChartDots, lineChartSummary,
       // dashboard – budget overview + chart

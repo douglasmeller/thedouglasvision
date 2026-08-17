@@ -122,9 +122,15 @@
         <!-- ═══ DASHBOARD ═══ -->
         <sc-if value="{{ isDashboard }}" hint-placeholder-val="{{ true }}">
           <div class="fade-in" style="padding: 20px 20px; display: flex; flex-direction: column; gap: 18px; max-width: 820px;">
-            <div>
-              <div style="font-size: 21px; font-weight: 600; color: #E2E8F0; letter-spacing: -0.3px;">{{ greeting }}, {{ firstName }} 👋</div>
-              <div style="font-size: 12px; color: #334155; margin-top: 3px;">{{ currentMonthLabel }}</div>
+            <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;">
+              <div>
+                <div style="font-size: 21px; font-weight: 600; color: #E2E8F0; letter-spacing: -0.3px;">{{ greeting }}, {{ firstName }} 👋</div>
+                <div style="font-size: 12px; color: #334155; margin-top: 3px;">{{ currentMonthLabel }}</div>
+              </div>
+              <button onClick="{{ shareReport }}" title="Compartilhar resumo" style="display: flex; align-items: center; gap: 5px; padding: 7px 12px; background: {{ shareCopied ? '#22C55E18' : '#111118' }}; border: 1px solid {{ shareCopied ? '#22C55E44' : '#1A1A28' }}; border-radius: 8px; color: {{ shareCopied ? '#4ADE80' : '#475569' }}; font-size: 12px; font-weight: 600; font-family: inherit; cursor: pointer; white-space: nowrap; flex-shrink: 0; transition: all 0.2s;">
+                <i class="{{ shareCopied ? 'ph ph-check' : 'ph ph-share-network' }}" style="font-size: 14px;"></i>
+                {{ shareCopied ? 'Copiado!' : 'Compartilhar' }}
+              </button>
             </div>
 
             <!-- ── Quick Launch Widget ── -->
@@ -1255,6 +1261,7 @@ class Component extends DCLogic {
     showPieModal: false,
     showBarModal: false,
     showFiltersSheet: false,
+    shareCopied: false,
     undoTxn: null,
     undoTimer: null,
     planTab: 'recorrentes',
@@ -1455,6 +1462,37 @@ class Component extends DCLogic {
     this.setState({ user, screen: 'dashboard', loginError: '', cfgName: name, cfgEmail: loginEmail });
   }
 
+  shareMonthlyReport = () => {
+    const s = this.state;
+    const now = new Date();
+    const curKey = s.filterMonth || this.mKey(now);
+    const curTxns = s.transactions.filter(t => t.date && t.date.startsWith(curKey));
+    const income  = curTxns.filter(t => t.type === 'income').reduce((a, t) => a + t.amount, 0);
+    const expense = curTxns.filter(t => t.type === 'expense').reduce((a, t) => a + t.amount, 0);
+    const balance = income - expense;
+    const monthLabel = new Date(curKey + '-01T12:00:00').toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+    const rate = income > 0 ? Math.round(((income - expense) / income) * 100) : 0;
+    const lines = [
+      `📊 *TheDouglasVision — ${monthLabel}*`,
+      '',
+      `💰 Receitas: R$ ${income.toFixed(2).replace('.', ',')}`,
+      `💸 Despesas: R$ ${expense.toFixed(2).replace('.', ',')}`,
+      `💵 Saldo: R$ ${balance.toFixed(2).replace('.', ',')}`,
+      rate >= 0 ? `📈 Taxa de poupança: ${rate}%` : `📉 Gastos acima da receita`,
+      '',
+      `🔢 ${curTxns.length} lançamentos registrados`,
+    ];
+    const text = lines.join('\n');
+    if (navigator.share) {
+      navigator.share({ title: 'Resumo TDV', text });
+    } else {
+      navigator.clipboard.writeText(text).then(() => {
+        this.setState({ shareCopied: true });
+        setTimeout(() => this.setState({ shareCopied: false }), 2500);
+      });
+    }
+  }
+
   handleLogout = () => {
     this._save('user', null);
     this.setState({ user: null, screen: 'login', loginEmail: '', loginPassword: '', sidebarOpen: false });
@@ -1545,27 +1583,6 @@ class Component extends DCLogic {
 
   _saveGoals = () => this._save('goals', this.state.goals);
 
-  exportXlsx = (txns) => {
-    if (!window.XLSX) return alert('SheetJS não carregado. Verifique sua conexão.');
-    const { categories } = this.state;
-    const catMap = {};
-    categories.forEach(c => { catMap[c.id] = c.name; });
-    const rows = txns.map(t => ({
-      'Data': t.date,
-      'Tipo': t.type === 'income' ? 'Receita' : 'Despesa',
-      'Descrição': t.description,
-      'Categoria': catMap[t.categoryId] || '-',
-      'Valor': t.amount,
-      'Recorrente': t.recurring ? 'Sim' : 'Não',
-    }));
-    const ws = XLSX.utils.json_to_sheet(rows);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Lançamentos');
-    const now = new Date();
-    const fname = `TDV_${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}.xlsx`;
-    XLSX.writeFile(wb, fname);
-  }
-
   undoDelete = () => {
     if (this.state.undoTimer) clearTimeout(this.state.undoTimer);
     const { undoTxn } = this.state;
@@ -1593,11 +1610,12 @@ class Component extends DCLogic {
     setTimeout(() => this.setState({ quickSuccessTs: 0 }), 3000);
   }
 
-  exportXlsx = () => {
+  exportXlsx = (filteredTxns) => {
     if (typeof XLSX === 'undefined') { alert('Biblioteca de exportação ainda carregando. Tente novamente.'); return; }
     const { transactions, categories } = this.state;
+    const txns = filteredTxns || transactions;
     const wb = XLSX.utils.book_new();
-    const txnData = [...transactions]
+    const txnData = [...txns]
       .sort((a, b) => new Date(b.date) - new Date(a.date))
       .map(t => {
         const cat = this.getCat(t.categoryId);
@@ -2191,6 +2209,7 @@ class Component extends DCLogic {
       },
       userName: s.user?.name || 'Usuário', userEmail: s.user?.email || '',
       handleLogout: this.handleLogout,
+      shareReport: this.shareMonthlyReport, shareCopied: s.shareCopied,
       // login
       loginEmail: s.loginEmail, loginPassword: s.loginPassword, loginError: s.loginError,
       hasLoginError: !!s.loginError,
@@ -2348,7 +2367,7 @@ class Component extends DCLogic {
       cfgSavingsGoal: s.cfgSavingsGoal || '',
       setCfgSavingsGoal: e => this.setState({ cfgSavingsGoal: e.target.value }),
       saveCfg: this.saveCfg, clearData: this.clearData,
-      exportXlsx: this.exportXlsx,
+      exportAllXlsx: () => this.exportXlsx(s.transactions),
     };
   }
 }

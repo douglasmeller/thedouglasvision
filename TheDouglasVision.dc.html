@@ -148,6 +148,15 @@
               </button>
             </div>
 
+            <!-- Historical month banner -->
+            <sc-if value="{{ dashIsNotCurrentMonth }}" hint-placeholder-val="{{ false }}">
+              <div class="fade-in" style="display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: #2563EB0E; border: 1px solid #2563EB2A; border-radius: 10px;">
+                <i class="ph ph-calendar-blank" style="font-size: 14px; color: #60A5FA; flex-shrink: 0;"></i>
+                <span style="font-size: 12px; color: #64748B; flex: 1; line-height: 1.4;">Visualizando <b style="color: #93C5FD;">{{ dashMonthLabel }}</b></span>
+                <button onClick="{{ resetDashMonth }}" style="font-size: 11px; color: #3B82F6; background: none; border: none; cursor: pointer; font-family: inherit; white-space: nowrap; padding: 0; font-weight: 600; flex-shrink: 0;">Mês atual →</button>
+              </div>
+            </sc-if>
+
             <!-- ── Quick Launch Widget ── -->
             <div style="background: #111118; border: 1px solid #1E2A45; border-radius: 14px; padding: 14px 16px;">
               <div style="font-size: 10px; font-weight: 600; color: #334155; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px;">Lançamento Rápido</div>
@@ -545,6 +554,9 @@
                       <div style="flex: 1; min-width: 0;">
                         <div style="font-size: 13px; font-weight: 500; color: #CBD5E1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ rt.description }}</div>
                         <div style="font-size: 11px; color: #334155; margin-top: 1px;">{{ rt.catName }} · {{ rt.fmtDate }}</div>
+                        <sc-if value="{{ rt.hasNotes }}" hint-placeholder-val="{{ false }}">
+                          <div style="font-size: 10px; color: #1E2A3A; margin-top: 1px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-style: italic;">{{ rt.notes }}</div>
+                        </sc-if>
                       </div>
                       <div style="font-size: 13px; font-weight: 600; color: {{ rt.amtColor }}; flex-shrink: 0;">{{ rt.sign }}{{ rt.fmtAmount }}</div>
                     </div>
@@ -673,6 +685,9 @@
                           <span style="font-size: 9px; padding: 1px 5px; border-radius: 20px; background: #2563EB22; color: #3B82F6; font-weight: 500;">↻ {{ txn.freqLabel }}</span>
                         </sc-if>
                       </div>
+                      <sc-if value="{{ txn.hasNotes }}" hint-placeholder-val="{{ false }}">
+                        <div style="font-size: 11px; color: #1E2A3A; margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-style: italic;">{{ txn.notes }}</div>
+                      </sc-if>
                     </div>
                     <div style="font-size: 13px; font-weight: 700; color: {{ txn.amtColor }}; flex-shrink: 0; margin-right: 8px; letter-spacing: -0.3px;">{{ txn.sign }}{{ txn.fmtAmount }}</div>
                     <div style="display: flex; gap: 3px; flex-shrink: 0;">
@@ -1071,6 +1086,10 @@
               </div>
               <input type="checkbox" checked="{{ txnPlanned }}" onChange="{{ setTxnPlanned }}" style="width: 18px; height: 18px; accent-color: #2563EB; cursor: pointer; flex-shrink: 0;">
             </div>
+            <div>
+              <label style="display: block; font-size: 11px; color: #475569; margin-bottom: 6px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Notas <span style="color: #334155; font-weight: 400; text-transform: none; letter-spacing: 0;">(opcional)</span></label>
+              <input type="text" value="{{ txnNotes }}" onInput="{{ setTxnNotes }}" placeholder="Observações, referência, estabelecimento…" style="width: 100%; background: #0D0D1A; border: 1px solid #1E2A45; border-radius: 8px; padding: 11px 14px; color: #E2E8F0; font-size: 13px; font-family: inherit;">
+            </div>
           </div>
           <button onClick="{{ saveTxn }}" style="margin-top: 20px; width: 100%; padding: 13px; background: linear-gradient(135deg, #2563EB, #06B6D4); border: none; border-radius: 9px; color: white; font-size: 15px; font-weight: 600; cursor: pointer; font-family: inherit; box-shadow: 0 4px 16px #2563EB33;">Salvar</button>
         </div>
@@ -1284,6 +1303,7 @@ class Component extends DCLogic {
     txnRecurring: false,
     txnRecurringFreq: 'monthly',
     txnPlanned: false,
+    txnNotes: '',
     filterType: 'all',
     filterCategoryId: 'all',
     filterMonth: '',
@@ -1545,6 +1565,7 @@ class Component extends DCLogic {
         txnDescription: txn.description, txnCategoryId: txn.categoryId,
         txnDate: txn.date, txnRecurring: !!txn.recurring,
         txnRecurringFreq: txn.recurringFreq || 'monthly', txnPlanned: !!txn.planned,
+        txnNotes: txn.notes || '',
       });
     } else {
       this.setState({
@@ -1552,6 +1573,7 @@ class Component extends DCLogic {
         txnType: 'expense', txnAmount: '', txnDescription: '',
         txnCategoryId: '', txnDate: new Date().toISOString().split('T')[0],
         txnRecurring: false, txnRecurringFreq: 'monthly', txnPlanned: false,
+        txnNotes: '',
       });
     }
   }
@@ -1567,6 +1589,7 @@ class Component extends DCLogic {
       recurring: s.txnRecurring,
       recurringFreq: s.txnRecurring ? s.txnRecurringFreq : null,
       planned: s.txnPlanned,
+      notes: s.txnNotes.trim() || null,
     };
     const transactions = s.editTxnId
       ? s.transactions.map(t => t.id === s.editTxnId ? txn : t)
@@ -1936,7 +1959,8 @@ class Component extends DCLogic {
         return { ...t, catName: cat.name, catColor: cat.color, catIcon: 'ph ph-' + cat.icon,
           fmtAmount: this.fmt(t.amount), fmtDate: this.fmtDate(t.date),
           amtColor: t.type === 'income' ? '#22C55E' : '#EF4444',
-          sign: t.type === 'income' ? '+' : '-' };
+          sign: t.type === 'income' ? '+' : '-',
+          notes: t.notes || '', hasNotes: !!(t.notes && t.notes.trim()) };
       });
 
     // Filtered transactions
@@ -1969,6 +1993,7 @@ class Component extends DCLogic {
         amtColor: t.type === 'income' ? '#22C55E' : '#EF4444',
         sign: t.type === 'income' ? '+' : '-',
         freqLabel: freqMap[t.recurringFreq] || '',
+        notes: t.notes || '', hasNotes: !!(t.notes && t.notes.trim()),
         onEdit: () => this.openTxnModal(t), onDelete: () => this.deleteTxn(t.id) };
     });
     const hasActiveFilters = s.filterType !== 'all' || (s.filterCategoryId && s.filterCategoryId !== 'all') ||
@@ -2348,6 +2373,9 @@ class Component extends DCLogic {
       setTxnRecurring: e => this.setState({ txnRecurring: e.target.checked }),
       setTxnRecurringFreq: e => this.setState({ txnRecurringFreq: e.target.value }),
       setTxnPlanned: e => this.setState({ txnPlanned: e.target.checked }),
+      txnNotes: s.txnNotes || '',
+      setTxnNotes: e => this.setState({ txnNotes: e.target.value }),
+      hasTxnNotes: !!(s.txnNotes && s.txnNotes.trim()),
       catOptions, saveTxn: this.saveTxn,
       closeTxnModal: () => this.setState({ showTxnModal: false, editTxnId: null }),
       // planejamento
@@ -2387,6 +2415,7 @@ class Component extends DCLogic {
       dashMonthLabel, dashIsCurrentMonth, dashIsNotCurrentMonth,
       dashMonthColor, dashMonthFontWeight,
       prevDashMonth, nextDashMonth,
+      resetDashMonth: () => this.setState({ dashMonth: '' }),
       // contribution modal
       showContribModal: s.showContribModal,
       contribAmount: s.contribAmount,

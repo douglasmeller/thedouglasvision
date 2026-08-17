@@ -125,11 +125,26 @@
             <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;">
               <div>
                 <div style="font-size: 21px; font-weight: 600; color: #E2E8F0; letter-spacing: -0.3px;">{{ greeting }}, {{ firstName }} 👋</div>
-                <div style="font-size: 12px; color: #334155; margin-top: 3px;">{{ currentMonthLabel }}</div>
+                <div style="display: flex; align-items: center; gap: 2px; margin-top: 3px;">
+                  <button onClick="{{ prevDashMonth }}" title="Mês anterior" style="background: none; border: none; color: #475569; cursor: pointer; display: flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 4px; padding: 0; flex-shrink: 0;">
+                    <i class="ph ph-caret-left" style="font-size: 13px;"></i>
+                  </button>
+                  <span style="font-size: 12px; color: {{ dashMonthColor }}; font-weight: {{ dashMonthFontWeight }};">{{ dashMonthLabel }}</span>
+                  <sc-if value="{{ dashIsCurrentMonth }}" hint-placeholder-val="{{ true }}">
+                    <span style="width: 22px; height: 22px; display: inline-flex; align-items: center; justify-content: center; opacity: 0.2; cursor: default;">
+                      <i class="ph ph-caret-right" style="font-size: 13px; color: #334155;"></i>
+                    </span>
+                  </sc-if>
+                  <sc-if value="{{ dashIsNotCurrentMonth }}" hint-placeholder-val="{{ false }}">
+                    <button onClick="{{ nextDashMonth }}" title="Mês seguinte" style="background: none; border: none; color: #475569; cursor: pointer; display: flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 4px; padding: 0; flex-shrink: 0;">
+                      <i class="ph ph-caret-right" style="font-size: 13px;"></i>
+                    </button>
+                  </sc-if>
+                </div>
               </div>
-              <button onClick="{{ shareReport }}" title="Compartilhar resumo" style="display: flex; align-items: center; gap: 5px; padding: 7px 12px; background: {{ shareCopied ? '#22C55E18' : '#111118' }}; border: 1px solid {{ shareCopied ? '#22C55E44' : '#1A1A28' }}; border-radius: 8px; color: {{ shareCopied ? '#4ADE80' : '#475569' }}; font-size: 12px; font-weight: 600; font-family: inherit; cursor: pointer; white-space: nowrap; flex-shrink: 0; transition: all 0.2s;">
-                <i class="{{ shareCopied ? 'ph ph-check' : 'ph ph-share-network' }}" style="font-size: 14px;"></i>
-                {{ shareCopied ? 'Copiado!' : 'Compartilhar' }}
+              <button onClick="{{ shareReport }}" title="Compartilhar resumo" style="display: flex; align-items: center; gap: 5px; padding: 7px 12px; background: {{ shareBg }}; border: {{ shareBorder }}; border-radius: 8px; color: {{ shareColor }}; font-size: 12px; font-weight: 600; font-family: inherit; cursor: pointer; white-space: nowrap; flex-shrink: 0; transition: all 0.2s;">
+                <i class="{{ shareIcon }}" style="font-size: 14px;"></i>
+                {{ shareLabel }}
               </button>
             </div>
 
@@ -202,7 +217,7 @@
               <div style="position: absolute; top: -40px; right: -40px; width: 180px; height: 180px; background: radial-gradient(circle, #2563EB14 0%, transparent 70%); pointer-events: none;"></div>
               <div style="font-size: 10px; color: #334155; font-weight: 600; text-transform: uppercase; letter-spacing: 1.5px;">Saldo do Mês</div>
               <div style="font-size: clamp(28px, 8vw, 50px); font-weight: 800; letter-spacing: -2px; margin-top: 8px; color: {{ balanceColor }}; line-height: 1; word-break: break-all;">{{ balanceFormatted }}</div>
-              <div style="font-size: 11px; color: #1E2A3A; margin-top: 6px;">Receitas menos despesas · {{ currentMonthLabel }}</div>
+              <div style="font-size: 11px; color: #1E2A3A; margin-top: 6px;">Receitas menos despesas · {{ dashMonthLabel }}</div>
             </div>
             <!-- Forecast card -->
             <sc-if value="{{ hasUpcoming }}" hint-placeholder-val="{{ false }}">
@@ -1178,6 +1193,25 @@
       </div>
     </sc-if>
 
+    <!-- ── Contribution Modal ── -->
+    <sc-if value="{{ showContribModal }}" hint-placeholder-val="{{ false }}">
+      <div style="position: fixed; inset: 0; background: #00000099; z-index: 200; display: flex; align-items: center; justify-content: center; padding: 16px;">
+        <div class="modal-in" style="background: #111118; border: 1px solid #1E2A45; border-radius: 16px; padding: 24px; width: 100%; max-width: 360px; box-shadow: 0 32px 80px #00000066;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
+            <div style="font-size: 17px; font-weight: 700; color: #E2E8F0; letter-spacing: -0.5px;">Adicionar Aporte</div>
+            <button onClick="{{ closeContribModal }}" style="background: none; border: none; color: #334155; cursor: pointer; font-size: 22px; line-height: 1; padding: 0; display: flex;">×</button>
+          </div>
+          <div style="font-size: 12px; color: #475569; margin-bottom: 20px; padding-bottom: 16px; border-bottom: 1px solid #151525;">{{ contribGoalName }}</div>
+          <label style="display: block; font-size: 11px; color: #475569; margin-bottom: 8px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Valor (R$)</label>
+          <input type="number" inputmode="decimal" value="{{ contribAmount }}" onInput="{{ setContribAmount }}" placeholder="0,00" min="0" step="0.01" autofocus style="width: 100%; background: #0D0D1A; border: 1px solid #1E2A45; border-radius: 9px; padding: 13px 16px; color: #E2E8F0; font-size: 22px; font-weight: 700; font-family: inherit; letter-spacing: -0.5px; margin-bottom: 20px;">
+          <div style="display: flex; gap: 10px;">
+            <button onClick="{{ closeContribModal }}" style="flex: 1; padding: 12px; background: transparent; border: 1px solid #1E2A45; border-radius: 9px; color: #475569; font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit;">Cancelar</button>
+            <button onClick="{{ confirmContrib }}" style="flex: 1; padding: 12px; background: linear-gradient(135deg, #22C55E, #16A34A); border: none; border-radius: 9px; color: white; font-size: 14px; font-weight: 700; cursor: pointer; font-family: inherit; box-shadow: 0 2px 12px #22C55E33;">+ Aportar</button>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
     <!-- ── Pie Modal ── -->
     <sc-if value="{{ showPieModal }}" hint-placeholder-val="{{ false }}">
       <div style="position: fixed; inset: 0; background: #00000099; z-index: 200; display: flex; align-items: center; justify-content: center; padding: 16px;">
@@ -1262,6 +1296,10 @@ class Component extends DCLogic {
     showBarModal: false,
     showFiltersSheet: false,
     shareCopied: false,
+    dashMonth: '',
+    showContribModal: false,
+    contribGoalId: null,
+    contribAmount: '',
     undoTxn: null,
     undoTimer: null,
     planTab: 'recorrentes',
@@ -1305,6 +1343,7 @@ class Component extends DCLogic {
         if (s.showTxnModal) this.setState({ showTxnModal: false, editTxnId: null });
         else if (s.showCatModal) this.setState({ showCatModal: false, editCatId: null });
         else if (s.showGoalModal) this.setState({ showGoalModal: false });
+        else if (s.showContribModal) this.closeContribModal();
         else if (s.showFiltersSheet) this.setState({ showFiltersSheet: false });
       } else if ((e.key === 'n' || e.key === 'N') && !e.ctrlKey && !e.metaKey) {
         if (s.screen === 'lancamentos' && !s.showTxnModal) { e.preventDefault(); this.openTxnModal(null); }
@@ -1465,7 +1504,7 @@ class Component extends DCLogic {
   shareMonthlyReport = () => {
     const s = this.state;
     const now = new Date();
-    const curKey = s.filterMonth || this.mKey(now);
+    const curKey = s.dashMonth || this.mKey(now);
     const curTxns = s.transactions.filter(t => t.date && t.date.startsWith(curKey));
     const income  = curTxns.filter(t => t.type === 'income').reduce((a, t) => a + t.amount, 0);
     const expense = curTxns.filter(t => t.type === 'expense').reduce((a, t) => a + t.amount, 0);
@@ -1582,6 +1621,16 @@ class Component extends DCLogic {
   }
 
   _saveGoals = () => this._save('goals', this.state.goals);
+
+  openContribModal = (id) => this.setState({ showContribModal: true, contribGoalId: id, contribAmount: '' });
+  closeContribModal = () => this.setState({ showContribModal: false, contribGoalId: null, contribAmount: '' });
+  confirmContrib = () => {
+    const { contribGoalId, contribAmount } = this.state;
+    const a = parseFloat(contribAmount);
+    if (!a || a <= 0) return;
+    this.addGoalContrib(contribGoalId, a);
+    this.closeContribModal();
+  }
 
   undoDelete = () => {
     if (this.state.undoTimer) clearTimeout(this.state.undoTimer);
@@ -1771,7 +1820,7 @@ class Component extends DCLogic {
 
     // Month data
     const now = new Date();
-    const curKey = s.filterMonth || this.mKey(now);
+    const curKey = s.dashMonth || this.mKey(now);
     const curTxns = s.transactions.filter(t => t.date && t.date.startsWith(curKey));
     const income  = curTxns.filter(t => t.type === 'income').reduce((a, t) => a + t.amount, 0);
     const expense = curTxns.filter(t => t.type === 'expense').reduce((a, t) => a + t.amount, 0);
@@ -1801,6 +1850,13 @@ class Component extends DCLogic {
     const greeting = hr < 12 ? 'Bom dia' : hr < 18 ? 'Boa tarde' : 'Boa noite';
     const firstName = (s.user?.name || 'Usuário').split(' ')[0];
     const currentMonthLabel = now.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+    const dashMonthLabel = new Date(curKey + '-01T12:00:00').toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+    const dashIsCurrentMonth = curKey === this.mKey(now);
+    const dashIsNotCurrentMonth = !dashIsCurrentMonth;
+    const dashMonthColor = dashIsCurrentMonth ? '#334155' : '#60A5FA';
+    const dashMonthFontWeight = dashIsCurrentMonth ? '400' : '600';
+    const prevDashMonth = () => { const d = new Date(curKey + '-01T12:00:00'); d.setMonth(d.getMonth() - 1); this.setState({ dashMonth: this.mKey(d) }); };
+    const nextDashMonth = () => { const d = new Date(curKey + '-01T12:00:00'); d.setMonth(d.getMonth() + 1); const nk = this.mKey(d); this.setState({ dashMonth: nk <= this.mKey(now) ? nk : '' }); };
 
     // Pie chart
     const expByCat = {};
@@ -2210,6 +2266,11 @@ class Component extends DCLogic {
       userName: s.user?.name || 'Usuário', userEmail: s.user?.email || '',
       handleLogout: this.handleLogout,
       shareReport: this.shareMonthlyReport, shareCopied: s.shareCopied,
+      shareBg: s.shareCopied ? '#22C55E18' : '#111118',
+      shareBorder: s.shareCopied ? '1px solid #22C55E44' : '1px solid #1A1A28',
+      shareColor: s.shareCopied ? '#4ADE80' : '#475569',
+      shareIcon: s.shareCopied ? 'ph ph-check' : 'ph ph-share-network',
+      shareLabel: s.shareCopied ? 'Copiado!' : 'Compartilhar',
       // login
       loginEmail: s.loginEmail, loginPassword: s.loginPassword, loginError: s.loginError,
       hasLoginError: !!s.loginError,
@@ -2317,11 +2378,22 @@ class Component extends DCLogic {
           daysLeft, hasDl: dl !== null,
           dlLabel: dl ? (daysLeft === 0 ? 'hoje' : daysLeft + ' dias') : '',
           onEdit: () => this.openGoalModal(g), onDelete: () => this.deleteGoal(g.id),
-          onContrib: () => { const a = parseFloat(prompt('Valor a adicionar (R$):')); if (a > 0) this.addGoalContrib(g.id, a); },
+          onContrib: () => this.openContribModal(g.id),
         };
       }),
       hasGoals: s.goals.length > 0,
       noGoals: s.goals.length === 0,
+      // dashboard – month nav
+      dashMonthLabel, dashIsCurrentMonth, dashIsNotCurrentMonth,
+      dashMonthColor, dashMonthFontWeight,
+      prevDashMonth, nextDashMonth,
+      // contribution modal
+      showContribModal: s.showContribModal,
+      contribAmount: s.contribAmount,
+      setContribAmount: e => this.setState({ contribAmount: e.target.value }),
+      confirmContrib: this.confirmContrib,
+      closeContribModal: this.closeContribModal,
+      contribGoalName: (s.goals.find(g => g.id === s.contribGoalId) || {}).name || '',
       // dashboard – quick widget
       quickType: s.quickType, quickAmount: s.quickAmount, quickCategoryId: s.quickCategoryId,
       setQuickExpense: () => this.setState({ quickType: 'expense' }),

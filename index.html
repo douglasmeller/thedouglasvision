@@ -9,6 +9,13 @@
 <meta name="apple-mobile-web-app-title" content="TDV">
 <link rel="manifest" href="/manifest.json">
 <link rel="apple-touch-icon" href="/uploads/logo.png">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+  window._sb = supabase.createClient(
+    'https://evkpskwjzbyzpvvodnwf.supabase.co',
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV2a3Bza3dqemJ5enB2dm9kbndmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY4OTk1NTUsImV4cCI6MjEwMjQ3NTU1NX0.HwTcmm-9ljkin8YzAl1yo4TPJICKT5JwG-l_5ox-Icc'
+  );
+</script>
 <script src="./support.js"></script>
 </head>
 <body>
@@ -35,8 +42,17 @@
     input:focus, select:focus { outline: 2px solid #2563EB88; outline-offset: -1px; }
     button:focus-visible { outline: 2px solid #2563EB; outline-offset: 2px; }
     input[type="number"]::-webkit-inner-spin-button { opacity: 0.4; }
+    @keyframes spin { to { transform: rotate(360deg); } }
   </style>
 </helmet>
+
+<!-- ═══ LOADING ═══ -->
+<sc-if value="{{ isLoading }}" hint-placeholder-val="{{ false }}">
+  <div style="min-height: 100vh; display: flex; align-items: center; justify-content: center; background: #0A0A0F; flex-direction: column; gap: 16px;">
+    <div style="width: 40px; height: 40px; border: 3px solid #1E2A45; border-top-color: #2563EB; border-radius: 50%; animation: spin 0.8s linear infinite;"></div>
+    <div style="font-size: 13px; color: #334155;">{{ loadingMsg }}</div>
+  </div>
+</sc-if>
 
 <!-- ═══ LOGIN ═══ -->
 <sc-if value="{{ isLogin }}" hint-placeholder-val="{{ true }}">
@@ -46,6 +62,11 @@
         <img src="uploads/logo.png" alt="TheDouglasVision" style="width: 72px; height: 72px; border-radius: 16px; margin-bottom: 14px; filter: invert(1) hue-rotate(180deg); box-shadow: 0 8px 32px #2563EB44; display: block; margin-left: auto; margin-right: auto;">
         <div style="font-size: 20px; font-weight: 700; background: linear-gradient(135deg, #60A5FA, #22D3EE); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; letter-spacing: -0.3px;">TheDouglasVision</div>
         <div style="font-size: 10px; color: #2A3A55; letter-spacing: 2.5px; margin-top: 5px; font-weight: 500;">GESTÃO FINANCEIRA INTELIGENTE</div>
+      </div>
+      <!-- Tabs login/registro -->
+      <div style="display: flex; background: #0D0D1A; border-radius: 9px; padding: 3px; gap: 2px; margin-bottom: 20px;">
+        <button onClick="{{ switchToLogin }}" style="flex: 1; padding: 8px; border: none; border-radius: 7px; font-size: 13px; font-weight: 600; font-family: inherit; cursor: pointer; background: {{ isAuthLogin ? '#1E2A45' : 'transparent' }}; color: {{ isAuthLogin ? '#60A5FA' : '#334155' }}; transition: all 0.15s;">Entrar</button>
+        <button onClick="{{ switchToRegister }}" style="flex: 1; padding: 8px; border: none; border-radius: 7px; font-size: 13px; font-weight: 600; font-family: inherit; cursor: pointer; background: {{ isAuthRegister ? '#1E2A45' : 'transparent' }}; color: {{ isAuthRegister ? '#60A5FA' : '#334155' }}; transition: all 0.15s;">Criar conta</button>
       </div>
       <div style="display: flex; flex-direction: column; gap: 14px;">
         <div>
@@ -60,8 +81,12 @@
       <sc-if value="{{ hasLoginError }}" hint-placeholder-val="{{ false }}">
         <div style="margin-top: 12px; padding: 9px 12px; background: #EF444416; border: 1px solid #EF444440; border-radius: 7px; font-size: 12px; color: #F87171;">{{ loginError }}</div>
       </sc-if>
-      <button onClick="{{ handleLogin }}" style="margin-top: 20px; width: 100%; padding: 13px; background: linear-gradient(135deg, #2563EB, #06B6D4); border: none; border-radius: 9px; color: white; font-size: 15px; font-weight: 600; cursor: pointer; font-family: inherit; letter-spacing: -0.2px; box-shadow: 0 4px 16px #2563EB44;">Entrar</button>
-      <div style="margin-top: 14px; text-align: center; font-size: 11px; color: #1E2A45;">Use qualquer e-mail e senha para entrar</div>
+      <sc-if value="{{ isAuthLogin }}" hint-placeholder-val="{{ true }}">
+        <button onClick="{{ handleLogin }}" style="margin-top: 20px; width: 100%; padding: 13px; background: linear-gradient(135deg, #2563EB, #06B6D4); border: none; border-radius: 9px; color: white; font-size: 15px; font-weight: 600; cursor: pointer; font-family: inherit; letter-spacing: -0.2px; box-shadow: 0 4px 16px #2563EB44;">Entrar</button>
+      </sc-if>
+      <sc-if value="{{ isAuthRegister }}" hint-placeholder-val="{{ false }}">
+        <button onClick="{{ handleRegister }}" style="margin-top: 20px; width: 100%; padding: 13px; background: linear-gradient(135deg, #22C55E, #06B6D4); border: none; border-radius: 9px; color: white; font-size: 15px; font-weight: 600; cursor: pointer; font-family: inherit; letter-spacing: -0.2px; box-shadow: 0 4px 16px #22C55E44;">Criar conta</button>
+      </sc-if>
     </div>
   </div>
 </sc-if>
@@ -1311,6 +1336,9 @@ class Component extends DCLogic {
     loginEmail: '',
     loginPassword: '',
     loginError: '',
+    authMode: 'login',
+    loading: false,
+    loadingMsg: '',
     user: null,
     transactions: [],
     categories: [],
@@ -1373,6 +1401,9 @@ class Component extends DCLogic {
       isMobile: window.innerWidth < 768,
       filterMonth: this.mKey(new Date()),
       txnDate: today,
+      loading: true,
+      loadingMsg: 'Verificando sessão...',
+      onboardingDismissed: this._load('obDismissed') || false,
     });
     window.addEventListener('resize', this._resize = () =>
       this.setState({ isMobile: window.innerWidth < 768 })
@@ -1391,21 +1422,18 @@ class Component extends DCLogic {
         if (s.screen === 'lancamentos' && !s.showTxnModal) { e.preventDefault(); this.openTxnModal(null); }
       }
     });
-    const user = this._load('user');
-    const cats = this._load('cats') || this.defCats();
-    const txns = this._load('txns') || this.defTxns();
-    const cfg = this._load('cfg') || {};
-    const goals = this._load('goals') || [];
-    this.setState({
-      user, categories: cats, transactions: txns, goals,
-      cfgCurrency: cfg.currency || 'BRL',
-      savingsGoal: cfg.savingsGoal || 0,
-      cfgSavingsGoal: cfg.savingsGoal ? String(cfg.savingsGoal) : '',
-      screen: user ? 'dashboard' : 'login',
-      cfgName: user?.name || '',
-      cfgEmail: user?.email || '',
-      onboardingDismissed: this._load('obDismissed') || false,
-    }, () => { if (user) this._autoRecurring(); });
+    window._sb.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        this._loadFromSupabase(session.user);
+      } else {
+        this.setState({ loading: false });
+      }
+    });
+    window._sb.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_OUT') {
+        this.setState({ screen: 'login', user: null, transactions: [], categories: [], goals: [], loading: false });
+      }
+    });
   }
 
   componentWillUnmount() {
@@ -1413,8 +1441,8 @@ class Component extends DCLogic {
     window.removeEventListener('keydown', this._hotkey);
   }
 
-  _autoRecurring = () => {
-    const { transactions } = this.state;
+  _autoRecurring = async () => {
+    const { transactions, user } = this.state;
     const now = new Date();
     const curKey = this.mKey(now);
     if (this._load('autoMonth') === curKey) return;
@@ -1440,7 +1468,10 @@ class Component extends DCLogic {
     });
     this._save('autoMonth', curKey);
     if (toCreate.length === 0) return;
-    this.setState({ transactions: [...transactions, ...toCreate] }, () => this.persist());
+    this.setState({ transactions: [...transactions, ...toCreate] });
+    if (user?.id) {
+      await window._sb.from('transactions').insert(toCreate.map(t => this._txnRow(t, user.id)));
+    }
   }
 
   _load(k) {
@@ -1499,14 +1530,6 @@ class Component extends DCLogic {
     return this.state.categories.find(c => c.id === id) || { name: 'Outros', color: '#6B7280', icon: 'tag' };
   }
 
-  persist() {
-    const { transactions, categories, user, cfgCurrency } = this.state;
-    this._save('txns', transactions);
-    this._save('cats', categories);
-    if (user) this._save('user', user);
-    this._save('cfg', { currency: cfgCurrency, savingsGoal: this.state.savingsGoal });
-  }
-
   computePie(data) {
     if (!data.length) return [];
     const total = data.reduce((s, d) => s + d.value, 0);
@@ -1532,15 +1555,64 @@ class Component extends DCLogic {
     });
   }
 
-  handleLogin = () => {
+  _loadFromSupabase = async (authUser) => {
+    this.setState({ loading: true, loadingMsg: 'Carregando dados...' });
+    const uid = authUser.id;
+    const [{ data: cats }, { data: txns }, { data: goals }, { data: profile }] = await Promise.all([
+      window._sb.from('categories').select('*').eq('user_id', uid),
+      window._sb.from('transactions').select('*').eq('user_id', uid),
+      window._sb.from('goals').select('*').eq('user_id', uid),
+      window._sb.from('profiles').select('*').eq('id', uid).single(),
+    ]);
+    let catList = (cats || []).map(c => ({ id: c.id, name: c.name, icon: c.icon, color: c.color, budget: c.budget || null }));
+    if (catList.length === 0) {
+      const defaultCats = this.defCats();
+      await window._sb.from('categories').insert(defaultCats.map(c => ({ ...c, user_id: uid })));
+      catList = defaultCats;
+    }
+    const txnList = (txns || []).map(t => ({
+      id: t.id, type: t.type, amount: Number(t.amount), description: t.description,
+      categoryId: t.category_id, date: t.date, recurring: t.recurring,
+      recurringFreq: t.recurring_freq, planned: t.planned, notes: t.notes,
+    }));
+    const goalList = (goals || []).map(g => ({
+      id: g.id, name: g.name, target: Number(g.target), current: Number(g.current || 0),
+      icon: g.icon, color: g.color, deadline: g.deadline,
+    }));
+    const name = profile?.name || authUser.user_metadata?.name || authUser.email.split('@')[0].replace(/[._-]/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+    const user = { id: uid, name, email: authUser.email };
+    this.setState({
+      user, transactions: txnList, categories: catList, goals: goalList,
+      cfgName: name, cfgEmail: authUser.email,
+      cfgCurrency: profile?.currency || 'BRL',
+      savingsGoal: Number(profile?.savings_goal || 0),
+      cfgSavingsGoal: profile?.savings_goal ? String(profile.savings_goal) : '',
+      screen: 'dashboard', loading: false, loginError: '',
+    }, () => { this._autoRecurring(); });
+  }
+
+  handleLogin = async () => {
     const { loginEmail, loginPassword } = this.state;
     if (!loginEmail) { this.setState({ loginError: 'Insira seu e-mail' }); return; }
     if (!loginPassword) { this.setState({ loginError: 'Insira sua senha' }); return; }
-    const raw = loginEmail.split('@')[0];
-    const name = raw.replace(/[._\-]/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-    const user = { name, email: loginEmail };
-    this._save('user', user);
-    this.setState({ user, screen: 'dashboard', loginError: '', cfgName: name, cfgEmail: loginEmail });
+    this.setState({ loading: true, loadingMsg: 'Autenticando...' });
+    const { data, error } = await window._sb.auth.signInWithPassword({ email: loginEmail, password: loginPassword });
+    if (error) { this.setState({ loginError: 'E-mail ou senha incorretos', loading: false }); return; }
+    await this._loadFromSupabase(data.user);
+  }
+
+  handleRegister = async () => {
+    const { loginEmail, loginPassword } = this.state;
+    if (!loginEmail) { this.setState({ loginError: 'Insira seu e-mail' }); return; }
+    if (!loginPassword || loginPassword.length < 6) { this.setState({ loginError: 'Senha deve ter ao menos 6 caracteres' }); return; }
+    this.setState({ loading: true, loadingMsg: 'Criando conta...' });
+    const name = loginEmail.split('@')[0].replace(/[._-]/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+    const { data, error } = await window._sb.auth.signUp({ email: loginEmail, password: loginPassword, options: { data: { name } } });
+    if (error) { this.setState({ loginError: error.message, loading: false }); return; }
+    if (data.user && !data.session) {
+      this.setState({ loginError: '✓ Verifique seu e-mail para confirmar a conta!', loading: false }); return;
+    }
+    await this._loadFromSupabase(data.user);
   }
 
   shareMonthlyReport = () => {
@@ -1574,9 +1646,9 @@ class Component extends DCLogic {
     }
   }
 
-  handleLogout = () => {
-    this._save('user', null);
-    this.setState({ user: null, screen: 'login', loginEmail: '', loginPassword: '', sidebarOpen: false });
+  handleLogout = async () => {
+    await window._sb.auth.signOut();
+    this.setState({ user: null, screen: 'login', loginEmail: '', loginPassword: '', sidebarOpen: false, transactions: [], categories: [], goals: [] });
   }
 
   openTxnModal = (txn) => {
@@ -1600,7 +1672,14 @@ class Component extends DCLogic {
     }
   }
 
-  saveTxn = () => {
+  _txnRow = (txn, uid) => ({
+    id: txn.id, user_id: uid, type: txn.type, amount: txn.amount,
+    description: txn.description, category_id: txn.categoryId, date: txn.date,
+    recurring: txn.recurring, recurring_freq: txn.recurringFreq,
+    planned: txn.planned, notes: txn.notes,
+  })
+
+  saveTxn = async () => {
     const s = this.state;
     const amount = parseFloat(s.txnAmount);
     if (!s.txnDescription.trim() || !s.txnDate || isNaN(amount) || amount <= 0) return;
@@ -1616,27 +1695,35 @@ class Component extends DCLogic {
     const transactions = s.editTxnId
       ? s.transactions.map(t => t.id === s.editTxnId ? txn : t)
       : [...s.transactions, txn];
-    this.setState({ transactions, showTxnModal: false, editTxnId: null }, () => this.persist());
+    this.setState({ transactions, showTxnModal: false, editTxnId: null });
+    const row = this._txnRow(txn, s.user.id);
+    if (s.editTxnId) await window._sb.from('transactions').update(row).eq('id', s.editTxnId);
+    else await window._sb.from('transactions').insert(row);
   }
 
-  deleteTxn = (id) => {
+  deleteTxn = async (id) => {
     if (this.state.undoTimer) clearTimeout(this.state.undoTimer);
     const txn = this.state.transactions.find(t => t.id === id);
     const transactions = this.state.transactions.filter(t => t.id !== id);
-    const timer = setTimeout(() => this.setState({ undoTxn: null, undoTimer: null }), 5000);
-    this.setState({ transactions, undoTxn: txn, undoTimer: timer }, () => this.persist());
+    const timer = setTimeout(() => {
+      this.setState({ undoTxn: null, undoTimer: null });
+      window._sb.from('transactions').delete().eq('id', id);
+    }, 5000);
+    this.setState({ transactions, undoTxn: txn, undoTimer: timer });
   }
 
-  duplicateTxn = (id) => {
+  duplicateTxn = async (id) => {
     const txn = this.state.transactions.find(t => t.id === id);
     if (!txn) return;
     const newTxn = { ...txn, id: 't' + Date.now(), date: new Date().toISOString().split('T')[0], planned: false };
-    this.setState({ transactions: [...this.state.transactions, newTxn] }, () => this.persist());
+    this.setState({ transactions: [...this.state.transactions, newTxn] });
+    await window._sb.from('transactions').insert(this._txnRow(newTxn, this.state.user.id));
   }
 
-  realizeTxn = (id) => {
+  realizeTxn = async (id) => {
     const transactions = this.state.transactions.map(t => t.id === id ? { ...t, planned: false } : t);
-    this.setState({ transactions }, () => this.persist());
+    this.setState({ transactions });
+    await window._sb.from('transactions').update({ planned: false }).eq('id', id);
   }
 
   dismissOnboarding = () => {
@@ -1654,30 +1741,36 @@ class Component extends DCLogic {
 
   closeGoalModal = () => this.setState({ showGoalModal: false });
 
-  saveGoal = () => {
-    const { goalName, goalTarget, goalIcon, goalColor, goalDeadline, editGoalId, goals } = this.state;
+  saveGoal = async () => {
+    const { goalName, goalTarget, goalIcon, goalColor, goalDeadline, editGoalId, goals, user } = this.state;
     const name = goalName.trim();
     const target = parseFloat(goalTarget);
     if (!name || !target || target <= 0) return;
+    let goal;
     let newGoals;
     if (editGoalId) {
-      newGoals = goals.map(g => g.id === editGoalId ? { ...g, name, target, icon: goalIcon, color: goalColor, deadline: goalDeadline } : g);
+      goal = { id: editGoalId, name, target, icon: goalIcon, color: goalColor, deadline: goalDeadline || null };
+      newGoals = goals.map(g => g.id === editGoalId ? { ...g, ...goal } : g);
     } else {
-      newGoals = [...goals, { id: 'g' + Date.now(), name, target, current: 0, icon: goalIcon, color: goalColor, deadline: goalDeadline }];
+      goal = { id: 'g' + Date.now(), name, target, current: 0, icon: goalIcon, color: goalColor, deadline: goalDeadline || null };
+      newGoals = [...goals, goal];
     }
-    this.setState({ goals: newGoals, showGoalModal: false }, () => this._saveGoals());
+    this.setState({ goals: newGoals, showGoalModal: false });
+    const row = { id: goal.id, user_id: user.id, name: goal.name, target: goal.target, current: goal.current ?? 0, icon: goal.icon, color: goal.color, deadline: goal.deadline };
+    await window._sb.from('goals').upsert(row);
   }
 
-  deleteGoal = (id) => {
-    this.setState({ goals: this.state.goals.filter(g => g.id !== id) }, () => this._saveGoals());
+  deleteGoal = async (id) => {
+    this.setState({ goals: this.state.goals.filter(g => g.id !== id) });
+    await window._sb.from('goals').delete().eq('id', id);
   }
 
-  addGoalContrib = (id, amount) => {
+  addGoalContrib = async (id, amount) => {
     const goals = this.state.goals.map(g => g.id === id ? { ...g, current: Math.min(g.current + amount, g.target) } : g);
-    this.setState({ goals }, () => this._saveGoals());
+    const updated = goals.find(g => g.id === id);
+    this.setState({ goals });
+    await window._sb.from('goals').update({ current: updated.current }).eq('id', id);
   }
-
-  _saveGoals = () => this._save('goals', this.state.goals);
 
   openContribModal = (id) => this.setState({ showContribModal: true, contribGoalId: id, contribAmount: '' });
   closeContribModal = () => this.setState({ showContribModal: false, contribGoalId: null, contribAmount: '' });
@@ -1694,26 +1787,25 @@ class Component extends DCLogic {
     const { undoTxn } = this.state;
     if (!undoTxn) return;
     const transactions = [...this.state.transactions, undoTxn].sort((a, b) => new Date(b.date) - new Date(a.date));
-    this.setState({ transactions, undoTxn: null, undoTimer: null }, () => this.persist());
+    this.setState({ transactions, undoTxn: null, undoTimer: null });
   }
 
-  quickLaunch = () => {
+  quickLaunch = async () => {
     const s = this.state;
     const amount = parseFloat(s.quickAmount);
     if (!amount || amount <= 0 || !s.quickCategoryId) return;
     const cat = this.getCat(s.quickCategoryId);
     const txn = {
       id: 't' + Date.now(),
-      type: s.quickType,
-      amount,
-      description: cat.name,
+      type: s.quickType, amount, description: cat.name,
       categoryId: s.quickCategoryId,
       date: new Date().toISOString().split('T')[0],
       recurring: false, recurringFreq: null, planned: false,
     };
     const transactions = [...s.transactions, txn];
-    this.setState({ transactions, quickAmount: '', quickLastMsg: `${s.quickType === 'expense' ? '-' : '+'}${this.fmt(amount)} em ${cat.name}`, quickSuccessTs: Date.now() }, () => this.persist());
+    this.setState({ transactions, quickAmount: '', quickLastMsg: `${s.quickType === 'expense' ? '-' : '+'}${this.fmt(amount)} em ${cat.name}`, quickSuccessTs: Date.now() });
     setTimeout(() => this.setState({ quickSuccessTs: 0 }), 3000);
+    await window._sb.from('transactions').insert(this._txnRow(txn, s.user.id));
   }
 
   exportXlsx = (filteredTxns) => {
@@ -1770,34 +1862,40 @@ class Component extends DCLogic {
     }
   }
 
-  saveCat = () => {
-    const { catName, catIcon, catColor, catBudget, editCatId } = this.state;
+  saveCat = async () => {
+    const { catName, catIcon, catColor, catBudget, editCatId, user } = this.state;
     if (!catName.trim()) return;
     const budget = catBudget && parseFloat(catBudget) > 0 ? parseFloat(catBudget) : null;
     const cat = { id: editCatId || 'c' + Date.now(), name: catName.trim(), icon: catIcon, color: catColor, budget };
     const categories = editCatId
       ? this.state.categories.map(c => c.id === editCatId ? cat : c)
       : [...this.state.categories, cat];
-    this.setState({ categories, showCatModal: false, editCatId: null }, () => this.persist());
+    this.setState({ categories, showCatModal: false, editCatId: null });
+    await window._sb.from('categories').upsert({ ...cat, user_id: user.id });
   }
 
-  deleteCat = (id) => {
-    if (['c1','c2','c3','c4','c5','c6','c7','c8'].includes(id)) return;
+  deleteCat = async (id) => {
     const categories = this.state.categories.filter(c => c.id !== id);
-    this.setState({ categories }, () => this.persist());
+    this.setState({ categories });
+    await window._sb.from('categories').delete().eq('id', id);
   }
 
-  saveCfg = () => {
-    const { cfgName, cfgEmail, cfgCurrency, cfgSavingsGoal } = this.state;
-    const user = { name: cfgName || 'Usuário', email: cfgEmail };
+  saveCfg = async () => {
+    const { cfgName, cfgEmail, cfgCurrency, cfgSavingsGoal, user } = this.state;
+    const name = cfgName || 'Usuário';
     const savingsGoal = cfgSavingsGoal && parseFloat(cfgSavingsGoal) > 0 ? parseFloat(cfgSavingsGoal) : 0;
-    this.setState({ user, savingsGoal }, () => this.persist());
+    this.setState({ user: { ...user, name }, savingsGoal });
+    await window._sb.from('profiles').update({ name, currency: cfgCurrency, savings_goal: savingsGoal }).eq('id', user.id);
   }
 
-  clearData = () => {
-    const categories = this.defCats();
-    const transactions = this.defTxns();
-    this.setState({ transactions, categories }, () => this.persist());
+  clearData = async () => {
+    if (!confirm('Apagar todos os lançamentos e metas? Categorias serão mantidas.')) return;
+    const uid = this.state.user?.id;
+    this.setState({ transactions: [], goals: [] });
+    if (uid) {
+      await window._sb.from('transactions').delete().eq('user_id', uid);
+      await window._sb.from('goals').delete().eq('user_id', uid);
+    }
   }
 
   renderVals() {
@@ -1822,8 +1920,8 @@ class Component extends DCLogic {
     const showOnboarding = !s.onboardingDismissed && obDone < obSteps.length;
     const obPct = Math.round((obDone / obSteps.length) * 100);
 
-    const isLogin = screen === 'login';
-    const isApp = !isLogin;
+    const isLogin = screen === 'login' && !s.loading;
+    const isApp = screen !== 'login' && !s.loading;
     const isDashboard = screen === 'dashboard';
     const isLancamentos = screen === 'lancamentos';
     const isPlanejamento = screen === 'planejamento';
@@ -2351,13 +2449,19 @@ class Component extends DCLogic {
       shareColor: s.shareCopied ? '#4ADE80' : '#475569',
       shareIcon: s.shareCopied ? 'ph ph-check' : 'ph ph-share-network',
       shareLabel: s.shareCopied ? 'Copiado!' : 'Compartilhar',
-      // login
+      // loading
+      isLoading: s.loading, loadingMsg: s.loadingMsg,
+      // login / register
+      authMode: s.authMode, isAuthLogin: s.authMode === 'login', isAuthRegister: s.authMode === 'register',
+      switchToRegister: () => this.setState({ authMode: 'register', loginError: '' }),
+      switchToLogin: () => this.setState({ authMode: 'login', loginError: '' }),
       loginEmail: s.loginEmail, loginPassword: s.loginPassword, loginError: s.loginError,
       hasLoginError: !!s.loginError,
       setEmail: e => this.setState({ loginEmail: e.target.value }),
       setPassword: e => this.setState({ loginPassword: e.target.value }),
       handleLogin: this.handleLogin,
-      loginKeyDown: e => { if (e.key === 'Enter') this.handleLogin(); },
+      handleRegister: this.handleRegister,
+      loginKeyDown: e => { if (e.key === 'Enter') { if (s.authMode === 'register') this.handleRegister(); else this.handleLogin(); } },
       // dashboard
       greeting, firstName, currentMonthLabel,
       balanceFormatted: this.fmt(balance),

@@ -957,7 +957,7 @@
                 <span style="font-size: 13px; color: #64748B;">Versão</span><span style="font-size: 13px; color: #334155; font-weight: 500;">1.0.0</span>
               </div>
               <div style="display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #151525;">
-                <span style="font-size: 13px; color: #64748B;">Armazenamento</span><span style="font-size: 13px; color: #334155; font-weight: 500;">localStorage</span>
+                <span style="font-size: 13px; color: #64748B;">Armazenamento</span><span style="font-size: 13px; color: #334155; font-weight: 500;">Supabase (Postgres)</span>
               </div>
               <div style="display: flex; align-items: center; justify-content: space-between; padding: 10px 0;">
                 <span style="font-size: 13px; color: #64748B;">Total de lançamentos</span><span style="font-size: 13px; color: #334155; font-weight: 500;">{{ txnCount }}</span>
@@ -970,6 +970,16 @@
               <button onClick="{{ exportXlsx }}" style="align-self: flex-start; display: flex; align-items: center; gap: 7px; padding: 9px 18px; background: linear-gradient(135deg, #2563EB, #06B6D4); border: none; border-radius: 8px; color: white; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit;">
                 <i class="ph ph-file-xls" style="font-size: 16px;"></i>Exportar XLSX
               </button>
+            </div>
+            <!-- Jarvis context -->
+            <div style="background: #111118; border: 1px solid #151525; border-radius: 12px; padding: 20px; display: flex; flex-direction: column; gap: 12px;">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <i class="ph ph-robot" style="font-size: 15px; color: #8B5CF6;"></i>
+                <div style="font-size: 10px; font-weight: 600; color: #334155; text-transform: uppercase; letter-spacing: 1px;">Contexto do Jarvis</div>
+              </div>
+              <div style="font-size: 13px; color: #334155; line-height: 1.6;">O que o Jarvis deve saber sobre você — renda, dívidas, objetivos, preferências. Ele usa isso pra te dar conselhos melhores.</div>
+              <textarea value="{{ cfgJarvisNotes }}" onInput="{{ setCfgJarvisNotes }}" rows="8" placeholder="Ex: minha renda principal é..." style="width: 100%; box-sizing: border-box; background: #0D0D1A; border: 1px solid #1E2A45; border-radius: 8px; padding: 12px 14px; color: #E2E8F0; font-size: 13px; font-family: inherit; line-height: 1.6; resize: vertical;"></textarea>
+              <button onClick="{{ saveJarvisNotes }}" style="align-self: flex-start; padding: 9px 20px; background: linear-gradient(135deg, #8B5CF6, #06B6D4); border: none; border-radius: 8px; color: white; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit;">Salvar Contexto</button>
             </div>
             <!-- Danger -->
             <div style="background: #111118; border: 1px solid #EF444420; border-radius: 12px; padding: 20px;">
@@ -989,8 +999,91 @@
           </div>
         </sc-if>
 
+        <!-- ═══ JARVIS (tela dedicada) ═══ -->
+        <sc-if value="{{ isJarvisScreen }}" hint-placeholder-val="{{ false }}">
+          <div class="fade-in" style="height: 100%; display: flex; flex-direction: column;">
+            <div style="padding: 16px 20px; border-bottom: 1px solid #151525; display: flex; align-items: center; gap: 10px; flex-shrink: 0;">
+              <div style="width: 32px; height: 32px; border-radius: 9px; background: linear-gradient(135deg, #8B5CF6, #06B6D4); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                <i class="ph ph-robot" style="font-size: 17px; color: white;"></i>
+              </div>
+              <div style="flex: 1;">
+                <div style="font-size: 15px; font-weight: 700; color: #E2E8F0;">Jarvis</div>
+                <div style="font-size: 11px; color: #334155;">assistente financeiro</div>
+              </div>
+              <div style="display: flex; gap: 5px; flex-shrink: 0;">
+                <button onClick="{{ setJarvisHaiku }}" style="{{ jarvisHaikuPillStyle }}">Jarvis</button>
+                <button onClick="{{ setJarvisSonnet }}" style="{{ jarvisSonnetPillStyle }}">Aprimorado</button>
+              </div>
+            </div>
+            <div id="jarvis-msgs-screen" style="flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 12px;">
+              <sc-if value="{{ hasJarvisMessages }}" hint-placeholder-val="{{ false }}">
+                <sc-for list="{{ jarvisMessages }}" as="msg" hint-placeholder-count="4">
+                  <div style="display: flex; justify-content: {{ msg.bubbleAlign }};">
+                    <div style="max-width: 80%; background: {{ msg.bubbleBg }}; color: {{ msg.bubbleColor }}; border: {{ msg.bubbleBorder }}; border-radius: 14px; padding: 10px 14px; font-size: 13px; line-height: 1.6; white-space: pre-wrap;">{{ msg.content }}</div>
+                  </div>
+                </sc-for>
+              </sc-if>
+              <sc-if value="{{ jarvisLoading }}" hint-placeholder-val="{{ false }}">
+                <div style="display: flex; justify-content: flex-start;">
+                  <div style="background: #111118; border: 1px solid #1E2A45; border-radius: 14px; padding: 10px 14px; font-size: 13px; color: #475569;">Jarvis está pensando...</div>
+                </div>
+              </sc-if>
+            </div>
+            <div style="padding: 14px 20px; border-top: 1px solid #151525; display: flex; gap: 10px; flex-shrink: 0;">
+              <input type="text" value="{{ jarvisInput }}" onInput="{{ setJarvisInput }}" onKeyDown="{{ jarvisKeyDown }}" placeholder="Pergunte ao Jarvis..." style="flex: 1; background: #0D0D1A; border: 1px solid #1E2A45; border-radius: 9px; padding: 11px 14px; color: #E2E8F0; font-size: 14px; font-family: inherit;">
+              <button onClick="{{ sendJarvisMessage }}" style="width: 44px; height: 44px; border-radius: 9px; background: linear-gradient(135deg, #8B5CF6, #06B6D4); border: none; color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                <i class="ph ph-paper-plane-tilt" style="font-size: 17px;"></i>
+              </button>
+            </div>
+          </div>
+        </sc-if>
+
       </div>
     </div>
+
+    <!-- ── Jarvis Chat Bubble ── -->
+    <sc-if value="{{ showJarvisBubble }}" hint-placeholder-val="{{ false }}">
+      <button onClick="{{ toggleJarvisBubble }}" title="Jarvis" style="{{ jarvisBubbleStyle }}">
+        <i class="ph ph-robot" style="font-size: 24px;"></i>
+      </button>
+      <sc-if value="{{ jarvisOpen }}" hint-placeholder-val="{{ false }}">
+        <div class="modal-in" style="{{ jarvisPopoverStyle }}">
+          <div style="padding: 14px 16px; border-bottom: 1px solid #151525; display: flex; align-items: center; gap: 9px; flex-shrink: 0;">
+            <div style="width: 26px; height: 26px; border-radius: 7px; background: linear-gradient(135deg, #8B5CF6, #06B6D4); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+              <i class="ph ph-robot" style="font-size: 14px; color: white;"></i>
+            </div>
+            <div style="font-size: 13px; font-weight: 700; color: #E2E8F0; flex: 1;">Jarvis</div>
+            <div style="display: flex; gap: 4px; flex-shrink: 0;">
+              <button onClick="{{ setJarvisHaiku }}" style="{{ jarvisHaikuPillStyle }}">Jarvis</button>
+              <button onClick="{{ setJarvisSonnet }}" style="{{ jarvisSonnetPillStyle }}">Aprim.</button>
+            </div>
+            <button onClick="{{ toggleJarvisBubble }}" style="background: none; border: none; color: #334155; cursor: pointer; padding: 4px; display: flex;">
+              <i class="ph ph-x" style="font-size: 16px;"></i>
+            </button>
+          </div>
+          <div id="jarvis-msgs-bubble" style="flex: 1; overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 10px;">
+            <sc-if value="{{ hasJarvisMessages }}" hint-placeholder-val="{{ false }}">
+              <sc-for list="{{ jarvisMessages }}" as="msg" hint-placeholder-count="4">
+                <div style="display: flex; justify-content: {{ msg.bubbleAlign }};">
+                  <div style="max-width: 85%; background: {{ msg.bubbleBg }}; color: {{ msg.bubbleColor }}; border: {{ msg.bubbleBorder }}; border-radius: 12px; padding: 8px 12px; font-size: 12px; line-height: 1.5; white-space: pre-wrap;">{{ msg.content }}</div>
+                </div>
+              </sc-for>
+            </sc-if>
+            <sc-if value="{{ jarvisLoading }}" hint-placeholder-val="{{ false }}">
+              <div style="display: flex; justify-content: flex-start;">
+                <div style="background: #0D0D1A; border: 1px solid #1E2A45; border-radius: 12px; padding: 8px 12px; font-size: 12px; color: #475569;">pensando...</div>
+              </div>
+            </sc-if>
+          </div>
+          <div style="padding: 10px; border-top: 1px solid #151525; display: flex; gap: 8px; flex-shrink: 0;">
+            <input type="text" value="{{ jarvisInput }}" onInput="{{ setJarvisInput }}" onKeyDown="{{ jarvisKeyDown }}" placeholder="Pergunte ao Jarvis..." style="flex: 1; background: #0D0D1A; border: 1px solid #1E2A45; border-radius: 8px; padding: 9px 12px; color: #E2E8F0; font-size: 13px; font-family: inherit;">
+            <button onClick="{{ sendJarvisMessage }}" style="width: 36px; height: 36px; border-radius: 8px; background: linear-gradient(135deg, #8B5CF6, #06B6D4); border: none; color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+              <i class="ph ph-paper-plane-tilt" style="font-size: 15px;"></i>
+            </button>
+          </div>
+        </div>
+      </sc-if>
+    </sc-if>
 
     <!-- ── FAB ── -->
     <sc-if value="{{ showFab }}" hint-placeholder-val="{{ false }}">
@@ -1381,6 +1474,13 @@ class Component extends DCLogic {
     toastMsg: '',
     toastTs: 0,
     sidebarCollapsed: false,
+    jarvisMessages: [],
+    jarvisInput: '',
+    jarvisLoading: false,
+    jarvisOpen: false,
+    jarvisLoaded: false,
+    jarvisModel: 'sonnet',
+    cfgJarvisNotes: '',
     user: null,
     transactions: [],
     categories: [],
@@ -1447,6 +1547,7 @@ class Component extends DCLogic {
       loadingMsg: 'Verificando sessão...',
       onboardingDismissed: this._load('obDismissed') || false,
       sidebarCollapsed: this._load('sidebarCollapsed') || false,
+      jarvisModel: this._load('jarvisModel') || 'sonnet',
     });
     window.addEventListener('resize', this._resize = () =>
       this.setState({ isMobile: window.innerWidth < 768 })
@@ -1461,6 +1562,7 @@ class Component extends DCLogic {
         else if (s.showGoalModal) this.setState({ showGoalModal: false });
         else if (s.showContribModal) this.closeContribModal();
         else if (s.showClearConfirm) this.closeClearDataConfirm();
+        else if (s.jarvisOpen) this.setState({ jarvisOpen: false });
         else if (s.showFiltersSheet) this.setState({ showFiltersSheet: false });
       } else if ((e.key === 'n' || e.key === 'N') && !e.ctrlKey && !e.metaKey) {
         if (s.screen === 'lancamentos' && !s.showTxnModal) { e.preventDefault(); this.openTxnModal(null); }
@@ -1602,11 +1704,12 @@ class Component extends DCLogic {
   _loadFromSupabase = async (authUser) => {
     this.setState({ loading: true, loadingMsg: 'Carregando dados...' });
     const uid = authUser.id;
-    const [{ data: cats }, { data: txns }, { data: goals }, { data: profile }] = await Promise.all([
+    const [{ data: cats }, { data: txns }, { data: goals }, { data: profile }, { data: jarvisCtx }] = await Promise.all([
       window._sb.from('categories').select('*').eq('user_id', uid),
       window._sb.from('transactions').select('*').eq('user_id', uid),
       window._sb.from('goals').select('*').eq('user_id', uid),
       window._sb.from('profiles').select('*').eq('id', uid).single(),
+      window._sb.from('jarvis_context').select('personal_notes').eq('user_id', uid).maybeSingle(),
     ]);
     let catList = (cats || []).map(c => ({ id: c.id, name: c.name, icon: c.icon, color: c.color, budget: c.budget || null }));
     if (catList.length === 0) {
@@ -1631,8 +1734,30 @@ class Component extends DCLogic {
       cfgCurrency: profile?.currency || 'BRL',
       savingsGoal: Number(profile?.savings_goal || 0),
       cfgSavingsGoal: profile?.savings_goal ? String(profile.savings_goal) : '',
+      cfgJarvisNotes: jarvisCtx?.personal_notes || '',
       screen: 'dashboard', loading: false, loginError: '',
     }, () => { this._autoRecurring(); });
+  }
+
+  _refreshData = async () => {
+    const uid = this.state.user?.id;
+    if (!uid) return;
+    const [{ data: cats }, { data: txns }, { data: goals }] = await Promise.all([
+      window._sb.from('categories').select('*').eq('user_id', uid),
+      window._sb.from('transactions').select('*').eq('user_id', uid),
+      window._sb.from('goals').select('*').eq('user_id', uid),
+    ]);
+    const catList = (cats || []).map(c => ({ id: c.id, name: c.name, icon: c.icon, color: c.color, budget: c.budget || null }));
+    const txnList = (txns || []).map(t => ({
+      id: t.id, type: t.type, amount: Number(t.amount), description: t.description,
+      categoryId: t.category_id, date: t.date, recurring: t.recurring,
+      recurringFreq: t.recurring_freq, planned: t.planned, notes: t.notes,
+    }));
+    const goalList = (goals || []).map(g => ({
+      id: g.id, name: g.name, target: Number(g.target), current: Number(g.current || 0),
+      icon: g.icon, color: g.color, deadline: g.deadline,
+    }));
+    this.setState({ transactions: txnList, categories: catList, goals: goalList });
   }
 
   handleLogin = async () => {
@@ -1692,7 +1817,67 @@ class Component extends DCLogic {
 
   handleLogout = async () => {
     await window._sb.auth.signOut();
-    this.setState({ user: null, screen: 'login', loginEmail: '', loginPassword: '', sidebarOpen: false, transactions: [], categories: [], goals: [] });
+    this.setState({ user: null, screen: 'login', loginEmail: '', loginPassword: '', sidebarOpen: false, transactions: [], categories: [], goals: [], jarvisMessages: [], jarvisLoaded: false });
+  }
+
+  loadJarvisHistory = async () => {
+    if (this.state.jarvisLoaded) return;
+    const { data } = await window._sb.from('jarvis_messages').select('role, content').order('created_at', { ascending: true }).limit(50);
+    const msgs = (data || []).map(m => this._jarvisMsg(m.role, m.content));
+    this.setState({ jarvisMessages: msgs, jarvisLoaded: true }, () => this._scrollJarvisToBottom());
+  }
+
+  _jarvisMsg = (role, content) => ({
+    role, content,
+    isUser: role === 'user',
+    bubbleAlign: role === 'user' ? 'flex-end' : 'flex-start',
+    bubbleBg: role === 'user' ? 'linear-gradient(135deg, #2563EB, #06B6D4)' : '#111118',
+    bubbleColor: role === 'user' ? '#FFFFFF' : '#CBD5E1',
+    bubbleBorder: role === 'user' ? 'none' : '1px solid #1E2A45',
+  })
+
+  _scrollJarvisToBottom = () => {
+    setTimeout(() => {
+      ['jarvis-msgs-screen', 'jarvis-msgs-bubble'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.scrollTop = el.scrollHeight;
+      });
+    }, 50);
+  }
+
+  setJarvisModel = (model) => {
+    this._save('jarvisModel', model);
+    this.setState({ jarvisModel: model });
+  }
+
+  toggleJarvisBubble = () => {
+    this.setState(st => ({ jarvisOpen: !st.jarvisOpen }));
+    if (!this.state.jarvisLoaded) this.loadJarvisHistory();
+    this._scrollJarvisToBottom();
+  }
+
+  sendJarvisMessage = async () => {
+    const s = this.state;
+    const text = s.jarvisInput.trim();
+    if (!text || s.jarvisLoading) return;
+    const userMsg = this._jarvisMsg('user', text);
+    this.setState({ jarvisMessages: [...s.jarvisMessages, userMsg], jarvisInput: '', jarvisLoading: true }, () => this._scrollJarvisToBottom());
+    try {
+      const { data: { session } } = await window._sb.auth.getSession();
+      const resp = await fetch('https://evkpskwjzbyzpvvodnwf.supabase.co/functions/v1/jarvis-chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.access_token },
+        body: JSON.stringify({ message: text, model: s.jarvisModel }),
+      });
+      const body = await resp.json();
+      const replyText = body.reply || body.error || 'Sem resposta do Jarvis.';
+      const assistantMsg = this._jarvisMsg('assistant', replyText);
+      this.setState(st => ({ jarvisMessages: [...st.jarvisMessages, assistantMsg], jarvisLoading: false }), () => this._scrollJarvisToBottom());
+      if (body.dataChanged) this._refreshData();
+    } catch (e) {
+      const errMsg = this._jarvisMsg('assistant', 'Não consegui me conectar agora, Sr. Douglas. Tente novamente em instantes.');
+      this.setState(st => ({ jarvisMessages: [...st.jarvisMessages, errMsg], jarvisLoading: false }), () => this._scrollJarvisToBottom());
+    }
   }
 
   openTxnModal = (txn) => {
@@ -1936,6 +2121,13 @@ class Component extends DCLogic {
     await window._sb.from('profiles').update({ name, currency: cfgCurrency, savings_goal: savingsGoal }).eq('id', user.id);
   }
 
+  saveJarvisNotes = async () => {
+    const { cfgJarvisNotes, user } = this.state;
+    await window._sb.from('jarvis_context').upsert({ user_id: user.id, personal_notes: cfgJarvisNotes, updated_at: new Date().toISOString() });
+    this.setState({ toastMsg: 'Contexto do Jarvis atualizado!', toastTs: Date.now() });
+    setTimeout(() => this.setState({ toastTs: 0 }), 3000);
+  }
+
   openClearDataConfirm = () => this.setState({ showClearConfirm: true });
   closeClearDataConfirm = () => this.setState({ showClearConfirm: false });
 
@@ -1977,8 +2169,9 @@ class Component extends DCLogic {
     const isPlanejamento = screen === 'planejamento';
     const isCategorias = screen === 'categorias';
     const isConfiguracoes = screen === 'configuracoes';
+    const isJarvisScreen = screen === 'jarvis';
 
-    const titles = { dashboard: 'Dashboard', lancamentos: 'Lançamentos', planejamento: 'Planejamento', categorias: 'Categorias', configuracoes: 'Configurações' };
+    const titles = { dashboard: 'Dashboard', lancamentos: 'Lançamentos', planejamento: 'Planejamento', categorias: 'Categorias', jarvis: 'Jarvis', configuracoes: 'Configurações' };
 
     const sidebarCollapsed = !isMobile && s.sidebarCollapsed;
     const sidebarExpanded = !sidebarCollapsed;
@@ -2022,6 +2215,7 @@ class Component extends DCLogic {
       { id: 'lancamentos',  label: 'Lançamentos',   icon: 'list-bullets' },
       { id: 'planejamento', label: 'Planejamento',  icon: 'calendar-check' },
       { id: 'categorias',   label: 'Categorias',    icon: 'tag' },
+      { id: 'jarvis',       label: 'Jarvis',         icon: 'robot' },
       { id: 'configuracoes',label: 'Configurações', icon: 'gear' },
     ];
     const navItems = navDefs.map(n => {
@@ -2045,7 +2239,7 @@ class Component extends DCLogic {
           fontFamily: 'inherit', fontSize: '10px', fontWeight: active ? '600' : '400',
           minHeight: '56px', transition: 'color 0.15s',
         },
-        onClick: () => this.setState({ screen: n.id, sidebarOpen: false }),
+        onClick: () => { this.setState({ screen: n.id, sidebarOpen: false }); if (n.id === 'jarvis') this.loadJarvisHistory(); },
       };
     });
 
@@ -2526,6 +2720,20 @@ class Component extends DCLogic {
         zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center',
         transition: 'transform 0.15s',
       },
+      jarvisBubbleStyle: {
+        position: 'fixed', bottom: isMobile ? '84px' : '24px', left: '24px',
+        width: '54px', height: '54px', borderRadius: '50%',
+        background: 'linear-gradient(135deg, #8B5CF6, #06B6D4)', border: 'none',
+        color: 'white', cursor: 'pointer', boxShadow: '0 4px 20px #8B5CF655',
+        zIndex: 60, display: 'flex', alignItems: 'center', justifyContent: 'center',
+      },
+      jarvisPopoverStyle: {
+        position: 'fixed', bottom: isMobile ? '148px' : '88px', left: '24px',
+        width: '360px', maxWidth: 'calc(100vw - 32px)', height: '480px', maxHeight: '65vh',
+        background: '#111118', border: '1px solid #1E2A45', borderRadius: '16px',
+        boxShadow: '0 24px 60px #00000088', zIndex: 60,
+        display: 'flex', flexDirection: 'column', overflow: 'hidden',
+      },
       userName: s.user?.name || 'Usuário', userEmail: s.user?.email || '',
       handleLogout: this.handleLogout,
       shareReport: this.shareMonthlyReport, shareCopied: s.shareCopied,
@@ -2720,6 +2928,34 @@ class Component extends DCLogic {
       showToast: !!s.toastMsg && s.toastTs && (Date.now() - s.toastTs < 3600),
       toastMsg: s.toastMsg,
       exportAllXlsx: () => this.exportXlsx(s.transactions),
+      // Jarvis
+      isJarvisScreen, showJarvisBubble: isApp && !isJarvisScreen,
+      jarvisMessages: s.jarvisMessages, hasJarvisMessages: s.jarvisMessages.length > 0,
+      jarvisInput: s.jarvisInput,
+      setJarvisInput: e => this.setState({ jarvisInput: e.target.value }),
+      jarvisKeyDown: e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); this.sendJarvisMessage(); } },
+      jarvisLoading: s.jarvisLoading,
+      jarvisOpen: s.jarvisOpen,
+      toggleJarvisBubble: this.toggleJarvisBubble,
+      sendJarvisMessage: this.sendJarvisMessage,
+      cfgJarvisNotes: s.cfgJarvisNotes || '',
+      setCfgJarvisNotes: e => this.setState({ cfgJarvisNotes: e.target.value }),
+      saveJarvisNotes: this.saveJarvisNotes,
+      jarvisModelLabel: s.jarvisModel === 'haiku' ? 'Jarvis' : 'Jarvis (Aprimorado)',
+      setJarvisSonnet: () => this.setJarvisModel('sonnet'),
+      setJarvisHaiku: () => this.setJarvisModel('haiku'),
+      jarvisSonnetPillStyle: {
+        padding: '4px 10px', borderRadius: '20px', fontSize: '10px', fontWeight: '700', fontFamily: 'inherit',
+        cursor: 'pointer', border: '1px solid ' + (s.jarvisModel === 'sonnet' ? '#8B5CF677' : '#1E2A45'),
+        background: s.jarvisModel === 'sonnet' ? '#8B5CF62A' : 'transparent',
+        color: s.jarvisModel === 'sonnet' ? '#C4B5FD' : '#475569',
+      },
+      jarvisHaikuPillStyle: {
+        padding: '4px 10px', borderRadius: '20px', fontSize: '10px', fontWeight: '700', fontFamily: 'inherit',
+        cursor: 'pointer', border: '1px solid ' + (s.jarvisModel === 'haiku' ? '#06B6D477' : '#1E2A45'),
+        background: s.jarvisModel === 'haiku' ? '#06B6D42A' : 'transparent',
+        color: s.jarvisModel === 'haiku' ? '#67E8F9' : '#475569',
+      },
     };
   }
 }

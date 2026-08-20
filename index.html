@@ -63,11 +63,6 @@
         <div style="font-size: 20px; font-weight: 700; background: linear-gradient(135deg, #60A5FA, #22D3EE); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; letter-spacing: -0.3px;">TheDouglasVision</div>
         <div style="font-size: 10px; color: #2A3A55; letter-spacing: 2.5px; margin-top: 5px; font-weight: 500;">GESTÃO FINANCEIRA INTELIGENTE</div>
       </div>
-      <!-- Tabs login/registro -->
-      <div style="display: flex; background: #0D0D1A; border-radius: 9px; padding: 3px; gap: 2px; margin-bottom: 20px;">
-        <button onClick="{{ switchToLogin }}" style="flex: 1; padding: 8px; border: none; border-radius: 7px; font-size: 13px; font-weight: 600; font-family: inherit; cursor: pointer; background: {{ isAuthLogin ? '#1E2A45' : 'transparent' }}; color: {{ isAuthLogin ? '#60A5FA' : '#334155' }}; transition: all 0.15s;">Entrar</button>
-        <button onClick="{{ switchToRegister }}" style="flex: 1; padding: 8px; border: none; border-radius: 7px; font-size: 13px; font-weight: 600; font-family: inherit; cursor: pointer; background: {{ isAuthRegister ? '#1E2A45' : 'transparent' }}; color: {{ isAuthRegister ? '#60A5FA' : '#334155' }}; transition: all 0.15s;">Criar conta</button>
-      </div>
       <div style="display: flex; flex-direction: column; gap: 14px;">
         <div>
           <label style="display: block; font-size: 11px; color: #475569; margin-bottom: 6px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">E-mail</label>
@@ -75,18 +70,18 @@
         </div>
         <div>
           <label style="display: block; font-size: 11px; color: #475569; margin-bottom: 6px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Senha</label>
-          <input type="password" value="{{ loginPassword }}" onInput="{{ setPassword }}" onKeyDown="{{ loginKeyDown }}" placeholder="••••••••" style="width: 100%; background: #0D0D1A; border: 1px solid #1E2A45; border-radius: 8px; padding: 11px 14px; color: #E2E8F0; font-size: 14px; font-family: inherit;">
+          <div style="position: relative;">
+            <input type="{{ passwordInputType }}" value="{{ loginPassword }}" onInput="{{ setPassword }}" onKeyDown="{{ loginKeyDown }}" placeholder="••••••••" style="width: 100%; box-sizing: border-box; background: #0D0D1A; border: 1px solid #1E2A45; border-radius: 8px; padding: 11px 40px 11px 14px; color: #E2E8F0; font-size: 14px; font-family: inherit;">
+            <button type="button" onClick="{{ togglePasswordVisibility }}" style="position: absolute; right: 4px; top: 50%; transform: translateY(-50%); background: none; border: none; color: #475569; cursor: pointer; padding: 7px; display: flex; align-items: center; justify-content: center;">
+              <i class="{{ passwordEyeIcon }}" style="font-size: 16px;"></i>
+            </button>
+          </div>
         </div>
       </div>
       <sc-if value="{{ hasLoginError }}" hint-placeholder-val="{{ false }}">
         <div style="margin-top: 12px; padding: 9px 12px; background: #EF444416; border: 1px solid #EF444440; border-radius: 7px; font-size: 12px; color: #F87171;">{{ loginError }}</div>
       </sc-if>
-      <sc-if value="{{ isAuthLogin }}" hint-placeholder-val="{{ true }}">
-        <button onClick="{{ handleLogin }}" style="margin-top: 20px; width: 100%; padding: 13px; background: linear-gradient(135deg, #2563EB, #06B6D4); border: none; border-radius: 9px; color: white; font-size: 15px; font-weight: 600; cursor: pointer; font-family: inherit; letter-spacing: -0.2px; box-shadow: 0 4px 16px #2563EB44;">Entrar</button>
-      </sc-if>
-      <sc-if value="{{ isAuthRegister }}" hint-placeholder-val="{{ false }}">
-        <button onClick="{{ handleRegister }}" style="margin-top: 20px; width: 100%; padding: 13px; background: linear-gradient(135deg, #22C55E, #06B6D4); border: none; border-radius: 9px; color: white; font-size: 15px; font-weight: 600; cursor: pointer; font-family: inherit; letter-spacing: -0.2px; box-shadow: 0 4px 16px #22C55E44;">Criar conta</button>
-      </sc-if>
+      <button onClick="{{ handleLogin }}" style="margin-top: 20px; width: 100%; padding: 13px; background: linear-gradient(135deg, #2563EB, #06B6D4); border: none; border-radius: 9px; color: white; font-size: 15px; font-weight: 600; cursor: pointer; font-family: inherit; letter-spacing: -0.2px; box-shadow: 0 4px 16px #2563EB44;">Entrar</button>
     </div>
   </div>
 </sc-if>
@@ -1339,6 +1334,7 @@ class Component extends DCLogic {
     authMode: 'login',
     loading: false,
     loadingMsg: '',
+    showPassword: false,
     user: null,
     transactions: [],
     categories: [],
@@ -2451,17 +2447,16 @@ class Component extends DCLogic {
       shareLabel: s.shareCopied ? 'Copiado!' : 'Compartilhar',
       // loading
       isLoading: s.loading, loadingMsg: s.loadingMsg,
-      // login / register
-      authMode: s.authMode, isAuthLogin: s.authMode === 'login', isAuthRegister: s.authMode === 'register',
-      switchToRegister: () => this.setState({ authMode: 'register', loginError: '' }),
-      switchToLogin: () => this.setState({ authMode: 'login', loginError: '' }),
+      // login
       loginEmail: s.loginEmail, loginPassword: s.loginPassword, loginError: s.loginError,
       hasLoginError: !!s.loginError,
       setEmail: e => this.setState({ loginEmail: e.target.value }),
       setPassword: e => this.setState({ loginPassword: e.target.value }),
       handleLogin: this.handleLogin,
-      handleRegister: this.handleRegister,
-      loginKeyDown: e => { if (e.key === 'Enter') { if (s.authMode === 'register') this.handleRegister(); else this.handleLogin(); } },
+      loginKeyDown: e => { if (e.key === 'Enter') this.handleLogin(); },
+      passwordInputType: s.showPassword ? 'text' : 'password',
+      passwordEyeIcon: s.showPassword ? 'ph ph-eye-slash' : 'ph ph-eye',
+      togglePasswordVisibility: () => this.setState(st => ({ showPassword: !st.showPassword })),
       // dashboard
       greeting, firstName, currentMonthLabel,
       balanceFormatted: this.fmt(balance),

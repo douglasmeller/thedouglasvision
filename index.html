@@ -1809,11 +1809,30 @@ class Component extends DCLogic {
     await window._sb.from('goals').delete().eq('id', id);
   }
 
+  _ensureGoalsCategory = async () => {
+    const existing = this.state.categories.find(c => c.id === 'goals-sys');
+    if (existing) return existing.id;
+    const cat = { id: 'goals-sys', name: 'Metas', icon: 'target', color: '#8B5CF6', budget: null };
+    this.setState({ categories: [...this.state.categories, cat] });
+    await window._sb.from('categories').upsert({ ...cat, user_id: this.state.user.id });
+    return cat.id;
+  }
+
   addGoalContrib = async (id, amount) => {
-    const goals = this.state.goals.map(g => g.id === id ? { ...g, current: Math.min(g.current + amount, g.target) } : g);
+    const s = this.state;
+    const goal = s.goals.find(g => g.id === id);
+    const goals = s.goals.map(g => g.id === id ? { ...g, current: Math.min(g.current + amount, g.target) } : g);
     const updated = goals.find(g => g.id === id);
-    this.setState({ goals });
+    const catId = await this._ensureGoalsCategory();
+    const txn = {
+      id: 't' + Date.now(), type: 'expense', amount,
+      description: `Aporte: ${goal.name}`, categoryId: catId,
+      date: new Date().toISOString().split('T')[0],
+      recurring: false, recurringFreq: null, planned: false, notes: null,
+    };
+    this.setState({ goals, transactions: [...this.state.transactions, txn] });
     await window._sb.from('goals').update({ current: updated.current }).eq('id', id);
+    await window._sb.from('transactions').insert(this._txnRow(txn, s.user.id));
   }
 
   openContribModal = (id) => this.setState({ showContribModal: true, contribGoalId: id, contribAmount: '' });

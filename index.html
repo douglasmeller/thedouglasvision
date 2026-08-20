@@ -8,6 +8,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="TDV">
 <link rel="manifest" href="/manifest.json">
+<link rel="icon" type="image/png" href="/uploads/logo.png">
 <link rel="apple-touch-icon" href="/uploads/logo.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
@@ -97,28 +98,42 @@
 
     <!-- ── Sidebar ── -->
     <nav style="{{ sidebarStyle }}">
-      <div style="padding: 0 20px 18px; border-bottom: 1px solid #151525;">
-        <div style="display: flex; align-items: center; gap: 9px;">
+      <div style="{{ sidebarHeaderStyle }}">
+        <div style="{{ logoRowStyle }}">
           <img src="uploads/logo.png" alt="" style="width: 34px; height: 34px; border-radius: 9px; filter: invert(1) hue-rotate(180deg); flex-shrink: 0;">
-          <div>
-            <div style="font-size: 13px; font-weight: 700; background: linear-gradient(135deg, #60A5FA, #22D3EE); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; letter-spacing: -0.3px;">TheDouglasVision</div>
-            <div style="font-size: 9px; color: #1E2A3A; letter-spacing: 1.5px; margin-top: 2px; font-weight: 500;">GESTÃO FINANCEIRA</div>
-          </div>
+          <sc-if value="{{ sidebarExpanded }}" hint-placeholder-val="{{ true }}">
+            <div>
+              <div style="font-size: 13px; font-weight: 700; background: linear-gradient(135deg, #60A5FA, #22D3EE); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; letter-spacing: -0.3px;">TheDouglasVision</div>
+              <div style="font-size: 9px; color: #1E2A3A; letter-spacing: 1.5px; margin-top: 2px; font-weight: 500;">GESTÃO FINANCEIRA</div>
+            </div>
+          </sc-if>
         </div>
+        <sc-if value="{{ isDesktop }}" hint-placeholder-val="{{ true }}">
+          <button onClick="{{ toggleSidebarCollapse }}" title="Recolher/expandir menu" style="{{ collapseToggleStyle }}">
+            <i class="{{ collapseToggleIcon }}" style="font-size: 13px;"></i>
+          </button>
+        </sc-if>
       </div>
-      <div style="flex: 1; padding: 10px 0; display: flex; flex-direction: column; gap: 1px; overflow-y: auto;">
+      <div style="flex: 1; padding: 10px 0; display: flex; flex-direction: column; gap: 1px; overflow-y: auto; overflow-x: hidden;">
         <sc-for list="{{ navItems }}" as="nav" hint-placeholder-count="5">
-          <button onClick="{{ nav.onClick }}" style="{{ nav.style }}">
+          <button onClick="{{ nav.onClick }}" title="{{ nav.title }}" style="{{ nav.style }}">
             <i class="{{ nav.iconClass }}" style="font-size: 17px; flex-shrink: 0;"></i>
-            <span>{{ nav.label }}</span>
+            <sc-if value="{{ sidebarExpanded }}" hint-placeholder-val="{{ true }}">
+              <span>{{ nav.label }}</span>
+            </sc-if>
           </button>
         </sc-for>
       </div>
-      <div style="padding: 14px 20px; border-top: 1px solid #151525;">
-        <div style="font-size: 13px; font-weight: 500; color: #94A3B8; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ userName }}</div>
-        <div style="font-size: 11px; color: #2A3A50; margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ userEmail }}</div>
-        <button onClick="{{ handleLogout }}" style="margin-top: 10px; display: flex; align-items: center; gap: 6px; background: none; border: none; color: #334155; font-size: 12px; cursor: pointer; font-family: inherit; padding: 0; transition: color 0.15s;">
-          <i class="ph ph-sign-out" style="font-size: 13px;"></i>Sair
+      <div style="{{ sidebarFooterStyle }}">
+        <sc-if value="{{ sidebarExpanded }}" hint-placeholder-val="{{ true }}">
+          <div style="font-size: 13px; font-weight: 500; color: #94A3B8; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ userName }}</div>
+          <div style="font-size: 11px; color: #2A3A50; margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ userEmail }}</div>
+        </sc-if>
+        <button onClick="{{ handleLogout }}" title="Sair" style="{{ logoutBtnStyle }}">
+          <i class="ph ph-sign-out" style="font-size: 13px;"></i>
+          <sc-if value="{{ sidebarExpanded }}" hint-placeholder-val="{{ true }}">
+            <span>Sair</span>
+          </sc-if>
         </button>
       </div>
     </nav>
@@ -141,7 +156,7 @@
 
         <!-- ═══ DASHBOARD ═══ -->
         <sc-if value="{{ isDashboard }}" hint-placeholder-val="{{ true }}">
-          <div class="fade-in" style="padding: 20px 20px; display: flex; flex-direction: column; gap: 18px; max-width: 820px;">
+          <div class="fade-in" style="padding: 20px 20px; display: flex; flex-direction: column; gap: 18px; max-width: 820px; margin: 0 auto; width: 100%; box-sizing: border-box;">
             <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;">
               <div>
                 <div style="font-size: 21px; font-weight: 600; color: #E2E8F0; letter-spacing: -0.3px;">{{ greeting }}, {{ firstName }} 👋</div>
@@ -363,7 +378,7 @@
                 </div>
                 <div style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px;">
                   <sc-for list="{{ hmCells }}" as="hm" hint-placeholder-count="35">
-                    <div title="{{ hm.amt }}" style="aspect-ratio: 1; border-radius: 3px; background: {{ hm.color }}; display: flex; align-items: center; justify-content: center; position: relative; outline: {{ hm.isToday ? '2px solid #60A5FA' : 'none' }}; outline-offset: -1px;">
+                    <div title="{{ hm.amt }}" style="aspect-ratio: 1; border-radius: 3px; background: {{ hm.color }}; display: flex; align-items: center; justify-content: center; position: relative; outline: {{ hm.todayOutline }}; outline-offset: -1px;">
                       <span style="font-size: 8px; color: rgba(255,255,255,0.35); font-weight: 600; line-height: 1; pointer-events: none;">{{ hm.label }}</span>
                     </div>
                   </sc-for>
@@ -589,7 +604,7 @@
 
         <!-- ═══ LANÇAMENTOS ═══ -->
         <sc-if value="{{ isLancamentos }}" hint-placeholder-val="{{ false }}">
-          <div class="fade-in" style="padding: 20px; display: flex; flex-direction: column; gap: 16px;">
+          <div class="fade-in" style="padding: 20px; display: flex; flex-direction: column; gap: 16px; max-width: 960px; margin: 0 auto; width: 100%; box-sizing: border-box;">
             <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
               <div style="font-size: 20px; font-weight: 600; color: #E2E8F0; letter-spacing: -0.3px;">Lançamentos</div>
               <button onClick="{{ openNewTxn }}" style="display: flex; align-items: center; gap: 6px; padding: 9px 16px; background: linear-gradient(135deg, #2563EB, #06B6D4); border: none; border-radius: 9px; color: white; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; box-shadow: 0 2px 12px #2563EB33;">
@@ -745,7 +760,7 @@
 
         <!-- ═══ PLANEJAMENTO ═══ -->
         <sc-if value="{{ isPlanejamento }}" hint-placeholder-val="{{ false }}">
-          <div class="fade-in" style="padding: 20px; display: flex; flex-direction: column; gap: 18px;">
+          <div class="fade-in" style="padding: 20px; display: flex; flex-direction: column; gap: 18px; max-width: 960px; margin: 0 auto; width: 100%; box-sizing: border-box;">
             <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
               <div style="font-size: 20px; font-weight: 600; color: #E2E8F0; letter-spacing: -0.3px;">Planejamento</div>
               <sc-if value="{{ isTabMetas }}" hint-placeholder-val="{{ false }}">
@@ -756,8 +771,8 @@
             </div>
             <!-- Tabs -->
             <div style="display: flex; background: #111118; border-radius: 10px; padding: 4px; gap: 2px;">
-              <button onClick="{{ setPlanTabRec }}" style="flex: 1; padding: 8px; border: none; border-radius: 7px; font-size: 13px; font-weight: 600; font-family: inherit; cursor: pointer; background: {{ isTabRec ? '#1E2A45' : 'transparent' }}; color: {{ isTabRec ? '#60A5FA' : '#475569' }}; transition: all 0.15s;">Recorrentes</button>
-              <button onClick="{{ setPlanTabMetas }}" style="flex: 1; padding: 8px; border: none; border-radius: 7px; font-size: 13px; font-weight: 600; font-family: inherit; cursor: pointer; background: {{ isTabMetas ? '#1E2A45' : 'transparent' }}; color: {{ isTabMetas ? '#60A5FA' : '#475569' }}; transition: all 0.15s;">Metas</button>
+              <button onClick="{{ setPlanTabRec }}" style="{{ planTabRecStyle }}">Recorrentes</button>
+              <button onClick="{{ setPlanTabMetas }}" style="{{ planTabMetasStyle }}">Metas</button>
             </div>
             <!-- Recorrentes tab -->
             <sc-if value="{{ isTabRec }}" hint-placeholder-val="{{ true }}">
@@ -860,7 +875,7 @@
 
         <!-- ═══ CATEGORIAS ═══ -->
         <sc-if value="{{ isCategorias }}" hint-placeholder-val="{{ false }}">
-          <div class="fade-in" style="padding: 20px; display: flex; flex-direction: column; gap: 16px;">
+          <div class="fade-in" style="padding: 20px; display: flex; flex-direction: column; gap: 16px; max-width: 960px; margin: 0 auto; width: 100%; box-sizing: border-box;">
             <sc-if value="{{ hasBudgetAlert }}" hint-placeholder-val="{{ false }}">
               <div style="display: flex; align-items: center; gap: 10px; padding: 12px 16px; background: #EF444412; border: 1px solid #EF444430; border-radius: 10px;">
                 <i class="ph ph-warning" style="font-size: 16px; color: #EF4444; flex-shrink: 0;"></i>
@@ -907,7 +922,7 @@
 
         <!-- ═══ CONFIGURAÇÕES ═══ -->
         <sc-if value="{{ isConfiguracoes }}" hint-placeholder-val="{{ false }}">
-          <div class="fade-in" style="padding: 20px; display: flex; flex-direction: column; gap: 16px; max-width: 540px;">
+          <div class="fade-in" style="padding: 20px; display: flex; flex-direction: column; gap: 16px; max-width: 540px; margin: 0 auto; width: 100%; box-sizing: border-box;">
             <div style="font-size: 20px; font-weight: 600; color: #E2E8F0; letter-spacing: -0.3px;">Configurações</div>
             <!-- Profile -->
             <div style="background: #111118; border: 1px solid #151525; border-radius: 12px; padding: 20px; display: flex; flex-direction: column; gap: 14px;">
@@ -959,8 +974,8 @@
             <!-- Danger -->
             <div style="background: #111118; border: 1px solid #EF444420; border-radius: 12px; padding: 20px;">
               <div style="font-size: 10px; font-weight: 600; color: #EF444466; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px;">Zona de Perigo</div>
-              <div style="font-size: 13px; color: #334155; margin-bottom: 14px; line-height: 1.6;">Restaura os dados padrão de demonstração. Todos os seus lançamentos serão removidos.</div>
-              <button onClick="{{ clearData }}" style="padding: 9px 18px; background: transparent; border: 1px solid #EF444444; border-radius: 8px; color: #EF4444; font-size: 13px; font-weight: 500; cursor: pointer; font-family: inherit;">Restaurar Dados</button>
+              <div style="font-size: 13px; color: #334155; margin-bottom: 14px; line-height: 1.6;">Apaga todos os seus lançamentos e metas. Categorias são mantidas. Esta ação não pode ser desfeita.</div>
+              <button onClick="{{ openClearDataConfirm }}" style="padding: 9px 18px; background: transparent; border: 1px solid #EF444444; border-radius: 8px; color: #EF4444; font-size: 13px; font-weight: 500; cursor: pointer; font-family: inherit;">Apagar Dados</button>
             </div>
             <!-- Conta / Logout -->
             <div style="background: #111118; border: 1px solid #151525; border-radius: 12px; padding: 20px;">
@@ -1319,6 +1334,33 @@
       </div>
     </sc-if>
 
+    <!-- ── Clear Data Confirm Modal ── -->
+    <sc-if value="{{ showClearConfirm }}" hint-placeholder-val="{{ false }}">
+      <div style="position: fixed; inset: 0; background: #00000099; z-index: 200; display: flex; align-items: center; justify-content: center; padding: 16px;">
+        <div class="modal-in" style="background: #111118; border: 1px solid #EF444444; border-radius: 16px; padding: 24px; width: 100%; max-width: 380px; box-shadow: 0 32px 80px #00000066;">
+          <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 14px;">
+            <div style="width: 36px; height: 36px; border-radius: 10px; background: #EF444418; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+              <i class="ph ph-warning" style="font-size: 18px; color: #EF4444;"></i>
+            </div>
+            <div style="font-size: 16px; font-weight: 700; color: #E2E8F0;">Apagar todos os dados?</div>
+          </div>
+          <div style="font-size: 13px; color: #64748B; line-height: 1.6; margin-bottom: 22px;">Todos os seus lançamentos e metas serão apagados permanentemente. Categorias são mantidas. Esta ação não pode ser desfeita.</div>
+          <div style="display: flex; gap: 10px;">
+            <button onClick="{{ closeClearDataConfirm }}" style="flex: 1; padding: 12px; background: transparent; border: 1px solid #1E2A45; border-radius: 9px; color: #94A3B8; font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit;">Cancelar</button>
+            <button onClick="{{ clearData }}" style="flex: 1; padding: 12px; background: linear-gradient(135deg, #EF4444, #DC2626); border: none; border-radius: 9px; color: white; font-size: 14px; font-weight: 700; cursor: pointer; font-family: inherit; box-shadow: 0 2px 12px #EF444433;">Apagar tudo</button>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- ── Toast ── -->
+    <sc-if value="{{ showToast }}" hint-placeholder-val="{{ false }}">
+      <div style="position: fixed; bottom: 80px; left: 16px; right: 16px; z-index: 140; max-width: 420px; margin: 0 auto; background: #1E293B; border: 1px solid #334155; border-radius: 12px; padding: 14px 16px; display: flex; align-items: center; gap: 12px; box-shadow: 0 8px 32px #00000077; animation: fadeIn 0.2s ease both;">
+        <i class="ph ph-info" style="font-size: 16px; color: #F97316; flex-shrink: 0;"></i>
+        <span style="flex: 1; font-size: 13px; color: #CBD5E1;">{{ toastMsg }}</span>
+      </div>
+    </sc-if>
+
   </div>
 </sc-if>
 </x-dc>
@@ -1335,6 +1377,10 @@ class Component extends DCLogic {
     loading: false,
     loadingMsg: '',
     showPassword: false,
+    showClearConfirm: false,
+    toastMsg: '',
+    toastTs: 0,
+    sidebarCollapsed: false,
     user: null,
     transactions: [],
     categories: [],
@@ -1400,6 +1446,7 @@ class Component extends DCLogic {
       loading: true,
       loadingMsg: 'Verificando sessão...',
       onboardingDismissed: this._load('obDismissed') || false,
+      sidebarCollapsed: this._load('sidebarCollapsed') || false,
     });
     window.addEventListener('resize', this._resize = () =>
       this.setState({ isMobile: window.innerWidth < 768 })
@@ -1413,6 +1460,7 @@ class Component extends DCLogic {
         else if (s.showCatModal) this.setState({ showCatModal: false, editCatId: null });
         else if (s.showGoalModal) this.setState({ showGoalModal: false });
         else if (s.showContribModal) this.closeContribModal();
+        else if (s.showClearConfirm) this.closeClearDataConfirm();
         else if (s.showFiltersSheet) this.setState({ showFiltersSheet: false });
       } else if ((e.key === 'n' || e.key === 'N') && !e.ctrlKey && !e.metaKey) {
         if (s.screen === 'lancamentos' && !s.showTxnModal) { e.preventDefault(); this.openTxnModal(null); }
@@ -1805,7 +1853,11 @@ class Component extends DCLogic {
   }
 
   exportXlsx = (filteredTxns) => {
-    if (typeof XLSX === 'undefined') { alert('Biblioteca de exportação ainda carregando. Tente novamente.'); return; }
+    if (typeof XLSX === 'undefined') {
+      this.setState({ toastMsg: 'Biblioteca de exportação ainda carregando. Tente novamente.', toastTs: Date.now() });
+      setTimeout(() => this.setState({ toastTs: 0 }), 3500);
+      return;
+    }
     const { transactions, categories } = this.state;
     const txns = filteredTxns || transactions;
     const wb = XLSX.utils.book_new();
@@ -1884,10 +1936,12 @@ class Component extends DCLogic {
     await window._sb.from('profiles').update({ name, currency: cfgCurrency, savings_goal: savingsGoal }).eq('id', user.id);
   }
 
+  openClearDataConfirm = () => this.setState({ showClearConfirm: true });
+  closeClearDataConfirm = () => this.setState({ showClearConfirm: false });
+
   clearData = async () => {
-    if (!confirm('Apagar todos os lançamentos e metas? Categorias serão mantidas.')) return;
     const uid = this.state.user?.id;
-    this.setState({ transactions: [], goals: [] });
+    this.setState({ transactions: [], goals: [], showClearConfirm: false });
     if (uid) {
       await window._sb.from('transactions').delete().eq('user_id', uid);
       await window._sb.from('goals').delete().eq('user_id', uid);
@@ -1926,6 +1980,9 @@ class Component extends DCLogic {
 
     const titles = { dashboard: 'Dashboard', lancamentos: 'Lançamentos', planejamento: 'Planejamento', categorias: 'Categorias', configuracoes: 'Configurações' };
 
+    const sidebarCollapsed = !isMobile && s.sidebarCollapsed;
+    const sidebarExpanded = !sidebarCollapsed;
+    const sidebarWidth = sidebarCollapsed ? '72px' : '240px';
     const sidebarStyle = isMobile ? {
       position: 'fixed', left: 0, top: 0, bottom: 0, zIndex: 100, width: '240px',
       background: '#0D0D1A', borderRight: '1px solid #151525',
@@ -1933,9 +1990,31 @@ class Component extends DCLogic {
       transition: 'transform 0.25s cubic-bezier(.4,0,.2,1)',
       display: 'flex', flexDirection: 'column', padding: '20px 0',
     } : {
-      width: '240px', minWidth: '240px', background: '#0D0D1A', borderRight: '1px solid #151525',
+      width: sidebarWidth, minWidth: sidebarWidth, background: '#0D0D1A', borderRight: '1px solid #151525',
       display: 'flex', flexDirection: 'column', padding: '20px 0', height: '100vh',
-      position: 'sticky', top: 0,
+      position: 'sticky', top: 0, transition: 'width 0.2s ease, min-width 0.2s ease',
+    };
+    const collapseToggleStyle = {
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      width: '26px', height: '26px', borderRadius: '7px', flexShrink: 0,
+      background: 'transparent', border: '1px solid #1E2A45', color: '#475569',
+      cursor: 'pointer', transition: 'all 0.15s',
+    };
+    const logoRowStyle = { display: 'flex', alignItems: 'center', gap: '9px', justifyContent: sidebarCollapsed ? 'center' : 'flex-start' };
+    const sidebarHeaderStyle = {
+      padding: sidebarCollapsed ? '0 12px 18px' : '0 16px 18px',
+      borderBottom: '1px solid #151525',
+      display: 'flex', alignItems: 'center',
+      flexDirection: sidebarCollapsed ? 'column' : 'row',
+      justifyContent: sidebarCollapsed ? 'center' : 'space-between',
+      gap: '10px',
+    };
+    const sidebarFooterStyle = { padding: sidebarCollapsed ? '14px 12px' : '14px 20px', borderTop: '1px solid #151525' };
+    const logoutBtnStyle = {
+      marginTop: sidebarCollapsed ? '0' : '10px', display: 'flex', alignItems: 'center',
+      justifyContent: sidebarCollapsed ? 'center' : 'flex-start',
+      gap: '6px', background: 'none', border: 'none', color: '#334155', fontSize: '12px',
+      cursor: 'pointer', fontFamily: 'inherit', padding: 0, transition: 'color 0.15s', width: '100%',
     };
 
     const navDefs = [
@@ -1948,15 +2027,16 @@ class Component extends DCLogic {
     const navItems = navDefs.map(n => {
       const active = screen === n.id;
       return {
-        ...n, iconClass: 'ph ph-' + n.icon,
+        ...n, iconClass: 'ph ph-' + n.icon, title: n.label,
         style: {
-          display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 20px',
+          display: 'flex', alignItems: 'center', gap: '10px', padding: sidebarCollapsed ? '10px 0' : '10px 20px',
+          justifyContent: sidebarCollapsed ? 'center' : 'flex-start',
           width: '100%', border: 'none', textAlign: 'left', cursor: 'pointer',
           fontFamily: 'inherit', fontSize: '14px',
           background: active ? '#2563EB14' : 'transparent',
           color: active ? '#60A5FA' : '#334155',
-          borderLeft: '2px solid ' + (active ? '#2563EB' : 'transparent'),
-          borderRadius: '0 6px 6px 0', transition: 'all 0.15s', fontWeight: active ? '500' : '400',
+          borderLeft: sidebarCollapsed ? 'none' : ('2px solid ' + (active ? '#2563EB' : 'transparent')),
+          borderRadius: sidebarCollapsed ? '8px' : '0 6px 6px 0', transition: 'all 0.15s', fontWeight: active ? '500' : '400',
         },
         bottomNavStyle: {
           flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
@@ -2291,7 +2371,7 @@ class Component extends DCLogic {
       const alpha = amt > 0 ? Math.round(intensity * 255).toString(16).padStart(2, '0') : 'ff';
       const color = amt > 0 ? `rgba(239,68,68,${intensity.toFixed(2)})` : isFuture ? '#12121C' : '#1A1A2A';
       const isToday = d === now.getDate() && curKey === this.mKey(now);
-      hmCells.push({ empty: false, day: d, label: String(d), color, isToday, amt: amt > 0 ? this.fmt(amt) : '' });
+      hmCells.push({ empty: false, day: d, label: String(d), color, isToday, todayOutline: isToday ? '2px solid #60A5FA' : 'none', amt: amt > 0 ? this.fmt(amt) : '' });
     }
     const hmHasData = Object.keys(hmDailyExp).length > 0;
 
@@ -2422,6 +2502,14 @@ class Component extends DCLogic {
       isLogin, isApp, isDashboard, isLancamentos, isPlanejamento, isCategorias, isConfiguracoes,
       currentScreenTitle: titles[screen] || '',
       isMobile, sidebarOpen, sidebarStyle, navItems,
+      sidebarCollapsed, sidebarExpanded, collapseToggleStyle, logoRowStyle,
+      sidebarHeaderStyle, sidebarFooterStyle, logoutBtnStyle,
+      collapseToggleIcon: sidebarCollapsed ? 'ph ph-caret-right' : 'ph ph-caret-left',
+      toggleSidebarCollapse: () => this.setState(st => {
+        const next = !st.sidebarCollapsed;
+        this._save('sidebarCollapsed', next);
+        return { sidebarCollapsed: next };
+      }),
       showOverlay: isMobile && sidebarOpen,
       toggleSidebar: () => this.setState(st => ({ sidebarOpen: !st.sidebarOpen })),
       closeSidebar: () => this.setState({ sidebarOpen: false }),
@@ -2542,6 +2630,8 @@ class Component extends DCLogic {
       setPlanTabMetas: () => this.setState({ planTab: 'metas' }),
       isTabRec: s.planTab === 'recorrentes',
       isTabMetas: s.planTab === 'metas',
+      planTabRecStyle: { flex: 1, padding: '8px', border: 'none', borderRadius: '7px', fontSize: '13px', fontWeight: '600', fontFamily: 'inherit', cursor: 'pointer', transition: 'all 0.15s', background: s.planTab === 'recorrentes' ? '#1E2A45' : 'transparent', color: s.planTab === 'recorrentes' ? '#60A5FA' : '#475569' },
+      planTabMetasStyle: { flex: 1, padding: '8px', border: 'none', borderRadius: '7px', fontSize: '13px', fontWeight: '600', fontFamily: 'inherit', cursor: 'pointer', transition: 'all 0.15s', background: s.planTab === 'metas' ? '#1E2A45' : 'transparent', color: s.planTab === 'metas' ? '#60A5FA' : '#475569' },
       showGoalModal: s.showGoalModal,
       goalName: s.goalName, goalTarget: s.goalTarget, goalIcon: s.goalIcon, goalColor: s.goalColor, goalDeadline: s.goalDeadline,
       setGoalName: e => this.setState({ goalName: e.target.value }),
@@ -2621,7 +2711,13 @@ class Component extends DCLogic {
       setCfgCurrency: e => this.setState({ cfgCurrency: e.target.value }),
       cfgSavingsGoal: s.cfgSavingsGoal || '',
       setCfgSavingsGoal: e => this.setState({ cfgSavingsGoal: e.target.value }),
-      saveCfg: this.saveCfg, clearData: this.clearData,
+      saveCfg: this.saveCfg,
+      showClearConfirm: s.showClearConfirm,
+      openClearDataConfirm: this.openClearDataConfirm,
+      closeClearDataConfirm: this.closeClearDataConfirm,
+      clearData: this.clearData,
+      showToast: !!s.toastMsg && s.toastTs && (Date.now() - s.toastTs < 3600),
+      toastMsg: s.toastMsg,
       exportAllXlsx: () => this.exportXlsx(s.transactions),
     };
   }

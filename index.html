@@ -1982,7 +1982,7 @@ class Component extends DCLogic {
     });
     const obSteps = [
       _obStep('Registre sua primeira transação', s.transactions.filter(t => !t.planned).length > 0, () => { this.setState({ screen: 'lancamentos' }); setTimeout(() => this.openTxnModal(null), 100); }),
-      _obStep('Configure uma meta de poupança', s.savingsGoal > 0, () => this.setState({ screen: 'configuracoes' })),
+      _obStep('Configure uma meta de poupança', s.savingsGoal > 0 || s.goals.length > 0, () => this.setState({ screen: 'planejamento', planTab: 'metas' })),
       _obStep('Defina o orçamento de uma categoria', s.categories.some(c => c.budget && c.budget > 0), () => this.setState({ screen: 'categorias' })),
     ];
     const obDone = obSteps.filter(o => o.done).length;

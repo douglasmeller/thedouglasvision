@@ -143,7 +143,7 @@
 
       <!-- Mobile header -->
       <sc-if value="{{ isMobile }}" hint-placeholder-val="{{ false }}">
-        <div style="display: flex; align-items: center; gap: 10px; padding: 13px 16px; background: #0D0D1A; border-bottom: 1px solid #151525; flex-shrink: 0;">
+        <div style="display: flex; align-items: center; gap: 10px; padding: calc(13px + env(safe-area-inset-top, 0px)) 16px 13px; background: #0D0D1A; border-bottom: 1px solid #151525; flex-shrink: 0;">
           <div style="width: 28px; height: 28px; border-radius: 7px; background: linear-gradient(135deg, #2563EB, #06B6D4); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
             <i class="ph ph-chart-line" style="font-size: 15px; color: white;"></i>
           </div>

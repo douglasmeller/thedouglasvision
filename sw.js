@@ -1,13 +1,6 @@
-const CACHE = 'tdv-v1';
+const CACHE = 'tdv-v2';
 
 const PRECACHE = [
-  '/',
-  '/index.html',
-  '/TheDouglasVision.dc.html',
-  '/support.js',
-  '/_ds/nocturne-6ad6d877-2b1e-4775-8548-94fdb4d1c0bd/styles.css',
-  '/_ds/nocturne-6ad6d877-2b1e-4775-8548-94fdb4d1c0bd/_ds_bundle.js',
-  '/uploads/logo.png',
   '/manifest.json',
 ];
 
@@ -32,6 +25,21 @@ self.addEventListener('activate', e => {
 self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
   if (!e.request.url.startsWith(self.location.origin)) return;
+
+  const isHTML = e.request.mode === 'navigate' || (e.request.headers.get('accept') || '').includes('text/html');
+
+  if (isHTML) {
+    // Network-first for HTML so deploys show up immediately; cache is only a fallback for offline use.
+    e.respondWith(
+      fetch(e.request).then(resp => {
+        if (resp && resp.status === 200) {
+          caches.open(CACHE).then(c => c.put(e.request, resp.clone()));
+        }
+        return resp;
+      }).catch(() => caches.match(e.request))
+    );
+    return;
+  }
 
   e.respondWith(
     caches.match(e.request).then(cached => {

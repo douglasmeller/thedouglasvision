@@ -1000,8 +1000,8 @@
         <sc-if value="{{ isJarvisScreen }}" hint-placeholder-val="{{ false }}">
           <div class="fade-in" style="height: 100%; display: flex; flex-direction: column;">
             <div style="padding: 16px 20px; border-bottom: 1px solid #151525; display: flex; align-items: center; gap: 10px; flex-shrink: 0;">
-              <div style="width: 32px; height: 32px; border-radius: 9px; overflow: hidden; flex-shrink: 0;">
-                <img src="{{ jarvisLogoSrc }}" alt="" style="width: 100%; height: 100%; object-fit: cover;">
+              <div style="width: {{ jarvisHeaderIconSize }}; height: {{ jarvisHeaderIconSize }}; border-radius: 9px; overflow: hidden; flex-shrink: 0; background: {{ jarvisAvatarBg }}; box-shadow: 0 0 10px {{ jarvisGlowColor }}; padding: 4px; box-sizing: border-box;">
+                <img src="{{ jarvisLogoSrc }}" alt="" style="width: 100%; height: 100%; object-fit: contain;">
               </div>
               <div style="flex: 1;">
                 <div style="font-size: 15px; font-weight: 700; color: #E2E8F0;">{{ jarvisDisplayName }}</div>
@@ -1041,13 +1041,13 @@
     <!-- ── Jarvis Chat Bubble ── -->
     <sc-if value="{{ showJarvisBubble }}" hint-placeholder-val="{{ false }}">
       <button onClick="{{ toggleJarvisBubble }}" title="{{ jarvisDisplayName }}" style="{{ jarvisBubbleStyle }}">
-        <img src="{{ jarvisLogoSrc }}" alt="" style="width: 100%; height: 100%; object-fit: cover;">
+        <img src="{{ jarvisLogoSrc }}" alt="" style="width: 100%; height: 100%; object-fit: contain;">
       </button>
       <sc-if value="{{ jarvisOpen }}" hint-placeholder-val="{{ false }}">
         <div class="modal-in" style="{{ jarvisPopoverStyle }}">
           <div style="padding: 14px 16px; border-bottom: 1px solid #151525; display: flex; align-items: center; gap: 9px; flex-shrink: 0;">
-            <div style="width: 26px; height: 26px; border-radius: 7px; overflow: hidden; flex-shrink: 0;">
-              <img src="{{ jarvisLogoSrc }}" alt="" style="width: 100%; height: 100%; object-fit: cover;">
+            <div style="width: 30px; height: 30px; border-radius: 8px; overflow: hidden; flex-shrink: 0; background: {{ jarvisAvatarBg }}; box-shadow: 0 0 8px {{ jarvisGlowColor }}; padding: 3px; box-sizing: border-box;">
+              <img src="{{ jarvisLogoSrc }}" alt="" style="width: 100%; height: 100%; object-fit: contain;">
             </div>
             <div style="font-size: 13px; font-weight: 700; color: #E2E8F0; flex: 1;">{{ jarvisDisplayName }}</div>
             <div style="display: flex; gap: 4px; flex-shrink: 0;">
@@ -2170,6 +2170,16 @@ class Component extends DCLogic {
 
     const titles = { dashboard: 'Dashboard', lancamentos: 'Lançamentos', planejamento: 'Planejamento', categorias: 'Categorias', jarvis: 'Jarvis', configuracoes: 'Configurações' };
 
+    // Jarvis persona theming: Jarvis (haiku) = azul/ciano, Sexta-feira (sonnet) = laranja
+    const jarvisAccentColor = s.jarvisModel === 'haiku' ? '#38BDF8' : '#F97316';
+    const jarvisGlowColor = s.jarvisModel === 'haiku' ? '#38BDF866' : '#F9731677';
+    const jarvisAvatarBg = s.jarvisModel === 'haiku'
+      ? 'radial-gradient(circle, #0F2A3D, #081A28)'
+      : 'radial-gradient(circle, #F97316, #9A3412)';
+    const jarvisBubbleSize = isMobile ? '54px' : '64px';
+    const jarvisBubbleIconPad = isMobile ? '6px' : '8px';
+    const jarvisHeaderIconSize = isMobile ? '32px' : '44px';
+
     const sidebarCollapsed = !isMobile && s.sidebarCollapsed;
     const sidebarExpanded = !sidebarCollapsed;
     const sidebarWidth = sidebarCollapsed ? '72px' : '240px';
@@ -2719,14 +2729,14 @@ class Component extends DCLogic {
       },
       jarvisBubbleStyle: {
         position: 'fixed', bottom: isMobile ? '84px' : '24px', right: '24px',
-        width: '54px', height: '54px', borderRadius: '50%',
-        background: 'linear-gradient(135deg, #8B5CF6, #06B6D4)', border: 'none',
-        color: 'white', cursor: 'pointer', boxShadow: '0 4px 20px #8B5CF655',
+        width: jarvisBubbleSize, height: jarvisBubbleSize, borderRadius: '50%',
+        background: jarvisAvatarBg, border: '1px solid ' + jarvisAccentColor + '55',
+        color: 'white', cursor: 'pointer', boxShadow: '0 0 22px ' + jarvisAccentColor + '77, 0 4px 16px #00000055',
         zIndex: 60, display: 'flex', alignItems: 'center', justifyContent: 'center',
-        overflow: 'hidden', padding: 0,
+        overflow: 'hidden', padding: jarvisBubbleIconPad, boxSizing: 'border-box',
       },
       jarvisPopoverStyle: {
-        position: 'fixed', bottom: isMobile ? '148px' : '88px', right: '24px',
+        position: 'fixed', bottom: isMobile ? '148px' : '96px', right: '24px',
         width: '360px', maxWidth: 'calc(100vw - 32px)', height: '480px', maxHeight: '65vh',
         background: '#111118', border: '1px solid #1E2A45', borderRadius: '16px',
         boxShadow: '0 24px 60px #00000088', zIndex: 60,
@@ -2942,6 +2952,7 @@ class Component extends DCLogic {
       jarvisModelLabel: s.jarvisModel === 'haiku' ? 'Jarvis' : 'Sexta-feira',
       jarvisDisplayName: s.jarvisModel === 'haiku' ? 'Jarvis' : 'Sexta-feira',
       jarvisLogoSrc: s.jarvisModel === 'haiku' ? 'public/jarvis.png' : 'public/sexta-feira.png',
+      jarvisAvatarBg, jarvisGlowColor, jarvisBubbleIconPad, jarvisHeaderIconSize,
       setJarvisSonnet: () => this.setJarvisModel('sonnet'),
       setJarvisHaiku: () => this.setJarvisModel('haiku'),
       jarvisSonnetPillStyle: {

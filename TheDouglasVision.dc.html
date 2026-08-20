@@ -670,31 +670,53 @@
                 </div>
               </sc-if>
               <sc-if value="{{ hasTxns }}" hint-placeholder-val="{{ true }}">
-                <sc-for list="{{ filteredTxns }}" as="txn" hint-placeholder-count="8">
-                  <div style="display: flex; align-items: center; gap: 12px; padding: 13px 16px; border-bottom: 1px solid #15152555;">
-                    <div style="width: 36px; height: 36px; border-radius: 9px; background: {{ txn.catColor }}20; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-                      <i class="{{ txn.catIcon }}" style="font-size: 17px; color: {{ txn.catColor }};"></i>
+                <sc-for list="{{ groupedFilteredTxns }}" as="txn" hint-placeholder-count="10">
+                  <!-- Date separator -->
+                  <sc-if value="{{ txn.isHeader }}" hint-placeholder-val="{{ false }}">
+                    <div style="display: flex; align-items: center; gap: 8px; padding: 8px 16px 4px; background: #0D0D1A; position: sticky; top: 0; z-index: 5;">
+                      <span style="font-size: 11px; font-weight: 600; color: #2563EB; letter-spacing: 0.3px;">{{ txn.dateLabel }}</span>
+                      <sc-if value="{{ txn.hasRelLabel }}" hint-placeholder-val="{{ false }}">
+                        <span style="font-size: 10px; color: #1E2A3A; background: #1E2A4520; padding: 1px 6px; border-radius: 20px; font-weight: 500;">{{ txn.relLabel }}</span>
+                      </sc-if>
+                      <div style="flex: 1; height: 1px; background: #15152555;"></div>
                     </div>
-                    <div style="flex: 1; min-width: 0;">
-                      <div style="font-size: 13px; font-weight: 500; color: #CBD5E1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ txn.description }}</div>
-                      <div style="font-size: 11px; color: #334155; margin-top: 2px; display: flex; gap: 6px; align-items: center;">
-                        <span>{{ txn.catName }}</span>
-                        <span style="color: #1E2A3A;">·</span>
-                        <span>{{ txn.fmtDate }}</span>
-                        <sc-if value="{{ txn.recurring }}" hint-placeholder-val="{{ false }}">
-                          <span style="font-size: 9px; padding: 1px 5px; border-radius: 20px; background: #2563EB22; color: #3B82F6; font-weight: 500;">↻ {{ txn.freqLabel }}</span>
+                  </sc-if>
+                  <!-- Transaction row -->
+                  <sc-if value="{{ txn.isTxn }}" hint-placeholder-val="{{ true }}">
+                    <div style="display: flex; align-items: center; gap: 12px; padding: 11px 16px; border-bottom: 1px solid #15152522;">
+                      <div style="width: 36px; height: 36px; border-radius: 9px; background: {{ txn.catColor }}20; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                        <i class="{{ txn.catIcon }}" style="font-size: 17px; color: {{ txn.catColor }};"></i>
+                      </div>
+                      <div style="flex: 1; min-width: 0;">
+                        <div style="font-size: 13px; font-weight: 500; color: #CBD5E1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ txn.description }}</div>
+                        <div style="font-size: 11px; color: #334155; margin-top: 2px; display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
+                          <span>{{ txn.catName }}</span>
+                          <sc-if value="{{ txn.showDateInline }}" hint-placeholder-val="{{ false }}">
+                            <span style="color: #1E2A3A;">·</span>
+                            <span>{{ txn.fmtDate }}</span>
+                          </sc-if>
+                          <sc-if value="{{ txn.recurring }}" hint-placeholder-val="{{ false }}">
+                            <span style="font-size: 9px; padding: 1px 5px; border-radius: 20px; background: #2563EB22; color: #3B82F6; font-weight: 500;">↻ {{ txn.freqLabel }}</span>
+                          </sc-if>
+                          <sc-if value="{{ txn.isPlanned }}" hint-placeholder-val="{{ false }}">
+                            <span style="font-size: 9px; padding: 1px 5px; border-radius: 20px; background: #F9731622; color: #F97316; font-weight: 500;">Previsto</span>
+                          </sc-if>
+                        </div>
+                        <sc-if value="{{ txn.hasNotes }}" hint-placeholder-val="{{ false }}">
+                          <div style="font-size: 11px; color: #1E2A3A; margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-style: italic;">{{ txn.notes }}</div>
                         </sc-if>
                       </div>
-                      <sc-if value="{{ txn.hasNotes }}" hint-placeholder-val="{{ false }}">
-                        <div style="font-size: 11px; color: #1E2A3A; margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-style: italic;">{{ txn.notes }}</div>
-                      </sc-if>
+                      <div style="font-size: 13px; font-weight: 700; color: {{ txn.amtColor }}; flex-shrink: 0; margin-right: 4px; letter-spacing: -0.3px;">{{ txn.sign }}{{ txn.fmtAmount }}</div>
+                      <div style="display: flex; gap: 3px; flex-shrink: 0;">
+                        <sc-if value="{{ txn.isPlanned }}" hint-placeholder-val="{{ false }}">
+                          <button onClick="{{ txn.onRealize }}" title="Marcar como realizado" style="background: #22C55E12; border: 1px solid #22C55E33; border-radius: 6px; color: #4ADE80; cursor: pointer; padding: 6px 8px; font-size: 13px; display: flex; align-items: center; line-height: 1;"><i class="ph ph-check"></i></button>
+                        </sc-if>
+                        <button onClick="{{ txn.onDuplicate }}" title="Duplicar" style="background: none; border: 1px solid #1A1A28; border-radius: 6px; color: #334155; cursor: pointer; padding: 6px 8px; font-size: 13px; display: flex; align-items: center; line-height: 1;"><i class="ph ph-copy"></i></button>
+                        <button onClick="{{ txn.onEdit }}" title="Editar" style="background: none; border: 1px solid #1A1A28; border-radius: 6px; color: #334155; cursor: pointer; padding: 6px 8px; font-size: 13px; display: flex; align-items: center; line-height: 1;"><i class="ph ph-pencil-simple"></i></button>
+                        <button onClick="{{ txn.onDelete }}" title="Excluir" style="background: none; border: 1px solid #1A1A28; border-radius: 6px; color: #EF444466; cursor: pointer; padding: 6px 8px; font-size: 13px; display: flex; align-items: center; line-height: 1;"><i class="ph ph-trash"></i></button>
+                      </div>
                     </div>
-                    <div style="font-size: 13px; font-weight: 700; color: {{ txn.amtColor }}; flex-shrink: 0; margin-right: 8px; letter-spacing: -0.3px;">{{ txn.sign }}{{ txn.fmtAmount }}</div>
-                    <div style="display: flex; gap: 3px; flex-shrink: 0;">
-                      <button onClick="{{ txn.onEdit }}" style="background: none; border: 1px solid #1A1A28; border-radius: 6px; color: #334155; cursor: pointer; padding: 6px 8px; font-size: 13px; display: flex; align-items: center; line-height: 1;"><i class="ph ph-pencil-simple"></i></button>
-                      <button onClick="{{ txn.onDelete }}" style="background: none; border: 1px solid #1A1A28; border-radius: 6px; color: #EF444466; cursor: pointer; padding: 6px 8px; font-size: 13px; display: flex; align-items: center; line-height: 1;"><i class="ph ph-trash"></i></button>
-                    </div>
-                  </div>
+                  </sc-if>
                 </sc-for>
               </sc-if>
             </div>
@@ -1605,6 +1627,18 @@ class Component extends DCLogic {
     this.setState({ transactions, undoTxn: txn, undoTimer: timer }, () => this.persist());
   }
 
+  duplicateTxn = (id) => {
+    const txn = this.state.transactions.find(t => t.id === id);
+    if (!txn) return;
+    const newTxn = { ...txn, id: 't' + Date.now(), date: new Date().toISOString().split('T')[0], planned: false };
+    this.setState({ transactions: [...this.state.transactions, newTxn] }, () => this.persist());
+  }
+
+  realizeTxn = (id) => {
+    const transactions = this.state.transactions.map(t => t.id === id ? { ...t, planned: false } : t);
+    this.setState({ transactions }, () => this.persist());
+  }
+
   dismissOnboarding = () => {
     this._save('obDismissed', true);
     this.setState({ onboardingDismissed: true });
@@ -1994,7 +2028,9 @@ class Component extends DCLogic {
         sign: t.type === 'income' ? '+' : '-',
         freqLabel: freqMap[t.recurringFreq] || '',
         notes: t.notes || '', hasNotes: !!(t.notes && t.notes.trim()),
-        onEdit: () => this.openTxnModal(t), onDelete: () => this.deleteTxn(t.id) };
+        isPlanned: !!t.planned,
+        onEdit: () => this.openTxnModal(t), onDelete: () => this.deleteTxn(t.id),
+        onDuplicate: () => this.duplicateTxn(t.id), onRealize: () => this.realizeTxn(t.id) };
     });
     const hasActiveFilters = s.filterType !== 'all' || (s.filterCategoryId && s.filterCategoryId !== 'all') ||
       !!s.filterSearch.trim() || s.filterRecurring !== 'all' || s.filterPlanned !== 'all' ||
@@ -2269,6 +2305,25 @@ class Component extends DCLogic {
       onSelect: () => this.setState({ catColor: c }),
     }));
 
+    // Group transactions by date (only when sorted by date)
+    const sortByDate = s.sortOrder === 'date_desc' || s.sortOrder === 'date_asc';
+    const todayStr = new Date().toISOString().split('T')[0];
+    const yesterdayStr = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+    const groupedFilteredTxns = [];
+    if (sortByDate && filteredTxns.length > 0) {
+      let lastDate = null;
+      filteredTxns.forEach(t => {
+        if (t.date !== lastDate) {
+          const relLabel = t.date === todayStr ? 'Hoje' : t.date === yesterdayStr ? 'Ontem' : '';
+          groupedFilteredTxns.push({ isHeader: true, isTxn: false, dateLabel: this.fmtDate(t.date), relLabel, hasRelLabel: !!relLabel });
+          lastDate = t.date;
+        }
+        groupedFilteredTxns.push({ ...t, isHeader: false, isTxn: true, showDateInline: false });
+      });
+    } else {
+      filteredTxns.forEach(t => groupedFilteredTxns.push({ ...t, isHeader: false, isTxn: true, showDateInline: true }));
+    }
+
     return {
       isLogin, isApp, isDashboard, isLancamentos, isPlanejamento, isCategorias, isConfiguracoes,
       currentScreenTitle: titles[screen] || '',
@@ -2327,7 +2382,7 @@ class Component extends DCLogic {
       closeBarModal: () => this.setState({ showBarModal: false }),
       barModalItems, barModalViewBox, barModalSvgWidth, barModalMonths,
       // lancamentos
-      filteredTxns, noTxns: filteredTxns.length === 0, hasTxns: filteredTxns.length > 0,
+      filteredTxns, groupedFilteredTxns, noTxns: filteredTxns.length === 0, hasTxns: filteredTxns.length > 0,
       filteredTxnsCount, hasActiveFilters, activeFilterCount,
       emptyTxnHint: hasActiveFilters ? 'Nenhum lançamento corresponde aos filtros aplicados.' : 'Toque no + para registrar sua primeira transação deste mês.',
       exportXlsx: () => this.exportXlsx(filteredTxns),

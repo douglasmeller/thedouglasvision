@@ -784,11 +784,17 @@
                   <i class="ph ph-plus" style="font-size: 15px;"></i>Nova meta
                 </button>
               </sc-if>
+              <sc-if value="{{ isTabDespesas }}" hint-placeholder-val="{{ false }}">
+                <button onClick="{{ openNewExpense }}" style="display: flex; align-items: center; gap: 6px; padding: 9px 16px; background: linear-gradient(135deg, #2563EB, #06B6D4); border: none; border-radius: 9px; color: white; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit;">
+                  <i class="ph ph-plus" style="font-size: 15px;"></i>Nova despesa
+                </button>
+              </sc-if>
             </div>
             <!-- Tabs -->
             <div style="display: flex; background: #111118; border-radius: 10px; padding: 4px; gap: 2px;">
               <button onClick="{{ setPlanTabRec }}" style="{{ planTabRecStyle }}">Recorrentes</button>
               <button onClick="{{ setPlanTabMetas }}" style="{{ planTabMetasStyle }}">Metas</button>
+              <button onClick="{{ setPlanTabDespesas }}" style="{{ planTabDespesasStyle }}">Despesas</button>
             </div>
             <!-- Recorrentes tab -->
             <sc-if value="{{ isTabRec }}" hint-placeholder-val="{{ true }}">
@@ -878,6 +884,64 @@
                             </sc-if>
                             <span style="font-size: 11px; color: #334155; margin-left: auto;">Faltam {{ g.fmtRemaining }}</span>
                             <button onClick="{{ g.onContrib }}" style="margin-left: 10px; padding: 5px 12px; background: #22C55E18; border: 1px solid #22C55E33; border-radius: 7px; color: #22C55E; font-size: 11px; font-weight: 600; font-family: inherit; cursor: pointer; white-space: nowrap;">+ Aportar</button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </sc-for>
+                </div>
+              </sc-if>
+            </sc-if>
+            <!-- Despesas tab -->
+            <sc-if value="{{ isTabDespesas }}" hint-placeholder-val="{{ false }}">
+              <sc-if value="{{ noExpenses }}" hint-placeholder-val="{{ false }}">
+                <div style="background: #111118; border: 1px solid #151525; border-radius: 12px; padding: 48px 24px; display: flex; flex-direction: column; align-items: center; gap: 0; text-align: center;">
+                  <div style="width: 56px; height: 56px; border-radius: 14px; background: #1A1A2A; display: flex; align-items: center; justify-content: center; margin-bottom: 14px;">
+                    <i class="ph ph-receipt" style="font-size: 26px; color: #2A3A55;"></i>
+                  </div>
+                  <div style="font-size: 15px; font-weight: 600; color: #334155; margin-bottom: 6px;">Nenhuma despesa recorrente</div>
+                  <div style="font-size: 12px; color: #1E2A3A; line-height: 1.6; max-width: 260px; margin-bottom: 16px;">Configure um gasto recorrente com teto — por valor total (ex: parcela até quitar) ou por data final.</div>
+                  <button onClick="{{ openNewExpense }}" style="padding: 9px 20px; background: linear-gradient(135deg, #2563EB, #06B6D4); border: none; border-radius: 9px; color: white; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit;">Criar primeira despesa</button>
+                </div>
+              </sc-if>
+              <sc-if value="{{ hasExpenses }}" hint-placeholder-val="{{ false }}">
+                <div style="display: flex; flex-direction: column; gap: 12px;">
+                  <sc-for list="{{ expenseItems }}" as="e" hint-placeholder-count="3">
+                    <div style="background: #111118; border: 1px solid #151525; border-radius: 14px; padding: 18px 20px;">
+                      <div style="display: flex; align-items: flex-start; gap: 12px;">
+                        <div style="width: 40px; height: 40px; border-radius: 10px; background: {{ e.catColor }}20; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                          <i class="{{ e.catIcon }}" style="font-size: 20px; color: {{ e.catColor }};"></i>
+                        </div>
+                        <div style="flex: 1; min-width: 0;">
+                          <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 4px;">
+                            <div style="font-size: 14px; font-weight: 600; color: #CBD5E1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ e.name }}</div>
+                            <div style="display: flex; gap: 4px; flex-shrink: 0;">
+                              <button onClick="{{ e.onEdit }}" style="background: none; border: 1px solid #1A1A28; border-radius: 6px; color: #334155; cursor: pointer; padding: 5px 7px; font-size: 13px; display: flex; align-items: center; line-height: 1;"><i class="ph ph-pencil-simple"></i></button>
+                              <button onClick="{{ e.onDelete }}" style="background: none; border: 1px solid #1A1A28; border-radius: 6px; color: #EF444455; cursor: pointer; padding: 5px 7px; font-size: 13px; display: flex; align-items: center; line-height: 1;"><i class="ph ph-trash"></i></button>
+                            </div>
+                          </div>
+                          <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px; flex-wrap: wrap;">
+                            <span style="font-size: 12px; color: #334155;">{{ e.freqLabel }} · {{ e.fmtAmount }}/parcela</span>
+                            <span style="padding: 2px 8px; border-radius: 20px; background: {{ e.completedBg }}; color: {{ e.completedTxt }}; font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">{{ e.completedLabel }}</span>
+                          </div>
+                          <sc-if value="{{ e.hasTarget }}" hint-placeholder-val="{{ false }}">
+                            <div style="display: flex; align-items: baseline; gap: 6px; margin-bottom: 10px;">
+                              <span style="font-size: 20px; font-weight: 800; color: {{ e.barColor }}; letter-spacing: -0.5px;">{{ e.fmtPaid }}</span>
+                              <span style="font-size: 12px; color: #334155;">de {{ e.fmtTarget }}</span>
+                              <span style="font-size: 11px; color: {{ e.barColor }}; font-weight: 600; margin-left: auto;">{{ e.pct }}%</span>
+                            </div>
+                            <div style="height: 8px; background: #1A1A28; border-radius: 4px; overflow: hidden; margin-bottom: 10px;">
+                              <div style="height: 100%; border-radius: 4px; background: {{ e.barColor }}; width: {{ e.pct }}%; transition: width 0.5s ease;"></div>
+                            </div>
+                          </sc-if>
+                          <div style="display: flex; align-items: center; justify-content: space-between;">
+                            <sc-if value="{{ e.hasEndDate }}" hint-placeholder-val="{{ false }}">
+                              <span style="font-size: 11px; color: #334155;"><i class="ph ph-calendar-x" style="font-size: 11px;"></i> até {{ e.endDateLabel }}</span>
+                            </sc-if>
+                            <sc-if value="{{ e.hasTarget }}" hint-placeholder-val="{{ false }}">
+                              <span style="font-size: 11px; color: #334155; margin-left: auto;">Faltam {{ e.fmtRemaining }}</span>
+                            </sc-if>
+                            <button onClick="{{ e.onPay }}" style="margin-left: 10px; padding: 5px 12px; background: #F9731618; border: 1px solid #F9731633; border-radius: 7px; color: #F97316; font-size: 11px; font-weight: 600; font-family: inherit; cursor: pointer; white-space: nowrap;">Pagar parcela</button>
                           </div>
                         </div>
                       </div>
@@ -1000,7 +1064,7 @@
             <!-- Danger -->
             <div style="background: #111118; border: 1px solid #EF444420; border-radius: 12px; padding: 20px;">
               <div style="font-size: 10px; font-weight: 600; color: #EF444466; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px;">Zona de Perigo</div>
-              <div style="font-size: 13px; color: #334155; margin-bottom: 14px; line-height: 1.6;">Apaga todos os seus lançamentos e metas. Categorias são mantidas. Esta ação não pode ser desfeita.</div>
+              <div style="font-size: 13px; color: #334155; margin-bottom: 14px; line-height: 1.6;">Apaga todos os seus lançamentos, metas e despesas recorrentes. Categorias são mantidas. Esta ação não pode ser desfeita.</div>
               <button onClick="{{ openClearDataConfirm }}" style="padding: 9px 18px; background: transparent; border: 1px solid #EF444444; border-radius: 8px; color: #EF4444; font-size: 13px; font-weight: 500; cursor: pointer; font-family: inherit;">Apagar Dados</button>
             </div>
             <!-- Conta / Logout -->
@@ -1359,6 +1423,81 @@
       </div>
     </sc-if>
 
+    <!-- ── Expense (Despesa recorrente) Modal ── -->
+    <sc-if value="{{ showExpenseModal }}" hint-placeholder-val="{{ false }}">
+      <div style="position: fixed; inset: 0; background: #00000099; z-index: 200; display: flex; align-items: center; justify-content: center; padding: 16px;">
+        <div class="modal-in" style="background: #111118; border: 1px solid #1E2A45; border-radius: 16px; padding: 24px; width: 100%; max-width: 380px; max-height: 90vh; overflow-y: auto;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
+            <div style="font-size: 16px; font-weight: 600; color: #E2E8F0;">{{ expModalTitle }}</div>
+            <button onClick="{{ closeExpenseModal }}" style="background: none; border: none; color: #334155; cursor: pointer; font-size: 22px; line-height: 1; padding: 0; display: flex;">×</button>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 14px;">
+            <div>
+              <label style="display: block; font-size: 11px; color: #475569; margin-bottom: 6px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Nome</label>
+              <input type="text" value="{{ expName }}" onInput="{{ setExpName }}" placeholder="Ex: Parcela do carro" style="width: 100%; background: #0D0D1A; border: 1px solid #1E2A45; border-radius: 8px; padding: 11px 14px; color: #E2E8F0; font-size: 14px; font-family: inherit;">
+            </div>
+            <div>
+              <label style="display: block; font-size: 11px; color: #475569; margin-bottom: 6px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Valor da parcela (R$)</label>
+              <input type="number" inputmode="decimal" value="{{ expAmount }}" onInput="{{ setExpAmount }}" placeholder="0,00" min="0" step="0.01" style="width: 100%; background: #0D0D1A; border: 1px solid #1E2A45; border-radius: 8px; padding: 11px 14px; color: #E2E8F0; font-size: 14px; font-family: inherit;">
+            </div>
+            <div>
+              <label style="display: block; font-size: 11px; color: #475569; margin-bottom: 6px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Categoria</label>
+              <select value="{{ expCategoryId }}" onChange="{{ setExpCategoryId }}" style="width: 100%; background: #0D0D1A; border: 1px solid #1E2A45; border-radius: 8px; padding: 11px 14px; color: #E2E8F0; font-size: 14px; font-family: inherit; cursor: pointer;">
+                <sc-for list="{{ catOptions }}" as="copt" hint-placeholder-count="9">
+                  <option value="{{ copt.id }}">{{ copt.name }}</option>
+                </sc-for>
+              </select>
+            </div>
+            <div style="display: flex; gap: 10px;">
+              <div style="flex: 1;">
+                <label style="display: block; font-size: 11px; color: #475569; margin-bottom: 6px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Frequência</label>
+                <select value="{{ expFreq }}" onChange="{{ setExpFreq }}" style="width: 100%; background: #0D0D1A; border: 1px solid #1E2A45; border-radius: 8px; padding: 11px 14px; color: #E2E8F0; font-size: 14px; font-family: inherit; cursor: pointer;">
+                  <option value="monthly">Mensal</option>
+                  <option value="weekly">Semanal</option>
+                  <option value="daily">Diário</option>
+                </select>
+              </div>
+              <div style="width: 110px;">
+                <label style="display: block; font-size: 11px; color: #475569; margin-bottom: 6px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Dia venc.</label>
+                <input type="number" value="{{ expDay }}" onInput="{{ setExpDay }}" placeholder="7" min="1" max="31" step="1" style="width: 100%; background: #0D0D1A; border: 1px solid #1E2A45; border-radius: 8px; padding: 11px 14px; color: #E2E8F0; font-size: 14px; font-family: inherit;">
+              </div>
+            </div>
+            <div style="padding-top: 4px; border-top: 1px solid #151525;">
+              <div style="font-size: 11px; color: #475569; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin: 10px 0 6px;">Teto (pelo menos um)</div>
+            </div>
+            <div>
+              <label style="display: block; font-size: 11px; color: #475569; margin-bottom: 6px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Valor total a quitar (R$) <span style="color: #334155; font-weight: 400; text-transform: none; letter-spacing: 0;">(opcional)</span></label>
+              <input type="number" inputmode="decimal" value="{{ expTargetTotal }}" onInput="{{ setExpTargetTotal }}" placeholder="Ex: 25000,00" min="0" step="0.01" style="width: 100%; background: #0D0D1A; border: 1px solid #1E2A45; border-radius: 8px; padding: 11px 14px; color: #E2E8F0; font-size: 14px; font-family: inherit;">
+            </div>
+            <div>
+              <label style="display: block; font-size: 11px; color: #475569; margin-bottom: 6px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Data final <span style="color: #334155; font-weight: 400; text-transform: none; letter-spacing: 0;">(opcional)</span></label>
+              <input type="date" value="{{ expEndDate }}" onInput="{{ setExpEndDate }}" style="width: 100%; background: #0D0D1A; border: 1px solid #1E2A45; border-radius: 8px; padding: 11px 14px; color: #E2E8F0; font-size: 14px; font-family: inherit;">
+            </div>
+          </div>
+          <button onClick="{{ saveExpense }}" style="margin-top: 20px; width: 100%; padding: 14px; background: linear-gradient(135deg, #2563EB, #06B6D4); border: none; border-radius: 10px; color: white; font-size: 15px; font-weight: 600; font-family: inherit; cursor: pointer; letter-spacing: -0.3px;">Salvar Despesa</button>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- ── Pay Expense Modal ── -->
+    <sc-if value="{{ showPayExpenseModal }}" hint-placeholder-val="{{ false }}">
+      <div style="position: fixed; inset: 0; background: #00000099; z-index: 200; display: flex; align-items: center; justify-content: center; padding: 16px;">
+        <div class="modal-in" style="background: #111118; border: 1px solid #1E2A45; border-radius: 16px; padding: 24px; width: 100%; max-width: 360px; box-shadow: 0 32px 80px #00000066;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
+            <div style="font-size: 17px; font-weight: 700; color: #E2E8F0; letter-spacing: -0.5px;">Pagar Parcela</div>
+            <button onClick="{{ closePayExpenseModal }}" style="background: none; border: none; color: #334155; cursor: pointer; font-size: 22px; line-height: 1; padding: 0; display: flex;">×</button>
+          </div>
+          <div style="font-size: 12px; color: #475569; margin-bottom: 20px; padding-bottom: 16px; border-bottom: 1px solid #151525;">{{ payExpenseName }}</div>
+          <label style="display: block; font-size: 11px; color: #475569; margin-bottom: 8px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Valor (R$)</label>
+          <input type="number" inputmode="decimal" value="{{ payExpenseAmount }}" onInput="{{ setPayExpenseAmount }}" placeholder="0,00" min="0" step="0.01" autofocus style="width: 100%; background: #0D0D1A; border: 1px solid #1E2A45; border-radius: 9px; padding: 13px 16px; color: #E2E8F0; font-size: 22px; font-weight: 700; font-family: inherit; letter-spacing: -0.5px; margin-bottom: 20px;">
+          <div style="display: flex; gap: 10px;">
+            <button onClick="{{ closePayExpenseModal }}" style="flex: 1; padding: 12px; background: transparent; border: 1px solid #1E2A45; border-radius: 9px; color: #475569; font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit;">Cancelar</button>
+            <button onClick="{{ confirmPayExpense }}" style="flex: 1; padding: 12px; background: linear-gradient(135deg, #F97316, #C2410C); border: none; border-radius: 9px; color: white; font-size: 14px; font-weight: 700; cursor: pointer; font-family: inherit; box-shadow: 0 2px 12px #F9731633;">Pagar</button>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
     <!-- ── Category Modal ── -->
     <sc-if value="{{ showCatModal }}" hint-placeholder-val="{{ false }}">
       <div style="position: fixed; inset: 0; background: #00000099; z-index: 200; display: flex; align-items: center; justify-content: center; padding: 16px;">
@@ -1614,6 +1753,19 @@ class Component extends DCLogic {
     goalIcon: 'target',
     goalColor: '#22C55E',
     goalDeadline: '',
+    recurringExpenses: [],
+    showExpenseModal: false,
+    editExpenseId: null,
+    expName: '',
+    expAmount: '',
+    expFreq: 'monthly',
+    expDay: '',
+    expCategoryId: '',
+    expTargetTotal: '',
+    expEndDate: '',
+    showPayExpenseModal: false,
+    payExpenseId: null,
+    payExpenseAmount: '',
     quickType: 'expense',
     quickAmount: '',
     quickCategoryId: '',
@@ -1652,6 +1804,8 @@ class Component extends DCLogic {
         else if (s.showCatModal) this.setState({ showCatModal: false, editCatId: null });
         else if (s.showGoalModal) this.setState({ showGoalModal: false });
         else if (s.showContribModal) this.closeContribModal();
+        else if (s.showExpenseModal) this.closeExpenseModal();
+        else if (s.showPayExpenseModal) this.closePayExpenseModal();
         else if (s.showClearConfirm) this.closeClearDataConfirm();
         else if (s.jarvisOpen) this.setState({ jarvisOpen: false });
         else if (s.showFiltersSheet) this.setState({ showFiltersSheet: false });
@@ -1795,12 +1949,13 @@ class Component extends DCLogic {
   _loadFromSupabase = async (authUser) => {
     this.setState({ loading: true, loadingMsg: 'Carregando dados...' });
     const uid = authUser.id;
-    const [{ data: cats }, { data: txns }, { data: goals }, { data: profile }, { data: jarvisCtx }] = await Promise.all([
+    const [{ data: cats }, { data: txns }, { data: goals }, { data: profile }, { data: jarvisCtx }, { data: expenses }] = await Promise.all([
       window._sb.from('categories').select('*').eq('user_id', uid),
       window._sb.from('transactions').select('*').eq('user_id', uid),
       window._sb.from('goals').select('*').eq('user_id', uid),
       window._sb.from('profiles').select('*').eq('id', uid).single(),
       window._sb.from('jarvis_context').select('personal_notes').eq('user_id', uid).maybeSingle(),
+      window._sb.from('recurring_expenses').select('*').eq('user_id', uid),
     ]);
     let catList = (cats || []).map(c => ({ id: c.id, name: c.name, icon: c.icon, color: c.color, budget: c.budget || null }));
     if (catList.length === 0) {
@@ -1812,44 +1967,60 @@ class Component extends DCLogic {
       id: t.id, type: t.type, amount: Number(t.amount), description: t.description,
       categoryId: t.category_id, date: t.date, recurring: t.recurring,
       recurringFreq: t.recurring_freq, planned: t.planned, notes: t.notes,
+      recurringExpenseId: t.recurring_expense_id,
     }));
     const goalList = (goals || []).map(g => ({
       id: g.id, name: g.name, target: Number(g.target), current: Number(g.current || 0),
       icon: g.icon, color: g.color, deadline: g.deadline,
     }));
+    const expenseList = (expenses || []).map(e => this._expenseRowIn(e));
     const name = profile?.name || authUser.user_metadata?.name || authUser.email.split('@')[0].replace(/[._-]/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
     const user = { id: uid, name, email: authUser.email };
     this.setState({
-      user, transactions: txnList, categories: catList, goals: goalList,
+      user, transactions: txnList, categories: catList, goals: goalList, recurringExpenses: expenseList,
       cfgName: name, cfgEmail: authUser.email,
       cfgCurrency: profile?.currency || 'BRL',
       savingsGoal: Number(profile?.savings_goal || 0),
       cfgSavingsGoal: profile?.savings_goal ? String(profile.savings_goal) : '',
       cfgJarvisNotes: jarvisCtx?.personal_notes || '',
       screen: 'dashboard', loading: false, loginError: '',
-    }, () => { this._autoRecurring(); });
+    }, () => { this._autoRecurring(); this._autoRecurringExpenses(); });
   }
 
   _refreshData = async () => {
     const uid = this.state.user?.id;
     if (!uid) return;
-    const [{ data: cats }, { data: txns }, { data: goals }] = await Promise.all([
+    const [{ data: cats }, { data: txns }, { data: goals }, { data: expenses }] = await Promise.all([
       window._sb.from('categories').select('*').eq('user_id', uid),
       window._sb.from('transactions').select('*').eq('user_id', uid),
       window._sb.from('goals').select('*').eq('user_id', uid),
+      window._sb.from('recurring_expenses').select('*').eq('user_id', uid),
     ]);
     const catList = (cats || []).map(c => ({ id: c.id, name: c.name, icon: c.icon, color: c.color, budget: c.budget || null }));
     const txnList = (txns || []).map(t => ({
       id: t.id, type: t.type, amount: Number(t.amount), description: t.description,
       categoryId: t.category_id, date: t.date, recurring: t.recurring,
       recurringFreq: t.recurring_freq, planned: t.planned, notes: t.notes,
+      recurringExpenseId: t.recurring_expense_id,
     }));
     const goalList = (goals || []).map(g => ({
       id: g.id, name: g.name, target: Number(g.target), current: Number(g.current || 0),
       icon: g.icon, color: g.color, deadline: g.deadline,
     }));
-    this.setState({ transactions: txnList, categories: catList, goals: goalList });
+    const expenseList = (expenses || []).map(e => this._expenseRowIn(e));
+    this.setState({ transactions: txnList, categories: catList, goals: goalList, recurringExpenses: expenseList });
   }
+
+  _expenseRowIn = (e) => ({
+    id: e.id, name: e.name, amount: Number(e.amount), freq: e.freq, day: Number(e.day || 1),
+    categoryId: e.category_id, targetTotal: e.target_total != null ? Number(e.target_total) : null,
+    endDate: e.end_date,
+  })
+
+  _expenseRowOut = (exp, uid) => ({
+    id: exp.id, user_id: uid, name: exp.name, amount: exp.amount, freq: exp.freq, day: exp.day,
+    category_id: exp.categoryId || null, target_total: exp.targetTotal, end_date: exp.endDate,
+  })
 
   handleLogin = async () => {
     const { loginEmail, loginPassword } = this.state;
@@ -1908,7 +2079,7 @@ class Component extends DCLogic {
 
   handleLogout = async () => {
     await window._sb.auth.signOut();
-    this.setState({ user: null, screen: 'login', loginEmail: '', loginPassword: '', sidebarOpen: false, transactions: [], categories: [], goals: [], jarvisMessages: [], jarvisLoaded: false, jarvisConversationId: null, jarvisConversations: [] });
+    this.setState({ user: null, screen: 'login', loginEmail: '', loginPassword: '', sidebarOpen: false, transactions: [], categories: [], goals: [], recurringExpenses: [], jarvisMessages: [], jarvisLoaded: false, jarvisConversationId: null, jarvisConversations: [] });
   }
 
   _jarvisMsg = (role, content, persona) => {
@@ -2121,6 +2292,7 @@ class Component extends DCLogic {
     description: txn.description, category_id: txn.categoryId, date: txn.date,
     recurring: txn.recurring, recurring_freq: txn.recurringFreq,
     planned: txn.planned, notes: txn.notes,
+    recurring_expense_id: txn.recurringExpenseId || null,
   })
 
   saveTxn = async () => {
@@ -2224,6 +2396,122 @@ class Component extends DCLogic {
     if (!a || a <= 0) return;
     this.addGoalContrib(contribGoalId, a);
     this.closeContribModal();
+  }
+
+  // ─── Despesas recorrentes com teto ──────────────────────────────────────
+  // Diferente de Metas (dinheiro guardado, conta como patrimônio), uma Despesa
+  // recorrente é um gasto real: cada pagamento cria um lançamento de despesa
+  // de verdade, ligado por recurring_expense_id. O total pago é sempre
+  // calculado a partir dos lançamentos (nunca guardado separado), então
+  // editar/excluir um lançamento mantém o progresso sempre correto.
+
+  _expensePaidSoFar = (expenseId) =>
+    this.state.transactions.filter(t => t.recurringExpenseId === expenseId).reduce((a, t) => a + t.amount, 0)
+
+  openExpenseModal = (exp) => {
+    if (exp) {
+      this.setState({
+        showExpenseModal: true, editExpenseId: exp.id, expName: exp.name, expAmount: String(exp.amount),
+        expFreq: exp.freq, expDay: String(exp.day || 1), expCategoryId: exp.categoryId || '',
+        expTargetTotal: exp.targetTotal != null ? String(exp.targetTotal) : '', expEndDate: exp.endDate || '',
+      });
+    } else {
+      this.setState({
+        showExpenseModal: true, editExpenseId: null, expName: '', expAmount: '', expFreq: 'monthly',
+        expDay: String(new Date().getDate()), expCategoryId: '', expTargetTotal: '', expEndDate: '',
+      });
+    }
+  }
+
+  closeExpenseModal = () => this.setState({ showExpenseModal: false });
+
+  saveExpense = async () => {
+    const s = this.state;
+    const name = s.expName.trim();
+    const amount = parseFloat(s.expAmount);
+    const day = Math.min(31, Math.max(1, parseInt(s.expDay) || 1));
+    const targetTotal = s.expTargetTotal.trim() ? parseFloat(s.expTargetTotal) : null;
+    const endDate = s.expEndDate || null;
+    if (!name || !amount || amount <= 0) return;
+    if (!targetTotal && !endDate) return; // precisa de pelo menos um tipo de teto
+    let exp;
+    let newExpenses;
+    if (s.editExpenseId) {
+      exp = { id: s.editExpenseId, name, amount, freq: s.expFreq, day, categoryId: s.expCategoryId || null, targetTotal, endDate };
+      newExpenses = s.recurringExpenses.map(e => e.id === s.editExpenseId ? exp : e);
+    } else {
+      exp = { id: 'e' + Date.now(), name, amount, freq: s.expFreq, day, categoryId: s.expCategoryId || null, targetTotal, endDate };
+      newExpenses = [...s.recurringExpenses, exp];
+    }
+    this.setState({ recurringExpenses: newExpenses, showExpenseModal: false });
+    await window._sb.from('recurring_expenses').upsert(this._expenseRowOut(exp, s.user.id));
+  }
+
+  deleteExpense = async (id) => {
+    this.setState({ recurringExpenses: this.state.recurringExpenses.filter(e => e.id !== id) });
+    await window._sb.from('recurring_expenses').delete().eq('id', id);
+  }
+
+  openPayExpenseModal = (id) => {
+    const exp = this.state.recurringExpenses.find(e => e.id === id);
+    if (!exp) return;
+    let amount = exp.amount;
+    if (exp.targetTotal) amount = Math.max(0, Math.min(amount, exp.targetTotal - this._expensePaidSoFar(id)));
+    this.setState({ showPayExpenseModal: true, payExpenseId: id, payExpenseAmount: amount > 0 ? String(amount) : '' });
+  }
+  closePayExpenseModal = () => this.setState({ showPayExpenseModal: false, payExpenseId: null, payExpenseAmount: '' });
+
+  confirmPayExpense = async () => {
+    const s = this.state;
+    const exp = s.recurringExpenses.find(e => e.id === s.payExpenseId);
+    let a = parseFloat(s.payExpenseAmount);
+    if (!exp || !a || a <= 0) return;
+    if (exp.targetTotal) {
+      const remaining = exp.targetTotal - this._expensePaidSoFar(exp.id);
+      if (remaining <= 0) { this.closePayExpenseModal(); return; }
+      a = Math.min(a, remaining);
+    }
+    const txn = {
+      id: 't' + Date.now(), type: 'expense', amount: a, description: exp.name,
+      categoryId: exp.categoryId, date: new Date().toISOString().split('T')[0],
+      recurring: true, recurringFreq: exp.freq, planned: false, recurringExpenseId: exp.id,
+    };
+    this.setState({ transactions: [...s.transactions, txn], showPayExpenseModal: false, payExpenseId: null, payExpenseAmount: '' });
+    await window._sb.from('transactions').insert(this._txnRow(txn, s.user.id));
+  }
+
+  // Roda uma vez por mês (como _autoRecurring): gera automaticamente a parcela do
+  // mês corrente pra cada despesa recorrente ainda dentro do teto.
+  _autoRecurringExpenses = async () => {
+    const { transactions, recurringExpenses, user } = this.state;
+    const now = new Date();
+    const curKey = this.mKey(now);
+    if (this._load('autoExpenseMonth') === curKey) return;
+    this._save('autoExpenseMonth', curKey);
+    const toCreate = [];
+    recurringExpenses.forEach(exp => {
+      if (exp.freq !== 'monthly') return;
+      if (exp.endDate && (curKey + '-01') > exp.endDate) return;
+      const alreadyThisMonth = transactions.some(t => t.recurringExpenseId === exp.id && t.date && t.date.startsWith(curKey));
+      if (alreadyThisMonth) return;
+      let amount = exp.amount;
+      if (exp.targetTotal) {
+        const remaining = exp.targetTotal - this._expensePaidSoFar(exp.id);
+        if (remaining <= 0) return;
+        amount = Math.min(amount, remaining);
+      }
+      const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+      const day = Math.min(exp.day || 1, lastDay);
+      toCreate.push({
+        id: 't' + Date.now() + Math.random().toString(36).slice(2, 7),
+        type: 'expense', amount, description: exp.name, categoryId: exp.categoryId,
+        date: curKey + '-' + String(day).padStart(2, '0'),
+        recurring: true, recurringFreq: 'monthly', planned: true, recurringExpenseId: exp.id,
+      });
+    });
+    if (toCreate.length === 0) return;
+    this.setState({ transactions: [...this.state.transactions, ...toCreate] });
+    await window._sb.from('transactions').insert(toCreate.map(t => this._txnRow(t, user.id)));
   }
 
   undoDelete = () => {
@@ -2348,10 +2636,11 @@ class Component extends DCLogic {
 
   clearData = async () => {
     const uid = this.state.user?.id;
-    this.setState({ transactions: [], goals: [], showClearConfirm: false });
+    this.setState({ transactions: [], goals: [], recurringExpenses: [], showClearConfirm: false });
     if (uid) {
       await window._sb.from('transactions').delete().eq('user_id', uid);
       await window._sb.from('goals').delete().eq('user_id', uid);
+      await window._sb.from('recurring_expenses').delete().eq('user_id', uid);
     }
   }
 
@@ -3093,10 +3382,13 @@ class Component extends DCLogic {
       planTab: s.planTab,
       setPlanTabRec: () => this.setState({ planTab: 'recorrentes' }),
       setPlanTabMetas: () => this.setState({ planTab: 'metas' }),
+      setPlanTabDespesas: () => this.setState({ planTab: 'despesas' }),
       isTabRec: s.planTab === 'recorrentes',
       isTabMetas: s.planTab === 'metas',
+      isTabDespesas: s.planTab === 'despesas',
       planTabRecStyle: { flex: 1, padding: '8px', border: 'none', borderRadius: '7px', fontSize: '13px', fontWeight: '600', fontFamily: 'inherit', cursor: 'pointer', transition: 'all 0.15s', background: s.planTab === 'recorrentes' ? '#1E2A45' : 'transparent', color: s.planTab === 'recorrentes' ? '#60A5FA' : '#475569' },
       planTabMetasStyle: { flex: 1, padding: '8px', border: 'none', borderRadius: '7px', fontSize: '13px', fontWeight: '600', fontFamily: 'inherit', cursor: 'pointer', transition: 'all 0.15s', background: s.planTab === 'metas' ? '#1E2A45' : 'transparent', color: s.planTab === 'metas' ? '#60A5FA' : '#475569' },
+      planTabDespesasStyle: { flex: 1, padding: '8px', border: 'none', borderRadius: '7px', fontSize: '13px', fontWeight: '600', fontFamily: 'inherit', cursor: 'pointer', transition: 'all 0.15s', background: s.planTab === 'despesas' ? '#1E2A45' : 'transparent', color: s.planTab === 'despesas' ? '#60A5FA' : '#475569' },
       showGoalModal: s.showGoalModal,
       goalName: s.goalName, goalTarget: s.goalTarget, goalIcon: s.goalIcon, goalColor: s.goalColor, goalDeadline: s.goalDeadline,
       setGoalName: e => this.setState({ goalName: e.target.value }),
@@ -3120,6 +3412,51 @@ class Component extends DCLogic {
       }),
       hasGoals: s.goals.length > 0,
       noGoals: s.goals.length === 0,
+      // Despesas recorrentes com teto
+      showExpenseModal: s.showExpenseModal,
+      expName: s.expName, expAmount: s.expAmount, expFreq: s.expFreq, expDay: s.expDay,
+      expCategoryId: s.expCategoryId, expTargetTotal: s.expTargetTotal, expEndDate: s.expEndDate,
+      setExpName: e => this.setState({ expName: e.target.value }),
+      setExpAmount: e => this.setState({ expAmount: e.target.value }),
+      setExpFreq: e => this.setState({ expFreq: e.target.value }),
+      setExpDay: e => this.setState({ expDay: e.target.value }),
+      setExpCategoryId: e => this.setState({ expCategoryId: e.target.value }),
+      setExpTargetTotal: e => this.setState({ expTargetTotal: e.target.value }),
+      setExpEndDate: e => this.setState({ expEndDate: e.target.value }),
+      expModalTitle: s.editExpenseId ? 'Editar Despesa' : 'Nova Despesa',
+      saveExpense: this.saveExpense, closeExpenseModal: this.closeExpenseModal,
+      openNewExpense: () => this.openExpenseModal(null),
+      expenseItems: s.recurringExpenses.map(exp => {
+        const cat = this.getCat(exp.categoryId);
+        const paid = this._expensePaidSoFar(exp.id);
+        const hasTarget = exp.targetTotal != null;
+        const pct = hasTarget && exp.targetTotal > 0 ? Math.min(100, Math.round((paid / exp.targetTotal) * 100)) : 0;
+        const hasEndDate = !!exp.endDate;
+        const todayStr = new Date().toISOString().split('T')[0];
+        const isCompleted = (hasTarget && paid >= exp.targetTotal) || (hasEndDate && todayStr > exp.endDate);
+        return {
+          ...exp, catName: cat.name, catColor: cat.color, catIcon: 'ph ph-' + cat.icon,
+          freqLabel: freqMap[exp.freq] || 'Mensal',
+          fmtAmount: this.fmt(exp.amount), fmtPaid: this.fmt(paid),
+          hasTarget, fmtTarget: hasTarget ? this.fmt(exp.targetTotal) : '',
+          fmtRemaining: hasTarget ? this.fmt(Math.max(0, exp.targetTotal - paid)) : '',
+          pct, barColor: isCompleted ? '#22C55E' : pct >= 50 ? '#F97316' : '#3B82F6',
+          hasEndDate, endDateLabel: hasEndDate ? this.fmtDate(exp.endDate) : '',
+          isCompleted, completedLabel: isCompleted ? 'Concluído' : 'Ativa',
+          completedBg: isCompleted ? '#22C55E22' : '#3B82F622', completedTxt: isCompleted ? '#22C55E' : '#60A5FA',
+          onEdit: () => this.openExpenseModal(exp), onDelete: () => this.deleteExpense(exp.id),
+          onPay: () => this.openPayExpenseModal(exp.id),
+        };
+      }),
+      hasExpenses: s.recurringExpenses.length > 0,
+      noExpenses: s.recurringExpenses.length === 0,
+      // Pagar parcela (despesa recorrente)
+      showPayExpenseModal: s.showPayExpenseModal,
+      payExpenseAmount: s.payExpenseAmount,
+      setPayExpenseAmount: e => this.setState({ payExpenseAmount: e.target.value }),
+      confirmPayExpense: this.confirmPayExpense,
+      closePayExpenseModal: this.closePayExpenseModal,
+      payExpenseName: (s.recurringExpenses.find(e => e.id === s.payExpenseId) || {}).name || '',
       // dashboard – month nav
       dashMonthLabel, dashIsCurrentMonth, dashIsNotCurrentMonth,
       dashMonthColor, dashMonthFontWeight,

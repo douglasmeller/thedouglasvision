@@ -61,6 +61,8 @@
     .jarvis-typing span:nth-child(3) { animation-delay: 0.3s; }
     .jarvis-font { font-family: 'Share Tech Mono', 'Inter', monospace; }
     .jarvis-font-display { font-family: 'Orbitron', 'Inter', sans-serif; }
+    @keyframes jarvisMicPulse { 0%, 100% { box-shadow: 0 0 0 0 #EF444466; } 50% { box-shadow: 0 0 0 7px #EF444400; } }
+    .jarvis-mic-pulse { animation: jarvisMicPulse 1.2s ease-out infinite; }
   </style>
 </helmet>
 
@@ -1077,6 +1079,9 @@
             </div>
             <div style="padding: 14px 20px; border-top: 1px solid #151525; display: flex; gap: 10px; flex-shrink: 0;">
               <input type="text" class="jarvis-font" value="{{ jarvisInput }}" onInput="{{ setJarvisInput }}" onKeyDown="{{ jarvisKeyDown }}" placeholder="Pergunte ao Jarvis..." style="flex: 1; background: #0D0D1A; border: 1px solid #1E2A45; border-radius: 9px; padding: 11px 14px; color: #E2E8F0; font-size: 14px;">
+              <button onClick="{{ toggleJarvisListening }}" title="{{ jarvisMicTitle }}" class="{{ jarvisMicClass }}" style="{{ jarvisMicButtonStyle }}">
+                <i class="{{ jarvisMicIcon }}" style="font-size: 18px;"></i>
+              </button>
               <button onClick="{{ sendJarvisMessage }}" style="width: 44px; height: 44px; border-radius: 9px; background: linear-gradient(135deg, #8B5CF6, #06B6D4); border: none; color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
                 <i class="ph ph-paper-plane-tilt" style="font-size: 17px;"></i>
               </button>
@@ -1155,6 +1160,9 @@
           </div>
           <div style="padding: 10px 14px; border-top: 1px solid #151525; display: flex; gap: 8px; flex-shrink: 0;">
             <input type="text" class="jarvis-font" value="{{ jarvisInput }}" onInput="{{ setJarvisInput }}" onKeyDown="{{ jarvisKeyDown }}" placeholder="Pergunte ao {{ jarvisDisplayName }}..." style="flex: 1; min-width: 0; background: #0D0D1A; border: 1px solid #1E2A45; border-radius: 8px; padding: 9px 11px; color: #E2E8F0; font-size: 13px;">
+            <button onClick="{{ toggleJarvisListening }}" title="{{ jarvisMicTitle }}" class="{{ jarvisMicClass }}" style="{{ jarvisMicButtonStyleSm }}">
+              <i class="{{ jarvisMicIcon }}" style="font-size: 15px;"></i>
+            </button>
             <button onClick="{{ sendJarvisMessage }}" style="width: 38px; height: 38px; border-radius: 8px; background: linear-gradient(135deg, #8B5CF6, #06B6D4); border: none; color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
               <i class="ph ph-paper-plane-tilt" style="font-size: 15px;"></i>
             </button>
@@ -1562,6 +1570,7 @@ class Component extends DCLogic {
     jarvisConversations: [],
     jarvisShowConvList: false,
     jarvisGlitching: false,
+    jarvisListening: false,
     cfgJarvisNotes: '',
     user: null,
     transactions: [],
@@ -1967,6 +1976,35 @@ class Component extends DCLogic {
     setTimeout(() => this.setState({ jarvisGlitching: false }), 550);
   }
 
+  // Ditado por voz (Web Speech API) — preenche o campo de texto, o envio continua manual
+  // (não envia sozinho: como o Jarvis executa ações sem confirmar, um erro de reconhecimento
+  // não pode virar uma exclusão/edição acidental).
+  toggleJarvisListening = () => {
+    if (this.state.jarvisListening) {
+      if (this._jarvisRecognition) this._jarvisRecognition.stop();
+      return;
+    }
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) {
+      this.setState({ toastMsg: 'Reconhecimento de voz não é suportado neste navegador.', toastTs: Date.now() });
+      return;
+    }
+    const rec = new SR();
+    rec.lang = 'pt-BR';
+    rec.continuous = false;
+    rec.interimResults = true;
+    rec.onresult = (e) => {
+      let transcript = '';
+      for (let i = 0; i < e.results.length; i++) transcript += e.results[i][0].transcript;
+      this.setState({ jarvisInput: transcript });
+    };
+    rec.onerror = () => this.setState({ jarvisListening: false });
+    rec.onend = () => this.setState({ jarvisListening: false });
+    this._jarvisRecognition = rec;
+    this.setState({ jarvisListening: true });
+    rec.start();
+  }
+
   toggleJarvisBubble = () => {
     const opening = !this.state.jarvisOpen;
     this.setState(st => ({ jarvisOpen: !st.jarvisOpen }));
@@ -1980,6 +2018,7 @@ class Component extends DCLogic {
     const s = this.state;
     const text = s.jarvisInput.trim();
     if (!text || s.jarvisLoading) return;
+    if (s.jarvisListening && this._jarvisRecognition) this._jarvisRecognition.stop();
     const userMsg = this._jarvisMsg('user', text, null);
     this.setState({ jarvisMessages: [...s.jarvisMessages, userMsg], jarvisInput: '', jarvisLoading: true }, () => this._scrollJarvisToBottom());
 
@@ -3181,6 +3220,25 @@ class Component extends DCLogic {
         cursor: 'pointer', border: '1px solid ' + (s.jarvisModel === 'haiku' ? '#06B6D477' : '#1E2A45'),
         background: s.jarvisModel === 'haiku' ? '#06B6D42A' : 'transparent',
         color: s.jarvisModel === 'haiku' ? '#67E8F9' : '#475569',
+      },
+      toggleJarvisListening: this.toggleJarvisListening,
+      jarvisListening: s.jarvisListening,
+      jarvisMicClass: s.jarvisListening ? 'jarvis-mic-pulse' : '',
+      jarvisMicTitle: s.jarvisListening ? 'Ouvindo… clique para parar' : 'Falar',
+      jarvisMicIcon: 'ph ph-microphone',
+      jarvisMicButtonStyle: {
+        width: '44px', height: '44px', borderRadius: '9px',
+        background: s.jarvisListening ? '#EF444422' : 'transparent',
+        border: '1px solid ' + (s.jarvisListening ? '#EF4444' : '#1E2A45'),
+        color: s.jarvisListening ? '#EF4444' : '#64748B',
+        cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+      },
+      jarvisMicButtonStyleSm: {
+        width: '38px', height: '38px', borderRadius: '8px',
+        background: s.jarvisListening ? '#EF444422' : 'transparent',
+        border: '1px solid ' + (s.jarvisListening ? '#EF4444' : '#1E2A45'),
+        color: s.jarvisListening ? '#EF4444' : '#64748B',
+        cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
       },
     };
   }

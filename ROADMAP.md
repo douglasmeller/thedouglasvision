@@ -10,10 +10,10 @@ Ideias e próximos passos discutidos, ainda não implementados.
 ## Design / UI
 - Passar um pente geral no frontend: identificar elementos "básicos" demais e dar mais personalidade visual ao app (já está bonito, mas dá pra melhorar).
 
-## Lançamentos recorrentes com teto
-- Hoje, recorrência é só "todo mês/toda semana", sem fim definido.
-- Pedido: permitir configurar uma despesa/receita recorrente com **teto** — por valor total acumulado (ex: parcela do carro, recorrente todo dia 7, até somar R$25.000) ou por data final.
-- Proposta do usuário: nova seção "Despesas" em Planejamento, no mesmo espírito das Metas — dá pra fazer aporte/pagamento e acompanhar progresso até o teto, e também salvar como recorrente automática.
+## Lançamentos recorrentes com teto (feito)
+- Nova aba "Despesas" em Planejamento — cria uma despesa recorrente com teto por valor total (ex: parcela do carro até somar R$25.000) e/ou por data final.
+- "Pagar parcela" cria um lançamento de despesa real; progresso é sempre calculado a partir dos lançamentos, nunca duplicado.
+- Geração automática mensal da parcela, parando sozinha quando o teto é atingido.
 
 ## Exportação Excel
 - Deixar o relatório mais bonito: filtros, valores de receita positivos e despesa negativos, cores, negrito, destaques visuais.

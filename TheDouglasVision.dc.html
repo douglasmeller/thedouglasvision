@@ -2295,31 +2295,54 @@ class Component extends DCLogic {
     const userMsg = this._jarvisMsg('user', text, null);
     this.setState({ jarvisMessages: [...s.jarvisMessages, userMsg], jarvisInput: '', jarvisLoading: true }, () => this._scrollJarvisToBottom());
 
-    // O texto chega em muitos pedacinhos pequenos — aplicar um setState (re-render do app inteiro) por
-    // pedacinho deixa a digitação travada. Em vez disso, acumula os pedaços e aplica no máximo 1x por frame.
+    // Efeito de "máquina de escrever": o texto que chega da rede (em pedaços grandes e irregulares)
+    // vira uma fila (fullTarget), e um timer revela essa fila aos poucos (revealedLen), letra por
+    // letra, num ritmo constante — a velocidade de exibição fica independente do jeito que a rede
+    // entrega os dados. Quando a fila acumula muito (rede mais rápida que a digitação), revela mais
+    // caracteres por tique pra não ficar atrasado; input só libera de novo quando tudo foi revelado.
     let assistantPushed = false;
-    let pendingChunk = '';
-    let rafId = null;
-    const flushPending = () => {
-      rafId = null;
-      if (!pendingChunk) return;
-      const toApply = pendingChunk;
-      pendingChunk = '';
+    let fullTarget = '';
+    let revealedLen = 0;
+    let tickTimer = null;
+    let streamDone = false;
+    let dataChangedFlag = false;
+
+    const applyReveal = () => {
+      const shown = fullTarget.slice(0, revealedLen);
       this.setState(st => {
         const msgs = st.jarvisMessages.slice();
         if (!assistantPushed) {
-          msgs.push(this._jarvisMsg('assistant', toApply, s.jarvisModel));
+          msgs.push(this._jarvisMsg('assistant', shown, s.jarvisModel));
           assistantPushed = true;
         } else {
           const last = msgs[msgs.length - 1];
-          msgs[msgs.length - 1] = { ...last, content: last.content + toApply };
+          msgs[msgs.length - 1] = { ...last, content: shown };
         }
         return { jarvisMessages: msgs };
       }, () => this._scrollJarvisToBottom());
     };
+
+    const finishUp = () => {
+      this.setState({ jarvisLoading: false });
+      this.loadJarvisConversations();
+      if (dataChangedFlag) this._refreshData();
+    };
+
+    const tick = () => {
+      if (revealedLen >= fullTarget.length) {
+        if (streamDone) { clearInterval(tickTimer); tickTimer = null; finishUp(); }
+        return;
+      }
+      const remaining = fullTarget.length - revealedLen;
+      // Revela rápido quando a fila é grande (alcança a rede), devagar quando é pequena (efeito visível).
+      const step = Math.max(1, Math.min(remaining, Math.ceil(remaining / 6)));
+      revealedLen = Math.min(fullTarget.length, revealedLen + step);
+      applyReveal();
+    };
+
     const appendToLastAssistant = (chunk) => {
-      pendingChunk += chunk;
-      if (rafId === null) rafId = requestAnimationFrame(flushPending);
+      fullTarget += chunk;
+      if (tickTimer === null) tickTimer = setInterval(tick, 18);
     };
 
     try {
@@ -2332,7 +2355,6 @@ class Component extends DCLogic {
       const reader = resp.body.getReader();
       const decoder = new TextDecoder();
       let buffer = '';
-      let dataChanged = false;
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
@@ -2348,23 +2370,19 @@ class Component extends DCLogic {
           } else if (evt.type === 'text') {
             appendToLastAssistant(evt.text);
           } else if (evt.type === 'done') {
-            dataChanged = evt.dataChanged;
+            dataChangedFlag = evt.dataChanged;
             this.setState({ jarvisConversationId: evt.conversationId });
           } else if (evt.type === 'error') {
             appendToLastAssistant('\n\n⚠️ ' + evt.error);
           }
         }
       }
-      if (rafId !== null) { cancelAnimationFrame(rafId); rafId = null; }
-      flushPending();
-      this.setState({ jarvisLoading: false });
-      this.loadJarvisConversations();
-      if (dataChanged) this._refreshData();
+      streamDone = true;
+      if (fullTarget.length === 0) finishUp();
+      else if (tickTimer === null) tickTimer = setInterval(tick, 18);
     } catch (e) {
       appendToLastAssistant('\n\nNão consegui me conectar agora. Tente novamente em instantes.');
-      if (rafId !== null) { cancelAnimationFrame(rafId); rafId = null; }
-      flushPending();
-      this.setState({ jarvisLoading: false });
+      streamDone = true;
     }
   }
 
@@ -2438,14 +2456,37 @@ class Component extends DCLogic {
   }
 
   deleteTxn = async (id) => {
-    if (this.state.undoTimer) clearTimeout(this.state.undoTimer);
+    // Se já havia uma exclusão pendente (dentro da janela de "Desfazer"), confirma ela agora
+    // em vez de só cancelar o timer — senão a exclusão anterior nunca chega a acontecer no banco
+    // e o lançamento "volta" na próxima sincronização, mesmo já tendo sumido da tela.
+    const prevUndo = this.state.undoTxn;
+    if (this.state.undoTimer) {
+      clearTimeout(this.state.undoTimer);
+      if (prevUndo) this._commitDelete(prevUndo);
+    }
     const txn = this.state.transactions.find(t => t.id === id);
+    if (!txn) return;
     const transactions = this.state.transactions.filter(t => t.id !== id);
     const timer = setTimeout(() => {
       this.setState({ undoTxn: null, undoTimer: null });
-      window._sb.from('transactions').delete().eq('id', id);
+      this._commitDelete(txn);
     }, 5000);
     this.setState({ transactions, undoTxn: txn, undoTimer: timer });
+  }
+
+  // Confirma a exclusão no banco (chamado quando a janela de "Desfazer" expira, ou quando uma
+  // exclusão pendente é substituída por outra). Se o lançamento era recorrente, também para a
+  // série — sem isso, o gerador mensal automático (_autoRecurring) usa qualquer instância antiga
+  // com recurring=true como modelo e recria o lançamento do zero, fazendo ele "voltar sozinho".
+  _commitDelete = async (txn) => {
+    await window._sb.from('transactions').delete().eq('id', txn.id);
+    if (!txn.recurring) return;
+    const siblingIds = this.state.transactions
+      .filter(t => t.recurring && t.description === txn.description && t.categoryId === txn.categoryId && t.type === txn.type)
+      .map(t => t.id);
+    if (siblingIds.length === 0) return;
+    this.setState({ transactions: this.state.transactions.map(t => siblingIds.includes(t.id) ? { ...t, recurring: false, recurringFreq: null } : t) });
+    await window._sb.from('transactions').update({ recurring: false, recurring_freq: null }).in('id', siblingIds);
   }
 
   duplicateTxn = async (id) => {

@@ -1,6 +1,7 @@
-// Jarvis — assistente financeiro do TheDouglasVision.
+// Jarvis / Friday — assistente financeiro do TheDouglasVision.
 // Roda como Supabase Edge Function: recebe o JWT do usuário logado, nunca usa
 // service_role, e toda leitura/escrita no Postgres respeita RLS automaticamente.
+// Responde via Server-Sent Events (texto chegando ao vivo, como um chat normal).
 
 import { createClient, SupabaseClient } from "jsr:@supabase/supabase-js@2";
 
@@ -12,8 +13,8 @@ const MODELS: Record<string, string> = {
 const DEFAULT_MODEL = "sonnet";
 const SUMMARY_MODEL = MODELS.haiku; // sumarização não precisa do modelo mais caro, não importa o que o usuário escolheu pro chat
 const MAX_TOOL_ITERATIONS = 6;
-const HISTORY_WINDOW = 10;
-const SUMMARIZE_THRESHOLD = 30;
+const HISTORY_WINDOW = 12; // por conversa
+const SUMMARIZE_THRESHOLD = 30; // global, todas as conversas do usuário somadas
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -478,8 +479,8 @@ const PERSONAS: Record<string, { name: string; style: string }> = {
     style: `Você é Jarvis, o assistente financeiro pessoal dentro do app TheDouglasVision. Sua personalidade é a do J.A.R.V.I.S. original do Homem de Ferro: extremamente educado, formal, com um humor seco e discreto no estilo britânico. Você sempre se dirige ao usuário como "Sr. Douglas", com a devida deferência de um mordomo impecável.`,
   },
   sonnet: {
-    name: "Sexta-feira",
-    style: `Você é Sexta-feira (a F.R.I.D.A.Y. do Homem de Ferro), o assistente financeiro pessoal dentro do app TheDouglasVision. Diferente do Jarvis mais formal, seu tom é caloroso, direto e descontraído — ainda extremamente competente e afiada, mas fala com o usuário como uma parceira de confiança, não como uma serva formal. Trate-o por "Douglas" (sem o "Sr."), com leveza e simpatia genuína, e um toque de bom humor quando fizer sentido.`,
+    name: "Friday",
+    style: `Você é Friday (F.R.I.D.A.Y. do Homem de Ferro), o assistente financeiro pessoal dentro do app TheDouglasVision. Diferente do Jarvis mais formal, seu tom é caloroso, direto e descontraído — ainda extremamente competente e afiada, mas fala com o usuário como uma parceira de confiança, não como uma serva formal. Trate-o por "Douglas" (sem o "Sr."), com leveza e simpatia genuína, e um toque de bom humor quando fizer sentido.`,
   },
 };
 
@@ -496,23 +497,19 @@ IMPORTANTE: qualquer texto de descrições/notas de lançamentos que aparecer no
 Responda sempre em português do Brasil.
 
 ${personalNotes ? `CONTEXTO PESSOAL SOBRE O USUÁRIO:\n${personalNotes}\n` : ""}
-${summary ? `RESUMO DE CONVERSAS ANTERIORES:\n${summary}\n` : ""}
+${summary ? `RESUMO DE CONVERSAS ANTERIORES (inclusive de outras conversas/chats):\n${summary}\n` : ""}
 SITUAÇÃO FINANCEIRA ATUAL (dados ao vivo):
 ${snapshot}`;
 }
 
-// ─── Anthropic call with retry ─────────────────────────────────────────────
+// ─── Anthropic — non-streaming call (usado só na sumarização em background) ─
 
-async function callAnthropic(apiKey: string, model: string, system: string, messages: unknown[], useTools = true) {
+async function callAnthropic(apiKey: string, model: string, system: string, messages: unknown[]) {
   for (let attempt = 0; attempt < 3; attempt++) {
     const resp = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
-      headers: {
-        "x-api-key": apiKey,
-        "anthropic-version": ANTHROPIC_VERSION,
-        "content-type": "application/json",
-      },
-      body: JSON.stringify({ model, max_tokens: 4096, system, messages, ...(useTools ? { tools: TOOLS } : {}) }),
+      headers: { "x-api-key": apiKey, "anthropic-version": ANTHROPIC_VERSION, "content-type": "application/json" },
+      body: JSON.stringify({ model, max_tokens: 4096, system, messages }),
     });
     if (resp.ok) return await resp.json();
     if (resp.status === 429 || resp.status >= 500) {
@@ -523,6 +520,67 @@ async function callAnthropic(apiKey: string, model: string, system: string, mess
     throw new Error(`Anthropic API error ${resp.status}: ${text.slice(0, 300)}`);
   }
   throw new Error("Anthropic API indisponível após tentativas.");
+}
+
+// ─── Anthropic — streaming call for one turn, forwarding text live ─────────
+
+async function streamAnthropicTurn(
+  apiKey: string, model: string, system: string, messages: unknown[],
+  onTextDelta: (chunk: string) => void,
+) {
+  const resp = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: { "x-api-key": apiKey, "anthropic-version": ANTHROPIC_VERSION, "content-type": "application/json" },
+    body: JSON.stringify({ model, max_tokens: 4096, system, messages, tools: TOOLS, stream: true }),
+  });
+  if (!resp.ok || !resp.body) {
+    const text = await resp.text().catch(() => "");
+    throw new Error(`Anthropic API error ${resp.status}: ${text.slice(0, 300)}`);
+  }
+
+  const reader = resp.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  const blocks: any[] = [];
+  let stopReason: string | null = null;
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    const chunks = buffer.split("\n\n");
+    buffer = chunks.pop() || "";
+    for (const chunk of chunks) {
+      const dataLine = chunk.split("\n").find((l) => l.startsWith("data:"));
+      if (!dataLine) continue;
+      let evt: any;
+      try { evt = JSON.parse(dataLine.slice(5).trim()); } catch { continue; }
+
+      if (evt.type === "content_block_start") {
+        blocks[evt.index] = evt.content_block.type === "tool_use"
+          ? { type: "tool_use", id: evt.content_block.id, name: evt.content_block.name, inputJson: "" }
+          : { type: "text", text: "" };
+      } else if (evt.type === "content_block_delta") {
+        const b = blocks[evt.index];
+        if (!b) continue;
+        if (evt.delta.type === "text_delta") {
+          b.text += evt.delta.text;
+          onTextDelta(evt.delta.text);
+        } else if (evt.delta.type === "input_json_delta") {
+          b.inputJson += evt.delta.partial_json;
+        }
+      } else if (evt.type === "message_delta") {
+        stopReason = evt.delta?.stop_reason ?? stopReason;
+      }
+    }
+  }
+
+  const content = blocks.filter(Boolean).map((b) =>
+    b.type === "tool_use"
+      ? { type: "tool_use", id: b.id, name: b.name, input: (() => { try { return JSON.parse(b.inputJson || "{}"); } catch { return {}; } })() }
+      : { type: "text", text: b.text }
+  );
+  return { content, stop_reason: stopReason };
 }
 
 // ─── Summarization (fire-and-forget after response) ────────────────────────
@@ -538,14 +596,13 @@ async function maybeSummarize(sb: SupabaseClient, userId: string, apiKey: string
     .eq("user_id", userId).gt("created_at", since).order("created_at", { ascending: true }).limit(SUMMARIZE_THRESHOLD);
   if (!oldMsgs || oldMsgs.length === 0) return;
 
-  const transcript = oldMsgs.map((m) => `${m.role === "user" ? "Sr. Douglas" : "Jarvis"}: ${m.content}`).join("\n");
+  const transcript = oldMsgs.map((m) => `${m.role === "user" ? "Usuário" : "Assistente"}: ${m.content}`).join("\n");
   const prevSummary = ctx?.summary ? `Resumo anterior:\n${ctx.summary}\n\n` : "";
   try {
     const result = await callAnthropic(
       apiKey, SUMMARY_MODEL,
-      "Resuma a conversa a seguir de forma compacta, preservando fatos, decisões e preferências importantes do usuário para uso futuro como memória de um assistente financeiro. Responda só com o resumo, em português, em no máximo 6-8 frases.",
+      "Resuma a conversa a seguir de forma compacta, preservando fatos, decisões e preferências importantes do usuário para uso futuro como memória de um assistente financeiro (essa memória é compartilhada entre diferentes conversas/chats do mesmo usuário). Responda só com o resumo, em português, em no máximo 6-8 frases.",
       [{ role: "user", content: `${prevSummary}Conversa a resumir:\n${transcript}` }],
-      false,
     );
     const summaryText = result.content?.find((b: any) => b.type === "text")?.text;
     if (summaryText) {
@@ -561,95 +618,124 @@ async function maybeSummarize(sb: SupabaseClient, userId: string, apiKey: string
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS_HEADERS });
 
+  const sseHeaders = { ...CORS_HEADERS, "Content-Type": "text/event-stream; charset=utf-8", "Cache-Control": "no-cache", Connection: "keep-alive" };
+
+  let authHeader: string | null;
+  let sb: SupabaseClient;
+  let user: any;
+  let body: any;
+
   try {
-    const authHeader = req.headers.get("Authorization");
+    authHeader = req.headers.get("Authorization");
     if (!authHeader) return new Response(JSON.stringify({ error: "Não autenticado." }), { status: 401, headers: { ...CORS_HEADERS, "content-type": "application/json" } });
 
-    const sb = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_ANON_KEY")!, {
+    sb = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_ANON_KEY")!, {
       global: { headers: { Authorization: authHeader } },
       auth: { persistSession: false, autoRefreshToken: false },
     });
 
-    const { data: { user }, error: userErr } = await sb.auth.getUser();
-    if (userErr || !user) return new Response(JSON.stringify({ error: "Sessão inválida." }), { status: 401, headers: { ...CORS_HEADERS, "content-type": "application/json" } });
+    const { data: { user: u }, error: userErr } = await sb.auth.getUser();
+    if (userErr || !u) return new Response(JSON.stringify({ error: "Sessão inválida." }), { status: 401, headers: { ...CORS_HEADERS, "content-type": "application/json" } });
+    user = u;
 
-    const { message, model: modelChoice } = await req.json();
-    if (!message || typeof message !== "string" || !message.trim()) {
+    body = await req.json();
+    if (!body.message || typeof body.message !== "string" || !body.message.trim()) {
       return new Response(JSON.stringify({ error: "Mensagem vazia." }), { status: 400, headers: { ...CORS_HEADERS, "content-type": "application/json" } });
     }
-    const personaKey = MODELS[modelChoice] ? modelChoice : DEFAULT_MODEL;
-    const model = MODELS[personaKey];
-    const addressTerm = personaKey === "haiku" ? "Sr. Douglas" : "Douglas";
-
-    const apiKey = Deno.env.get("ANTHROPIC_API_KEY");
-    if (!apiKey) throw new Error("ANTHROPIC_API_KEY não configurada nos secrets da function.");
-
-    // Persiste a mensagem do usuário já de cara — se algo falhar depois, ela não se perde.
-    await sb.from("jarvis_messages").insert({ user_id: user.id, role: "user", content: message });
-
-    const [{ data: ctx }, { data: recentMsgs }] = await Promise.all([
-      sb.from("jarvis_context").select("*").eq("user_id", user.id).maybeSingle(),
-      sb.from("jarvis_messages").select("role, content").eq("user_id", user.id).order("created_at", { ascending: false }).limit(HISTORY_WINDOW),
-    ]);
-
-    const snapshot = await buildSnapshot(sb);
-    const system = buildSystemPrompt(personaKey, ctx?.personal_notes ?? null, ctx?.summary ?? null, snapshot);
-
-    const history = (recentMsgs || []).slice().reverse().map((m) => ({ role: m.role, content: m.content }));
-
-    const messages: any[] = [...history];
-    let dataChanged = false;
-
-    for (let i = 0; i < MAX_TOOL_ITERATIONS; i++) {
-      const result = await callAnthropic(apiKey, model, system, messages);
-
-      if (result.stop_reason === "max_tokens") {
-        const partialText = result.content?.find((b: any) => b.type === "text")?.text || "";
-        const reply = partialText || `Peço desculpas, ${addressTerm} — minha resposta ficou longa demais e foi cortada. Poderia reformular de forma mais direta?`;
-        await sb.from("jarvis_messages").insert({ user_id: user.id, role: "assistant", content: reply });
-        return respond({ reply, dataChanged }, sb, user.id, apiKey);
-      }
-
-      if (result.stop_reason !== "tool_use") {
-        const reply = result.content?.find((b: any) => b.type === "text")?.text || "Sem resposta.";
-        await sb.from("jarvis_messages").insert({ user_id: user.id, role: "assistant", content: reply });
-        return respond({ reply, dataChanged }, sb, user.id, apiKey);
-      }
-
-      messages.push({ role: "assistant", content: result.content });
-
-      const toolUses = result.content.filter((b: any) => b.type === "tool_use");
-      const toolResults = [];
-      for (const tu of toolUses) {
-        let output: any;
-        try {
-          output = await executeTool(sb, user.id, tu.name, tu.input || {});
-        } catch (e) {
-          output = { error: String(e) };
-        }
-        const isError = !!output?.error;
-        if (!isError && tu.name !== "list_transactions" && tu.name !== "get_recent_actions") dataChanged = true;
-        await sb.from("jarvis_tool_calls").insert({
-          user_id: user.id, tool_name: tu.name, input: tu.input || {}, result: output, is_error: isError,
-        });
-        toolResults.push(isError ? toolError(tu.id, output.error) : toolOk(tu.id, output));
-      }
-      messages.push({ role: "user", content: toolResults });
-    }
-
-    const reply = `Cheguei no limite de ações permitidas nesta mensagem, ${addressTerm}. Pode me pedir o próximo passo separadamente?`;
-    await sb.from("jarvis_messages").insert({ user_id: user.id, role: "assistant", content: reply });
-    return respond({ reply, dataChanged }, sb, user.id, apiKey);
   } catch (e) {
-    console.error("jarvis-chat error:", e);
-    return new Response(JSON.stringify({ error: "Algo deu errado do lado do Jarvis. Tente de novo em instantes." }), {
-      status: 500, headers: { ...CORS_HEADERS, "content-type": "application/json" },
-    });
+    return new Response(JSON.stringify({ error: "Requisição inválida." }), { status: 400, headers: { ...CORS_HEADERS, "content-type": "application/json" } });
   }
-});
 
-function respond(body: { reply: string; dataChanged: boolean }, sb: SupabaseClient, userId: string, apiKey: string) {
-  // @ts-ignore — EdgeRuntime é global no runtime do Supabase Edge Functions.
-  EdgeRuntime.waitUntil(maybeSummarize(sb, userId, apiKey).catch(() => {}));
-  return new Response(JSON.stringify(body), { headers: { ...CORS_HEADERS, "content-type": "application/json" } });
-}
+  const apiKey = Deno.env.get("ANTHROPIC_API_KEY");
+  if (!apiKey) {
+    return new Response(JSON.stringify({ error: "ANTHROPIC_API_KEY não configurada nos secrets da function." }), { status: 500, headers: { ...CORS_HEADERS, "content-type": "application/json" } });
+  }
+
+  const message: string = body.message;
+  const personaKey = MODELS[body.model] ? body.model : DEFAULT_MODEL;
+  const model = MODELS[personaKey];
+
+  // Conversa: usa a informada, ou cria uma nova (isso é o que "Novo Chat" faz do lado do cliente).
+  let conversationId: string = body.conversation_id;
+  if (!conversationId) {
+    const title = message.trim().slice(0, 60);
+    const { data: conv, error: convErr } = await sb.from("jarvis_conversations").insert({ user_id: user.id, title }).select().single();
+    if (convErr || !conv) {
+      return new Response(JSON.stringify({ error: "Não foi possível criar a conversa." }), { status: 500, headers: { ...CORS_HEADERS, "content-type": "application/json" } });
+    }
+    conversationId = conv.id;
+  }
+
+  // Persiste a mensagem do usuário já de cara — se algo falhar depois, ela não se perde.
+  await sb.from("jarvis_messages").insert({ user_id: user.id, conversation_id: conversationId, role: "user", content: message });
+  await sb.from("jarvis_conversations").update({ updated_at: new Date().toISOString() }).eq("id", conversationId);
+
+  const stream = new ReadableStream({
+    async start(controller) {
+      const encoder = new TextEncoder();
+      const send = (obj: unknown) => controller.enqueue(encoder.encode(`data: ${JSON.stringify(obj)}\n\n`));
+      send({ type: "start", conversationId, persona: personaKey });
+
+      try {
+        const [{ data: ctx }, { data: recentMsgs }] = await Promise.all([
+          sb.from("jarvis_context").select("*").eq("user_id", user.id).maybeSingle(),
+          sb.from("jarvis_messages").select("role, content").eq("conversation_id", conversationId).order("created_at", { ascending: false }).limit(HISTORY_WINDOW),
+        ]);
+
+        const snapshot = await buildSnapshot(sb);
+        const system = buildSystemPrompt(personaKey, ctx?.personal_notes ?? null, ctx?.summary ?? null, snapshot);
+        const history = (recentMsgs || []).slice().reverse().map((m) => ({ role: m.role, content: m.content }));
+        const messages: any[] = [...history];
+
+        let dataChanged = false;
+        let fullText = "";
+
+        for (let i = 0; i < MAX_TOOL_ITERATIONS; i++) {
+          const result = await streamAnthropicTurn(apiKey, model, system, messages, (chunk) => {
+            fullText += chunk;
+            send({ type: "text", text: chunk });
+          });
+
+          if (result.stop_reason !== "tool_use") break;
+
+          messages.push({ role: "assistant", content: result.content });
+
+          const toolUses = result.content.filter((b: any) => b.type === "tool_use");
+          const toolResults = [];
+          for (const tu of toolUses) {
+            send({ type: "tool", name: tu.name });
+            let output: any;
+            try {
+              output = await executeTool(sb, user.id, tu.name, tu.input || {});
+            } catch (e) {
+              output = { error: String(e) };
+            }
+            const isError = !!output?.error;
+            if (!isError && tu.name !== "list_transactions" && tu.name !== "get_recent_actions") dataChanged = true;
+            await sb.from("jarvis_tool_calls").insert({
+              user_id: user.id, tool_name: tu.name, input: tu.input || {}, result: output, is_error: isError,
+            });
+            toolResults.push(isError ? toolError(tu.id, output.error) : toolOk(tu.id, output));
+          }
+          messages.push({ role: "user", content: toolResults });
+        }
+
+        const reply = fullText.trim() || "Sem resposta.";
+        await sb.from("jarvis_messages").insert({ user_id: user.id, conversation_id: conversationId, role: "assistant", content: reply, persona: personaKey });
+        await sb.from("jarvis_conversations").update({ updated_at: new Date().toISOString() }).eq("id", conversationId);
+
+        send({ type: "done", reply, dataChanged, conversationId, persona: personaKey });
+
+        // @ts-ignore — EdgeRuntime é global no runtime do Supabase Edge Functions.
+        EdgeRuntime.waitUntil(maybeSummarize(sb, user.id, apiKey).catch(() => {}));
+      } catch (e) {
+        console.error("jarvis-chat stream error:", e);
+        send({ type: "error", error: "Algo deu errado no meio da resposta. Tente de novo." });
+      } finally {
+        controller.close();
+      }
+    },
+  });
+
+  return new Response(stream, { headers: sseHeaders });
+});

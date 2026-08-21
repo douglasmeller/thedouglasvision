@@ -25,7 +25,7 @@
   <link rel="stylesheet" href="_ds/nocturne-6ad6d877-2b1e-4775-8548-94fdb4d1c0bd/styles.css">
   <script src="_ds/nocturne-6ad6d877-2b1e-4775-8548-94fdb4d1c0bd/_ds_bundle.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Orbitron:wght@500;700;900&family=Share+Tech+Mono&display=swap">
   <link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css">
   <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
   <style>
@@ -44,6 +44,23 @@
     button:focus-visible { outline: 2px solid #2563EB; outline-offset: 2px; }
     input[type="number"]::-webkit-inner-spin-button { opacity: 0.4; }
     @keyframes spin { to { transform: rotate(360deg); } }
+    @keyframes jarvisGlitch {
+      0% { clip-path: inset(0 0 0 0); transform: translate(0,0); filter: hue-rotate(0deg); }
+      10% { clip-path: inset(10% 0 60% 0); transform: translate(-3px,1px); filter: hue-rotate(40deg); }
+      20% { clip-path: inset(70% 0 5% 0); transform: translate(3px,-1px); filter: hue-rotate(-30deg); }
+      30% { clip-path: inset(30% 0 40% 0); transform: translate(-2px,0); filter: hue-rotate(60deg); }
+      45% { clip-path: inset(0 0 0 0); transform: translate(2px,1px); filter: hue-rotate(-15deg); opacity: 0.7; }
+      60% { clip-path: inset(50% 0 20% 0); transform: translate(-1px,-2px); filter: hue-rotate(20deg); opacity: 1; }
+      80% { clip-path: inset(0 0 0 0); transform: translate(1px,0); filter: hue-rotate(0deg); }
+      100% { clip-path: inset(0 0 0 0); transform: translate(0,0); filter: hue-rotate(0deg); }
+    }
+    .jarvis-glitch { animation: jarvisGlitch 0.5s steps(2, end) both; }
+    @keyframes jarvisTyping { 0%, 100% { opacity: 0.3; } 50% { opacity: 1; } }
+    .jarvis-typing span { display: inline-block; width: 5px; height: 5px; border-radius: 50%; background: currentColor; margin-right: 3px; animation: jarvisTyping 1s infinite; }
+    .jarvis-typing span:nth-child(2) { animation-delay: 0.15s; }
+    .jarvis-typing span:nth-child(3) { animation-delay: 0.3s; }
+    .jarvis-font { font-family: 'Share Tech Mono', 'Inter', monospace; }
+    .jarvis-font-display { font-family: 'Orbitron', 'Inter', sans-serif; }
   </style>
 </helmet>
 
@@ -998,36 +1015,68 @@
 
         <!-- ═══ JARVIS (tela dedicada) ═══ -->
         <sc-if value="{{ isJarvisScreen }}" hint-placeholder-val="{{ false }}">
-          <div class="fade-in" style="height: 100%; display: flex; flex-direction: column;">
+          <div class="fade-in" style="height: 100%; display: flex; flex-direction: column; position: relative;">
             <div style="padding: 16px 20px; border-bottom: 1px solid #151525; display: flex; align-items: center; gap: 10px; flex-shrink: 0;">
-              <div style="width: {{ jarvisHeaderIconSize }}; height: {{ jarvisHeaderIconSize }}; border-radius: 9px; overflow: hidden; flex-shrink: 0; background: {{ jarvisAvatarBg }}; box-shadow: 0 0 10px {{ jarvisGlowColor }}; padding: 1px; box-sizing: border-box;">
+              <div class="{{ jarvisGlitchClass }}" style="width: {{ jarvisHeaderIconSize }}; height: {{ jarvisHeaderIconSize }}; border-radius: 9px; overflow: hidden; flex-shrink: 0; background: {{ jarvisAvatarBg }}; box-shadow: 0 0 10px {{ jarvisGlowColor }}; padding: 1px; box-sizing: border-box;">
                 <img src="{{ jarvisLogoSrc }}" alt="" style="width: 100%; height: 100%; object-fit: contain;">
               </div>
-              <div style="flex: 1;">
-                <div style="font-size: 15px; font-weight: 700; color: #E2E8F0;">{{ jarvisDisplayName }}</div>
-                <div style="font-size: 11px; color: #334155;">assistente financeiro</div>
+              <div style="flex: 1; min-width: 0;">
+                <div class="jarvis-font-display {{ jarvisGlitchClass }}" style="font-size: 15px; font-weight: 700; color: #E2E8F0; letter-spacing: 0.5px;">{{ jarvisDisplayName }}</div>
+                <div style="font-size: 10px; color: #334155; letter-spacing: 0.5px;">assistente financeiro</div>
               </div>
+              <button onClick="{{ startNewJarvisChat }}" title="Nova conversa" style="width: 34px; height: 34px; border-radius: 8px; background: transparent; border: 1px solid #1E2A45; color: #64748B; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                <i class="ph ph-plus" style="font-size: 16px;"></i>
+              </button>
+              <button onClick="{{ toggleJarvisConvList }}" title="Conversas" style="width: 34px; height: 34px; border-radius: 8px; background: transparent; border: 1px solid #1E2A45; color: #64748B; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                <i class="ph ph-clock-counter-clockwise" style="font-size: 16px;"></i>
+              </button>
               <div style="display: flex; gap: 5px; flex-shrink: 0;">
                 <button onClick="{{ setJarvisHaiku }}" style="{{ jarvisHaikuPillStyle }}">Jarvis</button>
-                <button onClick="{{ setJarvisSonnet }}" style="{{ jarvisSonnetPillStyle }}">Sexta-feira</button>
+                <button onClick="{{ setJarvisSonnet }}" style="{{ jarvisSonnetPillStyle }}">Friday</button>
               </div>
             </div>
+
+            <!-- Painel de conversas -->
+            <sc-if value="{{ jarvisShowConvList }}" hint-placeholder-val="{{ false }}">
+              <div class="modal-in" style="position: absolute; top: 68px; right: 20px; width: 280px; max-width: calc(100% - 40px); max-height: 60vh; overflow-y: auto; background: #111118; border: 1px solid #1E2A45; border-radius: 12px; box-shadow: 0 16px 40px #00000088; z-index: 40; padding: 8px;">
+                <sc-if value="{{ hasJarvisConversations }}" hint-placeholder-val="{{ false }}">
+                  <sc-for list="{{ jarvisConvItems }}" as="conv" hint-placeholder-count="3">
+                    <button onClick="{{ conv.onOpen }}" style="{{ conv.itemStyle }}">
+                      <i class="ph ph-chat-circle" style="font-size: 13px; flex-shrink: 0;"></i>
+                      <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ conv.title }}</span>
+                    </button>
+                  </sc-for>
+                </sc-if>
+                <sc-if value="{{ noJarvisConversations }}" hint-placeholder-val="{{ false }}">
+                  <div style="padding: 16px 10px; text-align: center; font-size: 12px; color: #334155;">Nenhuma conversa ainda.</div>
+                </sc-if>
+              </div>
+            </sc-if>
+
             <div id="jarvis-msgs-screen" style="flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 12px;">
               <sc-if value="{{ hasJarvisMessages }}" hint-placeholder-val="{{ false }}">
                 <sc-for list="{{ jarvisMessages }}" as="msg" hint-placeholder-count="4">
                   <div style="display: flex; justify-content: {{ msg.bubbleAlign }};">
-                    <div style="max-width: 80%; background: {{ msg.bubbleBg }}; color: {{ msg.bubbleColor }}; border: {{ msg.bubbleBorder }}; border-radius: 14px; padding: 10px 14px; font-size: 13px; line-height: 1.6; white-space: pre-wrap;">{{ msg.content }}</div>
+                    <div class="jarvis-font" style="max-width: 80%; background: {{ msg.bubbleBg }}; color: {{ msg.bubbleColor }}; border: {{ msg.bubbleBorder }}; border-radius: 14px; padding: 10px 14px; font-size: 13px; line-height: 1.6; white-space: pre-wrap;">{{ msg.content }}</div>
                   </div>
                 </sc-for>
               </sc-if>
-              <sc-if value="{{ jarvisLoading }}" hint-placeholder-val="{{ false }}">
+              <sc-if value="{{ noJarvisMessages }}" hint-placeholder-val="{{ true }}">
+                <div style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; color: #334155;">
+                  <i class="ph ph-chat-circle-dots" style="font-size: 34px;"></i>
+                  <div class="jarvis-font-display" style="font-size: 13px;">Comece uma conversa com {{ jarvisDisplayName }}</div>
+                </div>
+              </sc-if>
+              <sc-if value="{{ showJarvisTypingCursor }}" hint-placeholder-val="{{ false }}">
                 <div style="display: flex; justify-content: flex-start;">
-                  <div style="background: #111118; border: 1px solid #1E2A45; border-radius: 14px; padding: 10px 14px; font-size: 13px; color: #475569;">{{ jarvisDisplayName }} está pensando...</div>
+                  <div class="jarvis-typing" style="background: {{ jarvisAvatarBg }}; border: 1px solid {{ jarvisGlowColor }}; border-radius: 14px; padding: 12px 16px; color: {{ jarvisAccentColor }};">
+                    <span></span><span></span><span></span>
+                  </div>
                 </div>
               </sc-if>
             </div>
             <div style="padding: 14px 20px; border-top: 1px solid #151525; display: flex; gap: 10px; flex-shrink: 0;">
-              <input type="text" value="{{ jarvisInput }}" onInput="{{ setJarvisInput }}" onKeyDown="{{ jarvisKeyDown }}" placeholder="Pergunte ao Jarvis..." style="flex: 1; background: #0D0D1A; border: 1px solid #1E2A45; border-radius: 9px; padding: 11px 14px; color: #E2E8F0; font-size: 14px; font-family: inherit;">
+              <input type="text" class="jarvis-font" value="{{ jarvisInput }}" onInput="{{ setJarvisInput }}" onKeyDown="{{ jarvisKeyDown }}" placeholder="Pergunte ao Jarvis..." style="flex: 1; background: #0D0D1A; border: 1px solid #1E2A45; border-radius: 9px; padding: 11px 14px; color: #E2E8F0; font-size: 14px;">
               <button onClick="{{ sendJarvisMessage }}" style="width: 44px; height: 44px; border-radius: 9px; background: linear-gradient(135deg, #8B5CF6, #06B6D4); border: none; color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
                 <i class="ph ph-paper-plane-tilt" style="font-size: 17px;"></i>
               </button>
@@ -1038,46 +1087,19 @@
       </div>
     </div>
 
-    <!-- ── Jarvis Chat Bubble ── -->
+    <!-- ── Jarvis Chat Bubble (launcher — nas outras telas) ── -->
     <sc-if value="{{ showJarvisBubble }}" hint-placeholder-val="{{ false }}">
       <button onClick="{{ toggleJarvisBubble }}" title="{{ jarvisDisplayName }}" style="{{ jarvisBubbleStyle }}">
         <img src="{{ jarvisLogoSrc }}" alt="" style="width: 100%; height: 100%; object-fit: contain;">
       </button>
       <sc-if value="{{ jarvisOpen }}" hint-placeholder-val="{{ false }}">
-        <div class="modal-in" style="{{ jarvisPopoverStyle }}">
-          <div style="padding: 14px 16px; border-bottom: 1px solid #151525; display: flex; align-items: center; gap: 9px; flex-shrink: 0;">
-            <div style="width: 38px; height: 38px; border-radius: 8px; overflow: hidden; flex-shrink: 0; background: {{ jarvisAvatarBg }}; box-shadow: 0 0 8px {{ jarvisGlowColor }}; padding: 1px; box-sizing: border-box;">
-              <img src="{{ jarvisLogoSrc }}" alt="" style="width: 100%; height: 100%; object-fit: contain;">
-            </div>
-            <div style="font-size: 13px; font-weight: 700; color: #E2E8F0; flex: 1;">{{ jarvisDisplayName }}</div>
-            <div style="display: flex; gap: 4px; flex-shrink: 0;">
-              <button onClick="{{ setJarvisHaiku }}" style="{{ jarvisHaikuPillStyle }}">Jarvis</button>
-              <button onClick="{{ setJarvisSonnet }}" style="{{ jarvisSonnetPillStyle }}">Sexta</button>
-            </div>
-            <button onClick="{{ toggleJarvisBubble }}" style="background: none; border: none; color: #334155; cursor: pointer; padding: 4px; display: flex;">
-              <i class="ph ph-x" style="font-size: 16px;"></i>
-            </button>
-          </div>
-          <div id="jarvis-msgs-bubble" style="flex: 1; overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 10px;">
-            <sc-if value="{{ hasJarvisMessages }}" hint-placeholder-val="{{ false }}">
-              <sc-for list="{{ jarvisMessages }}" as="msg" hint-placeholder-count="4">
-                <div style="display: flex; justify-content: {{ msg.bubbleAlign }};">
-                  <div style="max-width: 85%; background: {{ msg.bubbleBg }}; color: {{ msg.bubbleColor }}; border: {{ msg.bubbleBorder }}; border-radius: 12px; padding: 8px 12px; font-size: 12px; line-height: 1.5; white-space: pre-wrap;">{{ msg.content }}</div>
-                </div>
-              </sc-for>
-            </sc-if>
-            <sc-if value="{{ jarvisLoading }}" hint-placeholder-val="{{ false }}">
-              <div style="display: flex; justify-content: flex-start;">
-                <div style="background: #0D0D1A; border: 1px solid #1E2A45; border-radius: 12px; padding: 8px 12px; font-size: 12px; color: #475569;">pensando...</div>
-              </div>
-            </sc-if>
-          </div>
-          <div style="padding: 10px; border-top: 1px solid #151525; display: flex; gap: 8px; flex-shrink: 0;">
-            <input type="text" value="{{ jarvisInput }}" onInput="{{ setJarvisInput }}" onKeyDown="{{ jarvisKeyDown }}" placeholder="Pergunte ao Jarvis..." style="flex: 1; background: #0D0D1A; border: 1px solid #1E2A45; border-radius: 8px; padding: 9px 12px; color: #E2E8F0; font-size: 13px; font-family: inherit;">
-            <button onClick="{{ sendJarvisMessage }}" style="width: 36px; height: 36px; border-radius: 8px; background: linear-gradient(135deg, #8B5CF6, #06B6D4); border: none; color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-              <i class="ph ph-paper-plane-tilt" style="font-size: 15px;"></i>
-            </button>
-          </div>
+        <div class="modal-in" style="{{ jarvisLauncherStyle }}">
+          <button onClick="{{ startNewJarvisChat }}" style="display: flex; align-items: center; gap: 8px; padding: 10px 12px; background: transparent; border: none; border-radius: 8px; color: #E2E8F0; font-size: 13px; font-weight: 500; cursor: pointer; font-family: inherit; text-align: left;">
+            <i class="ph ph-plus-circle" style="font-size: 16px; color: #8B5CF6;"></i>Nova conversa
+          </button>
+          <button onClick="{{ goToJarvisScreen }}" style="display: flex; align-items: center; gap: 8px; padding: 10px 12px; background: transparent; border: none; border-radius: 8px; color: #E2E8F0; font-size: 13px; font-weight: 500; cursor: pointer; font-family: inherit; text-align: left;">
+            <i class="ph ph-arrow-square-out" style="font-size: 16px; color: #60A5FA;"></i>Abrir {{ jarvisDisplayName }}
+          </button>
         </div>
       </sc-if>
     </sc-if>
@@ -1477,6 +1499,10 @@ class Component extends DCLogic {
     jarvisOpen: false,
     jarvisLoaded: false,
     jarvisModel: 'sonnet',
+    jarvisConversationId: null,
+    jarvisConversations: [],
+    jarvisShowConvList: false,
+    jarvisGlitching: false,
     cfgJarvisNotes: '',
     user: null,
     transactions: [],
@@ -1814,66 +1840,131 @@ class Component extends DCLogic {
 
   handleLogout = async () => {
     await window._sb.auth.signOut();
-    this.setState({ user: null, screen: 'login', loginEmail: '', loginPassword: '', sidebarOpen: false, transactions: [], categories: [], goals: [], jarvisMessages: [], jarvisLoaded: false });
+    this.setState({ user: null, screen: 'login', loginEmail: '', loginPassword: '', sidebarOpen: false, transactions: [], categories: [], goals: [], jarvisMessages: [], jarvisLoaded: false, jarvisConversationId: null, jarvisConversations: [] });
+  }
+
+  _jarvisMsg = (role, content, persona) => {
+    const isUser = role === 'user';
+    const p = persona === 'haiku' ? 'haiku' : 'sonnet';
+    return {
+      role, content, persona: persona || null, isUser,
+      bubbleAlign: isUser ? 'flex-end' : 'flex-start',
+      bubbleBg: isUser ? 'linear-gradient(135deg, #2563EB, #06B6D4)' : (p === 'haiku' ? 'linear-gradient(135deg, #0C4A6E, #075985)' : 'linear-gradient(135deg, #9A3412, #C2410C)'),
+      bubbleColor: '#F1F5F9',
+      bubbleBorder: isUser ? 'none' : '1px solid ' + (p === 'haiku' ? '#38BDF877' : '#F9731677'),
+    };
+  }
+
+  _scrollJarvisToBottom = () => {
+    setTimeout(() => {
+      const el = document.getElementById('jarvis-msgs-screen');
+      if (el) el.scrollTop = el.scrollHeight;
+    }, 50);
+  }
+
+  loadJarvisConversations = async () => {
+    const { data } = await window._sb.from('jarvis_conversations').select('*').order('updated_at', { ascending: false }).limit(50);
+    this.setState({ jarvisConversations: data || [] });
+    return data || [];
+  }
+
+  openConversation = async (id) => {
+    const { data } = await window._sb.from('jarvis_messages').select('role, content, persona').eq('conversation_id', id).order('created_at', { ascending: true });
+    const msgs = (data || []).map(m => this._jarvisMsg(m.role, m.content, m.persona));
+    this.setState({ jarvisConversationId: id, jarvisMessages: msgs, jarvisLoaded: true, jarvisShowConvList: false }, () => this._scrollJarvisToBottom());
   }
 
   loadJarvisHistory = async () => {
     if (this.state.jarvisLoaded) return;
-    const { data } = await window._sb.from('jarvis_messages').select('role, content').order('created_at', { ascending: true }).limit(50);
-    const msgs = (data || []).map(m => this._jarvisMsg(m.role, m.content));
-    this.setState({ jarvisMessages: msgs, jarvisLoaded: true }, () => this._scrollJarvisToBottom());
+    const list = await this.loadJarvisConversations();
+    if (list.length > 0) await this.openConversation(list[0].id);
+    else this.setState({ jarvisLoaded: true });
   }
 
-  _jarvisMsg = (role, content) => ({
-    role, content,
-    isUser: role === 'user',
-    bubbleAlign: role === 'user' ? 'flex-end' : 'flex-start',
-    bubbleBg: role === 'user' ? 'linear-gradient(135deg, #2563EB, #06B6D4)' : '#111118',
-    bubbleColor: role === 'user' ? '#FFFFFF' : '#CBD5E1',
-    bubbleBorder: role === 'user' ? 'none' : '1px solid #1E2A45',
-  })
+  startNewJarvisChat = () => {
+    this.setState({ jarvisConversationId: null, jarvisMessages: [], jarvisShowConvList: false, jarvisLoaded: true, screen: 'jarvis', jarvisOpen: false, sidebarOpen: false });
+  }
 
-  _scrollJarvisToBottom = () => {
-    setTimeout(() => {
-      ['jarvis-msgs-screen', 'jarvis-msgs-bubble'].forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.scrollTop = el.scrollHeight;
-      });
-    }, 50);
+  goToJarvisScreen = () => {
+    this.setState({ screen: 'jarvis', jarvisOpen: false, sidebarOpen: false });
+    if (!this.state.jarvisLoaded) this.loadJarvisHistory();
+  }
+
+  toggleJarvisConvList = () => {
+    this.setState(st => ({ jarvisShowConvList: !st.jarvisShowConvList }));
+    this.loadJarvisConversations();
   }
 
   setJarvisModel = (model) => {
+    if (model === this.state.jarvisModel) return;
     this._save('jarvisModel', model);
-    this.setState({ jarvisModel: model });
+    this.setState({ jarvisModel: model, jarvisGlitching: true });
+    setTimeout(() => this.setState({ jarvisGlitching: false }), 550);
   }
 
-  toggleJarvisBubble = () => {
-    this.setState(st => ({ jarvisOpen: !st.jarvisOpen }));
-    if (!this.state.jarvisLoaded) this.loadJarvisHistory();
-    this._scrollJarvisToBottom();
-  }
+  toggleJarvisBubble = () => this.setState(st => ({ jarvisOpen: !st.jarvisOpen }));
 
   sendJarvisMessage = async () => {
     const s = this.state;
     const text = s.jarvisInput.trim();
     if (!text || s.jarvisLoading) return;
-    const userMsg = this._jarvisMsg('user', text);
+    const userMsg = this._jarvisMsg('user', text, null);
     this.setState({ jarvisMessages: [...s.jarvisMessages, userMsg], jarvisInput: '', jarvisLoading: true }, () => this._scrollJarvisToBottom());
+
+    let assistantPushed = false;
+    const appendToLastAssistant = (chunk) => {
+      this.setState(st => {
+        const msgs = st.jarvisMessages.slice();
+        if (!assistantPushed) {
+          msgs.push(this._jarvisMsg('assistant', chunk, s.jarvisModel));
+          assistantPushed = true;
+        } else {
+          const last = msgs[msgs.length - 1];
+          msgs[msgs.length - 1] = { ...last, content: last.content + chunk };
+        }
+        return { jarvisMessages: msgs };
+      }, () => this._scrollJarvisToBottom());
+    };
+
     try {
       const { data: { session } } = await window._sb.auth.getSession();
       const resp = await fetch('https://evkpskwjzbyzpvvodnwf.supabase.co/functions/v1/jarvis-chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.access_token },
-        body: JSON.stringify({ message: text, model: s.jarvisModel }),
+        body: JSON.stringify({ message: text, model: s.jarvisModel, conversation_id: s.jarvisConversationId }),
       });
-      const body = await resp.json();
-      const replyText = body.reply || body.error || 'Sem resposta do Jarvis.';
-      const assistantMsg = this._jarvisMsg('assistant', replyText);
-      this.setState(st => ({ jarvisMessages: [...st.jarvisMessages, assistantMsg], jarvisLoading: false }), () => this._scrollJarvisToBottom());
-      if (body.dataChanged) this._refreshData();
+      const reader = resp.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      let dataChanged = false;
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const parts = buffer.split('\n\n');
+        buffer = parts.pop();
+        for (const p of parts) {
+          const line = p.split('\n').find(l => l.startsWith('data:'));
+          if (!line) continue;
+          let evt; try { evt = JSON.parse(line.slice(5).trim()); } catch (e2) { continue; }
+          if (evt.type === 'start') {
+            if (!s.jarvisConversationId) this.setState({ jarvisConversationId: evt.conversationId });
+          } else if (evt.type === 'text') {
+            appendToLastAssistant(evt.text);
+          } else if (evt.type === 'done') {
+            dataChanged = evt.dataChanged;
+            this.setState({ jarvisConversationId: evt.conversationId });
+          } else if (evt.type === 'error') {
+            appendToLastAssistant('\n\n⚠️ ' + evt.error);
+          }
+        }
+      }
+      this.setState({ jarvisLoading: false });
+      this.loadJarvisConversations();
+      if (dataChanged) this._refreshData();
     } catch (e) {
-      const errMsg = this._jarvisMsg('assistant', 'Não consegui me conectar agora, Sr. Douglas. Tente novamente em instantes.');
-      this.setState(st => ({ jarvisMessages: [...st.jarvisMessages, errMsg], jarvisLoading: false }), () => this._scrollJarvisToBottom());
+      appendToLastAssistant('\n\nNão consegui me conectar agora. Tente novamente em instantes.');
+      this.setState({ jarvisLoading: false });
     }
   }
 
@@ -2170,7 +2261,7 @@ class Component extends DCLogic {
 
     const titles = { dashboard: 'Dashboard', lancamentos: 'Lançamentos', planejamento: 'Planejamento', categorias: 'Categorias', jarvis: 'Jarvis', configuracoes: 'Configurações' };
 
-    // Jarvis persona theming: Jarvis (haiku) = azul/ciano, Sexta-feira (sonnet) = laranja
+    // Jarvis persona theming: Jarvis (haiku) = azul/ciano, Friday (sonnet) = laranja
     const jarvisAccentColor = s.jarvisModel === 'haiku' ? '#38BDF8' : '#F97316';
     const jarvisGlowColor = s.jarvisModel === 'haiku' ? '#38BDF866' : '#F9731677';
     const jarvisAvatarBg = s.jarvisModel === 'haiku'
@@ -2180,6 +2271,27 @@ class Component extends DCLogic {
     const jarvisBubbleIconPad = isMobile ? '1px' : '1px';
     const jarvisHeaderIconSize = isMobile ? '42px' : '54px';
     const jarvisBubbleBottom = isMobile ? 'calc(56px + env(safe-area-inset-bottom, 0px) + 16px)' : '24px';
+    const jarvisGlitchClass = s.jarvisGlitching ? 'jarvis-glitch' : '';
+
+    // Lista de conversas do Jarvis, formatada
+    const jarvisConvItems = (s.jarvisConversations || []).map(c => {
+      const active = c.id === s.jarvisConversationId;
+      return {
+        id: c.id, title: c.title || 'Conversa sem título',
+        active,
+        itemStyle: {
+          display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 12px',
+          borderRadius: '8px', cursor: 'pointer', fontFamily: 'inherit',
+          background: active ? '#2563EB18' : 'transparent',
+          color: active ? '#93C5FD' : '#94A3B8',
+          fontSize: '12.5px', fontWeight: active ? '600' : '400',
+          border: 'none', textAlign: 'left', width: '100%',
+        },
+        onOpen: () => this.openConversation(c.id),
+      };
+    });
+    const hasJarvisConversations = jarvisConvItems.length > 0;
+    const noJarvisConversations = jarvisConvItems.length === 0;
 
     const sidebarCollapsed = !isMobile && s.sidebarCollapsed;
     const sidebarExpanded = !sidebarCollapsed;
@@ -2247,7 +2359,7 @@ class Component extends DCLogic {
           fontFamily: 'inherit', fontSize: '10px', fontWeight: active ? '600' : '400',
           minHeight: '56px', transition: 'color 0.15s',
         },
-        onClick: () => { this.setState({ screen: n.id, sidebarOpen: false }); if (n.id === 'jarvis') this.loadJarvisHistory(); },
+        onClick: () => { if (n.id === 'jarvis') this.goToJarvisScreen(); else this.setState({ screen: n.id, sidebarOpen: false }); },
       };
     });
 
@@ -2736,12 +2848,11 @@ class Component extends DCLogic {
         zIndex: 110, display: 'flex', alignItems: 'center', justifyContent: 'center',
         overflow: 'hidden', padding: jarvisBubbleIconPad, boxSizing: 'border-box',
       },
-      jarvisPopoverStyle: {
-        position: 'fixed', bottom: isMobile ? 'calc(56px + env(safe-area-inset-bottom, 0px) + 80px)' : '110px', right: '24px',
-        width: '360px', maxWidth: 'calc(100vw - 32px)', height: '480px', maxHeight: '65vh',
-        background: '#111118', border: '1px solid #1E2A45', borderRadius: '16px',
-        boxShadow: '0 24px 60px #00000088', zIndex: 110,
-        display: 'flex', flexDirection: 'column', overflow: 'hidden',
+      jarvisLauncherStyle: {
+        position: 'fixed', bottom: isMobile ? 'calc(56px + env(safe-area-inset-bottom, 0px) + 80px)' : '96px', right: '24px',
+        width: '220px', background: '#111118', border: '1px solid #1E2A45', borderRadius: '14px',
+        boxShadow: '0 16px 40px #00000088', zIndex: 110, padding: '10px',
+        display: 'flex', flexDirection: 'column', gap: '6px',
       },
       userName: s.user?.name || 'Usuário', userEmail: s.user?.email || '',
       handleLogout: this.handleLogout,
@@ -2939,21 +3050,26 @@ class Component extends DCLogic {
       exportAllXlsx: () => this.exportXlsx(s.transactions),
       // Jarvis
       isJarvisScreen, showJarvisBubble: isApp && !isJarvisScreen,
-      jarvisMessages: s.jarvisMessages, hasJarvisMessages: s.jarvisMessages.length > 0,
+      jarvisMessages: s.jarvisMessages, hasJarvisMessages: s.jarvisMessages.length > 0, noJarvisMessages: s.jarvisMessages.length === 0,
       jarvisInput: s.jarvisInput,
       setJarvisInput: e => this.setState({ jarvisInput: e.target.value }),
       jarvisKeyDown: e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); this.sendJarvisMessage(); } },
       jarvisLoading: s.jarvisLoading,
+      showJarvisTypingCursor: s.jarvisLoading && (s.jarvisMessages.length === 0 || s.jarvisMessages[s.jarvisMessages.length - 1].isUser),
       jarvisOpen: s.jarvisOpen,
       toggleJarvisBubble: this.toggleJarvisBubble,
       sendJarvisMessage: this.sendJarvisMessage,
       cfgJarvisNotes: s.cfgJarvisNotes || '',
       setCfgJarvisNotes: e => this.setState({ cfgJarvisNotes: e.target.value }),
       saveJarvisNotes: this.saveJarvisNotes,
-      jarvisModelLabel: s.jarvisModel === 'haiku' ? 'Jarvis' : 'Sexta-feira',
-      jarvisDisplayName: s.jarvisModel === 'haiku' ? 'Jarvis' : 'Sexta-feira',
+      jarvisModelLabel: s.jarvisModel === 'haiku' ? 'Jarvis' : 'Friday',
+      jarvisDisplayName: s.jarvisModel === 'haiku' ? 'Jarvis' : 'Friday',
       jarvisLogoSrc: s.jarvisModel === 'haiku' ? 'public/jarvis.png' : 'public/sexta-feira.png',
-      jarvisAvatarBg, jarvisGlowColor, jarvisBubbleIconPad, jarvisHeaderIconSize,
+      jarvisAvatarBg, jarvisGlowColor, jarvisAccentColor, jarvisBubbleIconPad, jarvisHeaderIconSize, jarvisGlitchClass,
+      jarvisConvItems, hasJarvisConversations, noJarvisConversations, jarvisShowConvList: s.jarvisShowConvList,
+      toggleJarvisConvList: this.toggleJarvisConvList,
+      startNewJarvisChat: this.startNewJarvisChat,
+      goToJarvisScreen: this.goToJarvisScreen,
       setJarvisSonnet: () => this.setJarvisModel('sonnet'),
       setJarvisHaiku: () => this.setJarvisModel('haiku'),
       jarvisSonnetPillStyle: {

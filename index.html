@@ -752,6 +752,9 @@
                           <sc-if value="{{ txn.isPlanned }}" hint-placeholder-val="{{ false }}">
                             <span style="font-size: 9px; padding: 1px 5px; border-radius: 20px; background: #F9731622; color: #F97316; font-weight: 500;">Previsto</span>
                           </sc-if>
+                          <sc-if value="{{ txn.isCredit }}" hint-placeholder-val="{{ false }}">
+                            <span style="font-size: 9px; padding: 1px 5px; border-radius: 20px; background: #A855F722; color: #C084FC; font-weight: 500;">💳 {{ txn.invoiceLabel }}</span>
+                          </sc-if>
                         </div>
                         <sc-if value="{{ txn.hasNotes }}" hint-placeholder-val="{{ false }}">
                           <div style="font-size: 11px; color: #1E2A3A; margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-style: italic;">{{ txn.notes }}</div>
@@ -795,6 +798,7 @@
               <button onClick="{{ setPlanTabRec }}" style="{{ planTabRecStyle }}">Recorrentes</button>
               <button onClick="{{ setPlanTabMetas }}" style="{{ planTabMetasStyle }}">Metas</button>
               <button onClick="{{ setPlanTabDespesas }}" style="{{ planTabDespesasStyle }}">Dívidas</button>
+              <button onClick="{{ setPlanTabCartao }}" style="{{ planTabCartaoStyle }}">Cartão</button>
             </div>
             <!-- Recorrentes tab -->
             <sc-if value="{{ isTabRec }}" hint-placeholder-val="{{ true }}">
@@ -944,6 +948,62 @@
                             <button onClick="{{ e.onPay }}" style="margin-left: 10px; padding: 5px 12px; background: #F9731618; border: 1px solid #F9731633; border-radius: 7px; color: #F97316; font-size: 11px; font-weight: 600; font-family: inherit; cursor: pointer; white-space: nowrap;">Pagar</button>
                           </div>
                         </div>
+                      </div>
+                    </div>
+                  </sc-for>
+                </div>
+              </sc-if>
+            </sc-if>
+            <!-- Cartão tab -->
+            <sc-if value="{{ isTabCartao }}" hint-placeholder-val="{{ false }}">
+              <div style="background: #111118; border: 1px solid #151525; border-radius: 12px; padding: 18px 20px; display: flex; flex-direction: column; gap: 12px;">
+                <div style="font-size: 10px; color: #334155; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">Configuração do cartão</div>
+                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                  <div style="flex: 2; min-width: 160px;">
+                    <label style="display: block; font-size: 11px; color: #475569; margin-bottom: 6px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Nome</label>
+                    <input type="text" value="{{ cardName }}" onInput="{{ setCardName }}" placeholder="Ex: Nubank" style="width: 100%; box-sizing: border-box; background: #0D0D1A; border: 1px solid #1E2A45; border-radius: 8px; padding: 10px 14px; color: #E2E8F0; font-size: 14px; font-family: inherit;">
+                  </div>
+                  <div style="flex: 1; min-width: 110px;">
+                    <label style="display: block; font-size: 11px; color: #475569; margin-bottom: 6px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Dia fechamento</label>
+                    <input type="number" value="{{ cardClosingDay }}" onInput="{{ setCardClosingDay }}" min="1" max="31" step="1" style="width: 100%; box-sizing: border-box; background: #0D0D1A; border: 1px solid #1E2A45; border-radius: 8px; padding: 10px 14px; color: #E2E8F0; font-size: 14px; font-family: inherit;">
+                  </div>
+                </div>
+                <div style="font-size: 11px; color: #334155; line-height: 1.5;">Compras no cartão não descontam o saldo na hora — ficam acumuladas na fatura do mês até você marcar como paga.</div>
+                <button onClick="{{ saveCardSettings }}" style="align-self: flex-start; padding: 9px 20px; background: linear-gradient(135deg, #2563EB, #06B6D4); border: none; border-radius: 8px; color: white; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit;">Salvar</button>
+              </div>
+
+              <div style="margin-top: 12px; background: #111118; border: 1px solid #151525; border-radius: 12px; padding: 16px 20px;">
+                <div style="font-size: 10px; color: #334155; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;">Fatura em aberto (total)</div>
+                <div style="font-size: 26px; font-weight: 700; color: #F97316; letter-spacing: -1px;">{{ fmtOpenCardDebt }}</div>
+              </div>
+
+              <sc-if value="{{ noOpenInvoices }}" hint-placeholder-val="{{ false }}">
+                <div style="margin-top: 12px; background: #111118; border: 1px solid #151525; border-radius: 12px; padding: 40px 20px; display: flex; flex-direction: column; align-items: center; gap: 10px;">
+                  <i class="ph ph-credit-card" style="font-size: 36px; color: #1E2A3A;"></i>
+                  <span style="font-size: 14px; color: #1E2A3A; text-align: center;">Nenhuma fatura em aberto. Marque um lançamento como "Cartão de crédito" pra ele entrar aqui.</span>
+                </div>
+              </sc-if>
+              <sc-if value="{{ hasOpenInvoices }}" hint-placeholder-val="{{ false }}">
+                <div style="margin-top: 12px; display: flex; flex-direction: column; gap: 12px;">
+                  <sc-for list="{{ openInvoices }}" as="inv" hint-placeholder-count="2">
+                    <div style="background: #111118; border: 1px solid #151525; border-radius: 14px; padding: 16px 20px;">
+                      <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px;">
+                        <div>
+                          <div style="font-size: 14px; font-weight: 600; color: #CBD5E1; text-transform: capitalize;">{{ inv.monthLabel }}</div>
+                          <div style="font-size: 11px; color: #334155; margin-top: 2px;">{{ inv.count }} compra{{ inv.countPlural }}</div>
+                        </div>
+                        <div style="text-align: right;">
+                          <div style="font-size: 18px; font-weight: 800; color: #F97316; letter-spacing: -0.5px;">{{ inv.fmtTotal }}</div>
+                          <button onClick="{{ inv.onPay }}" style="margin-top: 4px; padding: 5px 14px; background: #F9731618; border: 1px solid #F9731633; border-radius: 7px; color: #F97316; font-size: 11px; font-weight: 600; font-family: inherit; cursor: pointer; white-space: nowrap;">Pagar fatura</button>
+                        </div>
+                      </div>
+                      <div style="display: flex; flex-direction: column; gap: 6px; border-top: 1px solid #151525; padding-top: 10px;">
+                        <sc-for list="{{ inv.items }}" as="it" hint-placeholder-count="2">
+                          <div style="display: flex; justify-content: space-between; font-size: 12px; color: #64748B;">
+                            <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ it.description }} · {{ it.fmtDate }}</span>
+                            <span style="flex-shrink: 0; margin-left: 10px;">{{ it.fmtAmount }}</span>
+                          </div>
+                        </sc-for>
                       </div>
                     </div>
                   </sc-for>
@@ -1361,6 +1421,22 @@
               <label style="display: block; font-size: 11px; color: #475569; margin-bottom: 6px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Data</label>
               <input type="date" value="{{ txnDate }}" onChange="{{ setTxnDate }}" style="width: 100%; background: #0D0D1A; border: 1px solid #1E2A45; border-radius: 8px; padding: 11px 14px; color: #E2E8F0; font-size: 14px; font-family: inherit;">
             </div>
+            <sc-if value="{{ showPaymentMethod }}" hint-placeholder-val="{{ false }}">
+              <div>
+                <label style="display: block; font-size: 11px; color: #475569; margin-bottom: 6px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Forma de pagamento</label>
+                <div style="display: flex; gap: 8px;">
+                  <button onClick="{{ setPaymentCash }}" style="{{ paymentCashStyle }}">
+                    <i class="ph ph-money" style="font-size: 14px;"></i>Dinheiro
+                  </button>
+                  <button onClick="{{ setPaymentCredit }}" style="{{ paymentCreditStyle }}">
+                    <i class="ph ph-credit-card" style="font-size: 14px;"></i>Cartão de crédito
+                  </button>
+                </div>
+                <sc-if value="{{ isCreditPayment }}" hint-placeholder-val="{{ false }}">
+                  <div style="font-size: 11px; color: #334155; margin-top: 6px; line-height: 1.5;"><i class="ph ph-info" style="font-size: 11px;"></i> Não desconta o saldo agora — entra na fatura de {{ txnInvoicePreview }} e só conta quando você pagar a fatura.</div>
+                </sc-if>
+              </div>
+            </sc-if>
             <!-- Toggles -->
             <div style="display: flex; align-items: center; justify-content: space-between; padding: 11px 14px; background: #0D0D1A; border: 1px solid #1E2A45; border-radius: 8px;">
               <div>
@@ -1743,6 +1819,10 @@ class Component extends DCLogic {
     txnRecurringFreq: 'monthly',
     txnPlanned: false,
     txnNotes: '',
+    txnPaymentMethod: 'cash',
+    cardSettings: null,
+    cardName: 'Cartão de Crédito',
+    cardClosingDay: '1',
     filterType: 'all',
     filterCategoryId: 'all',
     filterMonth: '',
@@ -1967,13 +2047,14 @@ class Component extends DCLogic {
   _loadFromSupabase = async (authUser) => {
     this.setState({ loading: true, loadingMsg: 'Carregando dados...' });
     const uid = authUser.id;
-    const [{ data: cats }, { data: txns }, { data: goals }, { data: profile }, { data: jarvisCtx }, { data: expenses }] = await Promise.all([
+    const [{ data: cats }, { data: txns }, { data: goals }, { data: profile }, { data: jarvisCtx }, { data: expenses }, { data: card }] = await Promise.all([
       window._sb.from('categories').select('*').eq('user_id', uid),
       window._sb.from('transactions').select('*').eq('user_id', uid),
       window._sb.from('goals').select('*').eq('user_id', uid),
       window._sb.from('profiles').select('*').eq('id', uid).single(),
       window._sb.from('jarvis_context').select('personal_notes').eq('user_id', uid).maybeSingle(),
       window._sb.from('recurring_expenses').select('*').eq('user_id', uid),
+      window._sb.from('card_settings').select('*').eq('user_id', uid).maybeSingle(),
     ]);
     let catList = (cats || []).map(c => ({ id: c.id, name: c.name, icon: c.icon, color: c.color, budget: c.budget || null }));
     if (catList.length === 0) {
@@ -1981,21 +2062,18 @@ class Component extends DCLogic {
       await window._sb.from('categories').insert(defaultCats.map(c => ({ ...c, user_id: uid })));
       catList = defaultCats;
     }
-    const txnList = (txns || []).map(t => ({
-      id: t.id, type: t.type, amount: Number(t.amount), description: t.description,
-      categoryId: t.category_id, date: t.date, recurring: t.recurring,
-      recurringFreq: t.recurring_freq, planned: t.planned, notes: t.notes,
-      recurringExpenseId: t.recurring_expense_id,
-    }));
+    const txnList = (txns || []).map(t => this._txnRowIn(t));
     const goalList = (goals || []).map(g => ({
       id: g.id, name: g.name, target: Number(g.target), current: Number(g.current || 0),
       icon: g.icon, color: g.color, deadline: g.deadline,
     }));
     const expenseList = (expenses || []).map(e => this._expenseRowIn(e));
+    const cardSettings = card ? { name: card.name, closingDay: Number(card.closing_day) } : null;
     const name = profile?.name || authUser.user_metadata?.name || authUser.email.split('@')[0].replace(/[._-]/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
     const user = { id: uid, name, email: authUser.email };
     this.setState({
       user, transactions: txnList, categories: catList, goals: goalList, recurringExpenses: expenseList,
+      cardSettings, cardName: cardSettings?.name || 'Cartão de Crédito', cardClosingDay: String(cardSettings?.closingDay || 1),
       cfgName: name, cfgEmail: authUser.email,
       cfgCurrency: profile?.currency || 'BRL',
       savingsGoal: Number(profile?.savings_goal || 0),
@@ -2005,28 +2083,33 @@ class Component extends DCLogic {
     }, () => { this._autoRecurring(); this._autoRecurringExpenses(); });
   }
 
+  _txnRowIn = (t) => ({
+    id: t.id, type: t.type, amount: Number(t.amount), description: t.description,
+    categoryId: t.category_id, date: t.date, recurring: t.recurring,
+    recurringFreq: t.recurring_freq, planned: t.planned, notes: t.notes,
+    recurringExpenseId: t.recurring_expense_id,
+    paymentMethod: t.payment_method, invoiceKey: t.invoice_key, invoicePaid: !!t.invoice_paid,
+  })
+
   _refreshData = async () => {
     const uid = this.state.user?.id;
     if (!uid) return;
-    const [{ data: cats }, { data: txns }, { data: goals }, { data: expenses }] = await Promise.all([
+    const [{ data: cats }, { data: txns }, { data: goals }, { data: expenses }, { data: card }] = await Promise.all([
       window._sb.from('categories').select('*').eq('user_id', uid),
       window._sb.from('transactions').select('*').eq('user_id', uid),
       window._sb.from('goals').select('*').eq('user_id', uid),
       window._sb.from('recurring_expenses').select('*').eq('user_id', uid),
+      window._sb.from('card_settings').select('*').eq('user_id', uid).maybeSingle(),
     ]);
     const catList = (cats || []).map(c => ({ id: c.id, name: c.name, icon: c.icon, color: c.color, budget: c.budget || null }));
-    const txnList = (txns || []).map(t => ({
-      id: t.id, type: t.type, amount: Number(t.amount), description: t.description,
-      categoryId: t.category_id, date: t.date, recurring: t.recurring,
-      recurringFreq: t.recurring_freq, planned: t.planned, notes: t.notes,
-      recurringExpenseId: t.recurring_expense_id,
-    }));
+    const txnList = (txns || []).map(t => this._txnRowIn(t));
     const goalList = (goals || []).map(g => ({
       id: g.id, name: g.name, target: Number(g.target), current: Number(g.current || 0),
       icon: g.icon, color: g.color, deadline: g.deadline,
     }));
     const expenseList = (expenses || []).map(e => this._expenseRowIn(e));
-    this.setState({ transactions: txnList, categories: catList, goals: goalList, recurringExpenses: expenseList });
+    const cardSettings = card ? { name: card.name, closingDay: Number(card.closing_day) } : null;
+    this.setState({ transactions: txnList, categories: catList, goals: goalList, recurringExpenses: expenseList, cardSettings });
   }
 
   _expenseRowIn = (e) => ({
@@ -2071,7 +2154,7 @@ class Component extends DCLogic {
     const curKey = s.dashMonth || this.mKey(now);
     const curTxns = s.transactions.filter(t => t.date && t.date.startsWith(curKey));
     const income  = curTxns.filter(t => t.type === 'income').reduce((a, t) => a + t.amount, 0);
-    const expense = curTxns.filter(t => t.type === 'expense').reduce((a, t) => a + t.amount, 0);
+    const expense = curTxns.filter(t => t.type === 'expense' && t.paymentMethod !== 'credit_card').reduce((a, t) => a + t.amount, 0);
     const balance = income - expense;
     const monthLabel = new Date(curKey + '-01T12:00:00').toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
     const rate = income > 0 ? Math.round(((income - expense) / income) * 100) : 0;
@@ -2293,7 +2376,7 @@ class Component extends DCLogic {
         txnDescription: txn.description, txnCategoryId: txn.categoryId,
         txnDate: txn.date, txnRecurring: !!txn.recurring,
         txnRecurringFreq: txn.recurringFreq || 'monthly', txnPlanned: !!txn.planned,
-        txnNotes: txn.notes || '',
+        txnNotes: txn.notes || '', txnPaymentMethod: txn.paymentMethod === 'credit_card' ? 'credit_card' : 'cash',
       });
     } else {
       this.setState({
@@ -2301,7 +2384,7 @@ class Component extends DCLogic {
         txnType: 'expense', txnAmount: '', txnDescription: '',
         txnCategoryId: '', txnDate: new Date().toISOString().split('T')[0],
         txnRecurring: false, txnRecurringFreq: 'monthly', txnPlanned: false,
-        txnNotes: '',
+        txnNotes: '', txnPaymentMethod: 'cash',
       });
     }
   }
@@ -2312,12 +2395,26 @@ class Component extends DCLogic {
     recurring: txn.recurring, recurring_freq: txn.recurringFreq,
     planned: txn.planned, notes: txn.notes,
     recurring_expense_id: txn.recurringExpenseId || null,
+    payment_method: txn.paymentMethod || null, invoice_key: txn.invoiceKey || null,
+    invoice_paid: !!txn.invoicePaid,
   })
+
+  // Cartão fecha no dia `closingDay`: compras até esse dia entram na fatura do mês corrente,
+  // depois disso caem na fatura do mês seguinte.
+  _invoiceKeyFor = (dateStr, closingDay) => {
+    const d = new Date(dateStr + 'T12:00:00');
+    let y = d.getFullYear(), m = d.getMonth(); // m é 0-indexado
+    if (d.getDate() > closingDay) { m += 1; if (m > 11) { m = 0; y += 1; } }
+    return y + '-' + String(m + 1).padStart(2, '0');
+  }
 
   saveTxn = async () => {
     const s = this.state;
     const amount = parseFloat(s.txnAmount);
     if (!s.txnDescription.trim() || !s.txnDate || isNaN(amount) || amount <= 0) return;
+    const isCredit = s.txnType === 'expense' && s.txnPaymentMethod === 'credit_card';
+    const closingDay = s.cardSettings?.closingDay || 1;
+    const prevTxn = s.editTxnId ? s.transactions.find(t => t.id === s.editTxnId) : null;
     const txn = {
       id: s.editTxnId || 't' + Date.now(),
       type: s.txnType, amount, description: s.txnDescription.trim(),
@@ -2326,6 +2423,10 @@ class Component extends DCLogic {
       recurringFreq: s.txnRecurring ? s.txnRecurringFreq : null,
       planned: s.txnPlanned,
       notes: s.txnNotes.trim() || null,
+      recurringExpenseId: prevTxn?.recurringExpenseId || null,
+      paymentMethod: isCredit ? 'credit_card' : null,
+      invoiceKey: isCredit ? this._invoiceKeyFor(s.txnDate, closingDay) : null,
+      invoicePaid: isCredit ? !!prevTxn?.invoicePaid : false,
     };
     const transactions = s.editTxnId
       ? s.transactions.map(t => t.id === s.editTxnId ? txn : t)
@@ -2546,6 +2647,44 @@ class Component extends DCLogic {
     if (toCreate.length === 0) return;
     this.setState({ transactions: [...this.state.transactions, ...toCreate] });
     await window._sb.from('transactions').insert(toCreate.map(t => this._txnRow(t, user.id)));
+  }
+
+  // ─── Cartão de crédito ──────────────────────────────────────────────────
+  // Compras no cartão não descontam o saldo na hora — ficam acumuladas numa fatura
+  // (agrupadas pelo dia de fechamento) até o usuário marcar a fatura como paga, o
+  // que cria um lançamento de despesa normal (à vista) no valor total da fatura.
+
+  setCardName = e => this.setState({ cardName: e.target.value });
+  setCardClosingDay = e => this.setState({ cardClosingDay: e.target.value });
+
+  saveCardSettings = async () => {
+    const s = this.state;
+    const name = s.cardName.trim() || 'Cartão de Crédito';
+    const closingDay = Math.min(31, Math.max(1, parseInt(s.cardClosingDay) || 1));
+    this.setState({ cardSettings: { name, closingDay }, cardName: name, cardClosingDay: String(closingDay) });
+    await window._sb.from('card_settings').upsert({ user_id: s.user.id, name, closing_day: closingDay });
+  }
+
+  payInvoice = async (invoiceKey) => {
+    const s = this.state;
+    const items = s.transactions.filter(t => t.paymentMethod === 'credit_card' && t.invoiceKey === invoiceKey && !t.invoicePaid);
+    if (items.length === 0) return;
+    const total = items.reduce((a, t) => a + t.amount, 0);
+    const cardName = s.cardSettings?.name || 'Cartão de Crédito';
+    const paymentTxn = {
+      id: 't' + Date.now(), type: 'expense', amount: total,
+      description: 'Fatura ' + cardName + ' — ' + invoiceKey,
+      categoryId: null, date: new Date().toISOString().split('T')[0],
+      recurring: false, recurringFreq: null, planned: false, notes: null,
+      recurringExpenseId: null, paymentMethod: null, invoiceKey: null, invoicePaid: false,
+    };
+    const itemIds = new Set(items.map(t => t.id));
+    const transactions = [...s.transactions.map(t => itemIds.has(t.id) ? { ...t, invoicePaid: true } : t), paymentTxn];
+    this.setState({ transactions });
+    await Promise.all([
+      window._sb.from('transactions').insert(this._txnRow(paymentTxn, s.user.id)),
+      window._sb.from('transactions').update({ invoice_paid: true }).eq('user_id', s.user.id).eq('invoice_key', invoiceKey).eq('payment_method', 'credit_card'),
+    ]);
   }
 
   undoDelete = () => {
@@ -2820,22 +2959,29 @@ class Component extends DCLogic {
     });
 
     // Month data
+    // Compras no cartão de crédito não contam pro saldo/patrimônio (dinheiro que ainda não saiu da
+    // conta) — só a fatura paga conta. "expenseAll"/"allExpenseAll" (com cartão) alimentam gráficos e
+    // insights de gasto (comportamento), enquanto "expense"/"allExpense" (sem cartão) alimentam
+    // Saldo/Patrimônio (posição real de caixa). Ver seção "Cartão de crédito" mais abaixo.
+    const isCash = t => t.paymentMethod !== 'credit_card';
     const now = new Date();
     const curKey = s.dashMonth || this.mKey(now);
     const curTxns = s.transactions.filter(t => t.date && t.date.startsWith(curKey));
     const income  = curTxns.filter(t => t.type === 'income').reduce((a, t) => a + t.amount, 0);
-    const expense = curTxns.filter(t => t.type === 'expense').reduce((a, t) => a + t.amount, 0);
+    const expenseAll = curTxns.filter(t => t.type === 'expense').reduce((a, t) => a + t.amount, 0);
+    const expense = curTxns.filter(t => t.type === 'expense' && isCash(t)).reduce((a, t) => a + t.amount, 0);
     const balance = income - expense;
     const allIncome  = s.transactions.filter(t => t.type === 'income').reduce((a, t) => a + t.amount, 0);
-    const allExpense = s.transactions.filter(t => t.type === 'expense').reduce((a, t) => a + t.amount, 0);
+    const allExpense = s.transactions.filter(t => t.type === 'expense' && isCash(t)).reduce((a, t) => a + t.amount, 0);
     const goalsTotalSaved = s.goals.reduce((a, g) => a + (g.current || 0), 0);
+    const openCardDebt = s.transactions.filter(t => t.paymentMethod === 'credit_card' && !t.invoicePaid).reduce((a, t) => a + t.amount, 0);
 
     // Previous month comparison
     const prevDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
     const prevKey = this.mKey(prevDate);
     const prevTxns = s.transactions.filter(t => t.date && t.date.startsWith(prevKey));
     const prevIncome  = prevTxns.filter(t => t.type === 'income').reduce((a, t) => a + t.amount, 0);
-    const prevExpense = prevTxns.filter(t => t.type === 'expense').reduce((a, t) => a + t.amount, 0);
+    const prevExpense = prevTxns.filter(t => t.type === 'expense' && isCash(t)).reduce((a, t) => a + t.amount, 0);
     const _pct = (cur, prev) => prev === 0 ? null : Math.round(((cur - prev) / prev) * 100);
     const incDelta = _pct(income, prevIncome);
     const expDelta = _pct(expense, prevExpense);
@@ -2869,14 +3015,14 @@ class Component extends DCLogic {
       .map(([id, v]) => { const c = this.getCat(id); return { label: c.name, value: v, color: c.color }; })
       .sort((a, b) => b.value - a.value).slice(0, 6);
     const pieSectors = this.computePie(pieData);
-    const total = expense || 1;
+    const total = expenseAll || 1;
     const pieLegend = pieData.map(d => ({ ...d, pct: Math.round(d.value / total * 100) })).slice(0, 5);
     const pieModalData = Object.entries(expByCat)
       .map(([id, v]) => {
         const c = this.getCat(id);
         return { name: c.name, color: c.color, iconClass: 'ph ph-' + c.icon,
-          fmtAmount: this.fmt(v), pct: Math.round(v / (expense || 1) * 100),
-          barW: Math.round(v / (expense || 1) * 100) };
+          fmtAmount: this.fmt(v), pct: Math.round(v / (expenseAll || 1) * 100),
+          barW: Math.round(v / (expenseAll || 1) * 100) };
       })
       .sort((a, b) => b.pct - a.pct);
 
@@ -2889,7 +3035,7 @@ class Component extends DCLogic {
       const label = dd.toLocaleDateString('pt-BR', {month: 'short'}).replace('.','');
       const mt = s.transactions.filter(t => t.date && t.date.startsWith(key));
       const inc = mt.filter(t => t.type === 'income').reduce((a, t) => a + t.amount, 0);
-      const exp = mt.filter(t => t.type === 'expense').reduce((a, t) => a + t.amount, 0);
+      const exp = mt.filter(t => t.type === 'expense' && isCash(t)).reduce((a, t) => a + t.amount, 0);
       barMonths.push({ key, label, inc, exp });
     }
     const bMax = Math.max(...barMonths.flatMap(m => [m.inc, m.exp]), 1);
@@ -2974,6 +3120,8 @@ class Component extends DCLogic {
         freqLabel: freqMap[t.recurringFreq] || '',
         notes: t.notes || '', hasNotes: !!(t.notes && t.notes.trim()),
         isPlanned: !!t.planned,
+        isCredit: t.paymentMethod === 'credit_card',
+        invoiceLabel: t.paymentMethod === 'credit_card' ? (t.invoicePaid ? 'fatura paga' : 'fatura ' + (t.invoiceKey || '')) : '',
         onEdit: () => this.openTxnModal(t), onDelete: () => this.deleteTxn(t.id),
         onDuplicate: () => this.duplicateTxn(t.id), onRealize: () => this.realizeTxn(t.id) };
     });
@@ -3079,7 +3227,7 @@ class Component extends DCLogic {
       insights.push({
         iconClass: 'ph ph-chart-bar',
         color: '#2563EB',
-        text: `Maior gasto: ${top.label} — ${this.fmt(top.value)} (${Math.round(top.value / (expense || 1) * 100)}% das despesas)`,
+        text: `Maior gasto: ${top.label} — ${this.fmt(top.value)} (${Math.round(top.value / (expenseAll || 1) * 100)}% das despesas)`,
       });
     }
     const exceededCats = catList.filter(c => c.hasBudget && c.pct >= 100);
@@ -3337,7 +3485,7 @@ class Component extends DCLogic {
       greeting, firstName, currentMonthLabel,
       balanceFormatted: this.fmt(balance),
       balanceColor: balance >= 0 ? '#4ADE80' : '#F87171',
-      totalBalance: this.fmt(allIncome - allExpense + goalsTotalSaved),
+      totalBalance: this.fmt(allIncome - allExpense + goalsTotalSaved - openCardDebt),
       incomeFormatted: this.fmt(income),
       expenseFormatted: this.fmt(expense),
       incDeltaTxt: incDeltaFmt.txt, incDeltaColor: incDeltaFmt.color, incDeltaIcon: incDeltaFmt.icon,
@@ -3396,6 +3544,29 @@ class Component extends DCLogic {
       showRecurringFreq: s.txnRecurring, txnExpStyle, txnIncStyle,
       setTxnExpense: () => this.setState({ txnType: 'expense' }),
       setTxnIncome: () => this.setState({ txnType: 'income' }),
+      showPaymentMethod: s.txnType === 'expense',
+      isCreditPayment: s.txnPaymentMethod === 'credit_card',
+      setPaymentCash: () => this.setState({ txnPaymentMethod: 'cash' }),
+      setPaymentCredit: () => this.setState({ txnPaymentMethod: 'credit_card' }),
+      paymentCashStyle: {
+        flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
+        padding: '10px', borderRadius: '8px', fontSize: '13px', fontWeight: '600', fontFamily: 'inherit', cursor: 'pointer',
+        border: '1px solid ' + (s.txnPaymentMethod !== 'credit_card' ? '#2563EB55' : '#1E2A45'),
+        background: s.txnPaymentMethod !== 'credit_card' ? '#2563EB16' : 'transparent',
+        color: s.txnPaymentMethod !== 'credit_card' ? '#60A5FA' : '#475569',
+      },
+      paymentCreditStyle: {
+        flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
+        padding: '10px', borderRadius: '8px', fontSize: '13px', fontWeight: '600', fontFamily: 'inherit', cursor: 'pointer',
+        border: '1px solid ' + (s.txnPaymentMethod === 'credit_card' ? '#F9731655' : '#1E2A45'),
+        background: s.txnPaymentMethod === 'credit_card' ? '#F9731616' : 'transparent',
+        color: s.txnPaymentMethod === 'credit_card' ? '#F97316' : '#475569',
+      },
+      txnInvoicePreview: (() => {
+        const d = s.txnDate || new Date().toISOString().split('T')[0];
+        const key = this._invoiceKeyFor(d, s.cardSettings?.closingDay || 1);
+        return new Date(key + '-01T12:00:00').toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+      })(),
       setTxnAmount: e => this.setState({ txnAmount: e.target.value }),
       setTxnDescription: e => this.setState({ txnDescription: e.target.value }),
       setTxnCategory: e => this.setState({ txnCategoryId: e.target.value }),
@@ -3417,12 +3588,15 @@ class Component extends DCLogic {
       setPlanTabRec: () => this.setState({ planTab: 'recorrentes' }),
       setPlanTabMetas: () => this.setState({ planTab: 'metas' }),
       setPlanTabDespesas: () => this.setState({ planTab: 'despesas' }),
+      setPlanTabCartao: () => this.setState({ planTab: 'cartao' }),
       isTabRec: s.planTab === 'recorrentes',
       isTabMetas: s.planTab === 'metas',
       isTabDespesas: s.planTab === 'despesas',
+      isTabCartao: s.planTab === 'cartao',
       planTabRecStyle: { flex: 1, padding: '8px', border: 'none', borderRadius: '7px', fontSize: '13px', fontWeight: '600', fontFamily: 'inherit', cursor: 'pointer', transition: 'all 0.15s', background: s.planTab === 'recorrentes' ? '#1E2A45' : 'transparent', color: s.planTab === 'recorrentes' ? '#60A5FA' : '#475569' },
       planTabMetasStyle: { flex: 1, padding: '8px', border: 'none', borderRadius: '7px', fontSize: '13px', fontWeight: '600', fontFamily: 'inherit', cursor: 'pointer', transition: 'all 0.15s', background: s.planTab === 'metas' ? '#1E2A45' : 'transparent', color: s.planTab === 'metas' ? '#60A5FA' : '#475569' },
       planTabDespesasStyle: { flex: 1, padding: '8px', border: 'none', borderRadius: '7px', fontSize: '13px', fontWeight: '600', fontFamily: 'inherit', cursor: 'pointer', transition: 'all 0.15s', background: s.planTab === 'despesas' ? '#1E2A45' : 'transparent', color: s.planTab === 'despesas' ? '#60A5FA' : '#475569' },
+      planTabCartaoStyle: { flex: 1, padding: '8px', border: 'none', borderRadius: '7px', fontSize: '13px', fontWeight: '600', fontFamily: 'inherit', cursor: 'pointer', transition: 'all 0.15s', background: s.planTab === 'cartao' ? '#1E2A45' : 'transparent', color: s.planTab === 'cartao' ? '#60A5FA' : '#475569' },
       showGoalModal: s.showGoalModal,
       goalName: s.goalName, goalTarget: s.goalTarget, goalIcon: s.goalIcon, goalColor: s.goalColor, goalDeadline: s.goalDeadline,
       setGoalName: e => this.setState({ goalName: e.target.value }),
@@ -3493,6 +3667,33 @@ class Component extends DCLogic {
       confirmPayExpense: this.confirmPayExpense,
       closePayExpenseModal: this.closePayExpenseModal,
       payExpenseName: (s.recurringExpenses.find(e => e.id === s.payExpenseId) || {}).name || '',
+      // Cartão de crédito
+      cardName: s.cardName, cardClosingDay: s.cardClosingDay,
+      setCardName: this.setCardName, setCardClosingDay: this.setCardClosingDay,
+      saveCardSettings: this.saveCardSettings,
+      hasCardSettings: !!s.cardSettings,
+      openInvoices: (() => {
+        const groups = {};
+        s.transactions.filter(t => t.paymentMethod === 'credit_card' && !t.invoicePaid).forEach(t => {
+          const key = t.invoiceKey || '—';
+          if (!groups[key]) groups[key] = [];
+          groups[key].push(t);
+        });
+        return Object.keys(groups).sort().map(key => {
+          const items = groups[key].slice().sort((a, b) => new Date(a.date) - new Date(b.date));
+          const total = items.reduce((a, t) => a + t.amount, 0);
+          const monthLabel = new Date(key + '-01T12:00:00').toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+          return {
+            key, monthLabel, fmtTotal: this.fmt(total), count: items.length,
+            countPlural: items.length === 1 ? '' : 's',
+            items: items.map(t => ({ id: t.id, description: t.description, fmtAmount: this.fmt(t.amount), fmtDate: this.fmtDate(t.date) })),
+            onPay: () => this.payInvoice(key),
+          };
+        });
+      })(),
+      hasOpenInvoices: s.transactions.some(t => t.paymentMethod === 'credit_card' && !t.invoicePaid),
+      noOpenInvoices: !s.transactions.some(t => t.paymentMethod === 'credit_card' && !t.invoicePaid),
+      fmtOpenCardDebt: this.fmt(openCardDebt),
       // dashboard – month nav
       dashMonthLabel, dashIsCurrentMonth, dashIsNotCurrentMonth,
       dashMonthColor, dashMonthFontWeight,

@@ -1911,6 +1911,18 @@ class Component extends DCLogic {
         if (s.screen === 'lancamentos' && !s.showTxnModal) { e.preventDefault(); this.openTxnModal(null); }
       }
     });
+    // Sem isso, dois dispositivos logados ao mesmo tempo (ex: celular e PC) só veem as mudanças
+    // um do outro depois de um F5 manual — o app nunca busca dados de novo sozinho enquanto a aba
+    // fica aberta. Rebusca ao voltar o foco (trocar de app/aba, destravar o celular), com um
+    // intervalo mínimo pra não disparar fetch toda vez que a tela pisca.
+    this._lastVisRefresh = 0;
+    document.addEventListener('visibilitychange', this._onVisible = () => {
+      if (document.visibilityState !== 'visible' || !this.state.user) return;
+      const now = Date.now();
+      if (now - this._lastVisRefresh < 15000) return;
+      this._lastVisRefresh = now;
+      this._refreshData();
+    });
     window._sb.auth.getSession().then(({ data: { session } }) => {
       if (session) {
         this._loadFromSupabase(session.user);
@@ -2109,7 +2121,12 @@ class Component extends DCLogic {
     }));
     const expenseList = (expenses || []).map(e => this._expenseRowIn(e));
     const cardSettings = card ? { name: card.name, closingDay: Number(card.closing_day) } : null;
-    this.setState({ transactions: txnList, categories: catList, goals: goalList, recurringExpenses: expenseList, cardSettings });
+    // Se tem uma exclusão pendente na janela de "Desfazer" (até 5s), o servidor ainda não sabe
+    // disso — sem esse filtro, um refresh nesse meio-tempo (outro dispositivo, o Jarvis mudando
+    // algo) traria o lançamento de volta na tela antes do tempo de desfazer acabar de verdade.
+    const pendingDeleteId = this.state.undoTxn?.id;
+    const finalTxnList = pendingDeleteId ? txnList.filter(t => t.id !== pendingDeleteId) : txnList;
+    this.setState({ transactions: finalTxnList, categories: catList, goals: goalList, recurringExpenses: expenseList, cardSettings });
   }
 
   _expenseRowIn = (e) => ({

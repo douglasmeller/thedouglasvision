@@ -786,7 +786,7 @@
               </sc-if>
               <sc-if value="{{ isTabDespesas }}" hint-placeholder-val="{{ false }}">
                 <button onClick="{{ openNewExpense }}" style="display: flex; align-items: center; gap: 6px; padding: 9px 16px; background: linear-gradient(135deg, #2563EB, #06B6D4); border: none; border-radius: 9px; color: white; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit;">
-                  <i class="ph ph-plus" style="font-size: 15px;"></i>Nova despesa
+                  <i class="ph ph-plus" style="font-size: 15px;"></i>Nova dívida
                 </button>
               </sc-if>
             </div>
@@ -794,7 +794,7 @@
             <div style="display: flex; background: #111118; border-radius: 10px; padding: 4px; gap: 2px;">
               <button onClick="{{ setPlanTabRec }}" style="{{ planTabRecStyle }}">Recorrentes</button>
               <button onClick="{{ setPlanTabMetas }}" style="{{ planTabMetasStyle }}">Metas</button>
-              <button onClick="{{ setPlanTabDespesas }}" style="{{ planTabDespesasStyle }}">Despesas</button>
+              <button onClick="{{ setPlanTabDespesas }}" style="{{ planTabDespesasStyle }}">Dívidas</button>
             </div>
             <!-- Recorrentes tab -->
             <sc-if value="{{ isTabRec }}" hint-placeholder-val="{{ true }}">
@@ -899,9 +899,9 @@
                   <div style="width: 56px; height: 56px; border-radius: 14px; background: #1A1A2A; display: flex; align-items: center; justify-content: center; margin-bottom: 14px;">
                     <i class="ph ph-receipt" style="font-size: 26px; color: #2A3A55;"></i>
                   </div>
-                  <div style="font-size: 15px; font-weight: 600; color: #334155; margin-bottom: 6px;">Nenhuma despesa recorrente</div>
-                  <div style="font-size: 12px; color: #1E2A3A; line-height: 1.6; max-width: 260px; margin-bottom: 16px;">Configure um gasto recorrente com teto — por valor total (ex: parcela até quitar) ou por data final.</div>
-                  <button onClick="{{ openNewExpense }}" style="padding: 9px 20px; background: linear-gradient(135deg, #2563EB, #06B6D4); border: none; border-radius: 9px; color: white; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit;">Criar primeira despesa</button>
+                  <div style="font-size: 15px; font-weight: 600; color: #334155; margin-bottom: 6px;">Nenhuma dívida cadastrada</div>
+                  <div style="font-size: 12px; color: #1E2A3A; line-height: 1.6; max-width: 260px; margin-bottom: 16px;">Cadastre uma dívida parcelada com teto (ex: parcela do carro até quitar) ou avulsa, sem prazo nem parcela fixa.</div>
+                  <button onClick="{{ openNewExpense }}" style="padding: 9px 20px; background: linear-gradient(135deg, #2563EB, #06B6D4); border: none; border-radius: 9px; color: white; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit;">Criar primeira dívida</button>
                 </div>
               </sc-if>
               <sc-if value="{{ hasExpenses }}" hint-placeholder-val="{{ false }}">
@@ -921,7 +921,7 @@
                             </div>
                           </div>
                           <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px; flex-wrap: wrap;">
-                            <span style="font-size: 12px; color: #334155;">{{ e.freqLabel }} · {{ e.fmtAmount }}/parcela</span>
+                            <span style="font-size: 12px; color: #334155;">{{ e.subtitleLabel }}</span>
                             <span style="padding: 2px 8px; border-radius: 20px; background: {{ e.completedBg }}; color: {{ e.completedTxt }}; font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">{{ e.completedLabel }}</span>
                           </div>
                           <sc-if value="{{ e.hasTarget }}" hint-placeholder-val="{{ false }}">
@@ -941,7 +941,7 @@
                             <sc-if value="{{ e.hasTarget }}" hint-placeholder-val="{{ false }}">
                               <span style="font-size: 11px; color: #334155; margin-left: auto;">Faltam {{ e.fmtRemaining }}</span>
                             </sc-if>
-                            <button onClick="{{ e.onPay }}" style="margin-left: 10px; padding: 5px 12px; background: #F9731618; border: 1px solid #F9731633; border-radius: 7px; color: #F97316; font-size: 11px; font-weight: 600; font-family: inherit; cursor: pointer; white-space: nowrap;">Pagar parcela</button>
+                            <button onClick="{{ e.onPay }}" style="margin-left: 10px; padding: 5px 12px; background: #F9731618; border: 1px solid #F9731633; border-radius: 7px; color: #F97316; font-size: 11px; font-weight: 600; font-family: inherit; cursor: pointer; white-space: nowrap;">Pagar</button>
                           </div>
                         </div>
                       </div>
@@ -1064,7 +1064,7 @@
             <!-- Danger -->
             <div style="background: #111118; border: 1px solid #EF444420; border-radius: 12px; padding: 20px;">
               <div style="font-size: 10px; font-weight: 600; color: #EF444466; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px;">Zona de Perigo</div>
-              <div style="font-size: 13px; color: #334155; margin-bottom: 14px; line-height: 1.6;">Apaga todos os seus lançamentos, metas e despesas recorrentes. Categorias são mantidas. Esta ação não pode ser desfeita.</div>
+              <div style="font-size: 13px; color: #334155; margin-bottom: 14px; line-height: 1.6;">Apaga todos os seus lançamentos, metas e dívidas. Categorias são mantidas. Esta ação não pode ser desfeita.</div>
               <button onClick="{{ openClearDataConfirm }}" style="padding: 9px 18px; background: transparent; border: 1px solid #EF444444; border-radius: 8px; color: #EF4444; font-size: 13px; font-weight: 500; cursor: pointer; font-family: inherit;">Apagar Dados</button>
             </div>
             <!-- Conta / Logout -->
@@ -1434,12 +1434,27 @@
           <div style="display: flex; flex-direction: column; gap: 14px;">
             <div>
               <label style="display: block; font-size: 11px; color: #475569; margin-bottom: 6px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Nome</label>
-              <input type="text" value="{{ expName }}" onInput="{{ setExpName }}" placeholder="Ex: Parcela do carro" style="width: 100%; background: #0D0D1A; border: 1px solid #1E2A45; border-radius: 8px; padding: 11px 14px; color: #E2E8F0; font-size: 14px; font-family: inherit;">
+              <input type="text" value="{{ expName }}" onInput="{{ setExpName }}" placeholder="Ex: Parcela do carro, Empréstimo da namorada" style="width: 100%; background: #0D0D1A; border: 1px solid #1E2A45; border-radius: 8px; padding: 11px 14px; color: #E2E8F0; font-size: 14px; font-family: inherit;">
             </div>
-            <div>
-              <label style="display: block; font-size: 11px; color: #475569; margin-bottom: 6px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Valor da parcela (R$)</label>
-              <input type="number" inputmode="decimal" value="{{ expAmount }}" onInput="{{ setExpAmount }}" placeholder="0,00" min="0" step="0.01" style="width: 100%; background: #0D0D1A; border: 1px solid #1E2A45; border-radius: 8px; padding: 11px 14px; color: #E2E8F0; font-size: 14px; font-family: inherit;">
+            <div style="display: flex; align-items: center; justify-content: space-between; padding: 11px 14px; background: #0D0D1A; border: 1px solid #1E2A45; border-radius: 8px;">
+              <div>
+                <div style="font-size: 13px; color: #94A3B8; font-weight: 500;">Parcelada</div>
+                <div style="font-size: 11px; color: #334155; margin-top: 1px;">Tem valor de parcela e recorrência fixa</div>
+              </div>
+              <input type="checkbox" checked="{{ expInstallment }}" onChange="{{ setExpInstallment }}" style="width: 18px; height: 18px; accent-color: #2563EB; cursor: pointer; flex-shrink: 0;">
             </div>
+            <sc-if value="{{ expInstallment }}" hint-placeholder-val="{{ false }}">
+              <div>
+                <label style="display: block; font-size: 11px; color: #475569; margin-bottom: 6px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Valor da parcela (R$)</label>
+                <input type="number" inputmode="decimal" value="{{ expAmount }}" onInput="{{ setExpAmount }}" placeholder="0,00" min="0" step="0.01" style="width: 100%; background: #0D0D1A; border: 1px solid #1E2A45; border-radius: 8px; padding: 11px 14px; color: #E2E8F0; font-size: 14px; font-family: inherit;">
+              </div>
+            </sc-if>
+            <sc-if value="{{ expNotInstallment }}" hint-placeholder-val="{{ false }}">
+              <div>
+                <label style="display: block; font-size: 11px; color: #475569; margin-bottom: 6px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Valor total devido (R$)</label>
+                <input type="number" inputmode="decimal" value="{{ expTargetTotal }}" onInput="{{ setExpTargetTotal }}" placeholder="Ex: 3123,00" min="0" step="0.01" style="width: 100%; background: #0D0D1A; border: 1px solid #1E2A45; border-radius: 8px; padding: 11px 14px; color: #E2E8F0; font-size: 14px; font-family: inherit;">
+              </div>
+            </sc-if>
             <div>
               <label style="display: block; font-size: 11px; color: #475569; margin-bottom: 6px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Categoria</label>
               <select value="{{ expCategoryId }}" onChange="{{ setExpCategoryId }}" style="width: 100%; background: #0D0D1A; border: 1px solid #1E2A45; border-radius: 8px; padding: 11px 14px; color: #E2E8F0; font-size: 14px; font-family: inherit; cursor: pointer;">
@@ -1448,33 +1463,35 @@
                 </sc-for>
               </select>
             </div>
-            <div style="display: flex; gap: 10px;">
-              <div style="flex: 1;">
-                <label style="display: block; font-size: 11px; color: #475569; margin-bottom: 6px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Frequência</label>
-                <select value="{{ expFreq }}" onChange="{{ setExpFreq }}" style="width: 100%; background: #0D0D1A; border: 1px solid #1E2A45; border-radius: 8px; padding: 11px 14px; color: #E2E8F0; font-size: 14px; font-family: inherit; cursor: pointer;">
-                  <option value="monthly">Mensal</option>
-                  <option value="weekly">Semanal</option>
-                  <option value="daily">Diário</option>
-                </select>
+            <sc-if value="{{ expInstallment }}" hint-placeholder-val="{{ false }}">
+              <div style="display: flex; gap: 10px;">
+                <div style="flex: 1;">
+                  <label style="display: block; font-size: 11px; color: #475569; margin-bottom: 6px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Frequência</label>
+                  <select value="{{ expFreq }}" onChange="{{ setExpFreq }}" style="width: 100%; background: #0D0D1A; border: 1px solid #1E2A45; border-radius: 8px; padding: 11px 14px; color: #E2E8F0; font-size: 14px; font-family: inherit; cursor: pointer;">
+                    <option value="monthly">Mensal</option>
+                    <option value="weekly">Semanal</option>
+                    <option value="daily">Diário</option>
+                  </select>
+                </div>
+                <div style="width: 110px;">
+                  <label style="display: block; font-size: 11px; color: #475569; margin-bottom: 6px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Dia venc.</label>
+                  <input type="number" value="{{ expDay }}" onInput="{{ setExpDay }}" placeholder="7" min="1" max="31" step="1" style="width: 100%; background: #0D0D1A; border: 1px solid #1E2A45; border-radius: 8px; padding: 11px 14px; color: #E2E8F0; font-size: 14px; font-family: inherit;">
+                </div>
               </div>
-              <div style="width: 110px;">
-                <label style="display: block; font-size: 11px; color: #475569; margin-bottom: 6px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Dia venc.</label>
-                <input type="number" value="{{ expDay }}" onInput="{{ setExpDay }}" placeholder="7" min="1" max="31" step="1" style="width: 100%; background: #0D0D1A; border: 1px solid #1E2A45; border-radius: 8px; padding: 11px 14px; color: #E2E8F0; font-size: 14px; font-family: inherit;">
+              <div style="padding-top: 4px; border-top: 1px solid #151525;">
+                <div style="font-size: 11px; color: #475569; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin: 10px 0 6px;">Teto (pelo menos um)</div>
               </div>
-            </div>
-            <div style="padding-top: 4px; border-top: 1px solid #151525;">
-              <div style="font-size: 11px; color: #475569; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin: 10px 0 6px;">Teto (pelo menos um)</div>
-            </div>
+              <div>
+                <label style="display: block; font-size: 11px; color: #475569; margin-bottom: 6px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Valor total a quitar (R$) <span style="color: #334155; font-weight: 400; text-transform: none; letter-spacing: 0;">(opcional)</span></label>
+                <input type="number" inputmode="decimal" value="{{ expTargetTotal }}" onInput="{{ setExpTargetTotal }}" placeholder="Ex: 25000,00" min="0" step="0.01" style="width: 100%; background: #0D0D1A; border: 1px solid #1E2A45; border-radius: 8px; padding: 11px 14px; color: #E2E8F0; font-size: 14px; font-family: inherit;">
+              </div>
+            </sc-if>
             <div>
-              <label style="display: block; font-size: 11px; color: #475569; margin-bottom: 6px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Valor total a quitar (R$) <span style="color: #334155; font-weight: 400; text-transform: none; letter-spacing: 0;">(opcional)</span></label>
-              <input type="number" inputmode="decimal" value="{{ expTargetTotal }}" onInput="{{ setExpTargetTotal }}" placeholder="Ex: 25000,00" min="0" step="0.01" style="width: 100%; background: #0D0D1A; border: 1px solid #1E2A45; border-radius: 8px; padding: 11px 14px; color: #E2E8F0; font-size: 14px; font-family: inherit;">
-            </div>
-            <div>
-              <label style="display: block; font-size: 11px; color: #475569; margin-bottom: 6px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Data final <span style="color: #334155; font-weight: 400; text-transform: none; letter-spacing: 0;">(opcional)</span></label>
+              <label style="display: block; font-size: 11px; color: #475569; margin-bottom: 6px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Prazo / data final <span style="color: #334155; font-weight: 400; text-transform: none; letter-spacing: 0;">(opcional)</span></label>
               <input type="date" value="{{ expEndDate }}" onInput="{{ setExpEndDate }}" style="width: 100%; background: #0D0D1A; border: 1px solid #1E2A45; border-radius: 8px; padding: 11px 14px; color: #E2E8F0; font-size: 14px; font-family: inherit;">
             </div>
           </div>
-          <button onClick="{{ saveExpense }}" style="margin-top: 20px; width: 100%; padding: 14px; background: linear-gradient(135deg, #2563EB, #06B6D4); border: none; border-radius: 10px; color: white; font-size: 15px; font-weight: 600; font-family: inherit; cursor: pointer; letter-spacing: -0.3px;">Salvar Despesa</button>
+          <button onClick="{{ saveExpense }}" style="margin-top: 20px; width: 100%; padding: 14px; background: linear-gradient(135deg, #2563EB, #06B6D4); border: none; border-radius: 10px; color: white; font-size: 15px; font-weight: 600; font-family: inherit; cursor: pointer; letter-spacing: -0.3px;">Salvar Dívida</button>
         </div>
       </div>
     </sc-if>
@@ -1484,7 +1501,7 @@
       <div style="position: fixed; inset: 0; background: #00000099; z-index: 200; display: flex; align-items: center; justify-content: center; padding: 16px;">
         <div class="modal-in" style="background: #111118; border: 1px solid #1E2A45; border-radius: 16px; padding: 24px; width: 100%; max-width: 360px; box-shadow: 0 32px 80px #00000066;">
           <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
-            <div style="font-size: 17px; font-weight: 700; color: #E2E8F0; letter-spacing: -0.5px;">Pagar Parcela</div>
+            <div style="font-size: 17px; font-weight: 700; color: #E2E8F0; letter-spacing: -0.5px;">Pagar</div>
             <button onClick="{{ closePayExpenseModal }}" style="background: none; border: none; color: #334155; cursor: pointer; font-size: 22px; line-height: 1; padding: 0; display: flex;">×</button>
           </div>
           <div style="font-size: 12px; color: #475569; margin-bottom: 20px; padding-bottom: 16px; border-bottom: 1px solid #151525;">{{ payExpenseName }}</div>
@@ -1757,6 +1774,7 @@ class Component extends DCLogic {
     showExpenseModal: false,
     editExpenseId: null,
     expName: '',
+    expInstallment: false,
     expAmount: '',
     expFreq: 'monthly',
     expDay: '',
@@ -2012,14 +2030,15 @@ class Component extends DCLogic {
   }
 
   _expenseRowIn = (e) => ({
-    id: e.id, name: e.name, amount: Number(e.amount), freq: e.freq, day: Number(e.day || 1),
+    id: e.id, name: e.name, amount: Number(e.amount), freq: e.freq, day: e.day != null ? Number(e.day) : null,
     categoryId: e.category_id, targetTotal: e.target_total != null ? Number(e.target_total) : null,
-    endDate: e.end_date,
+    endDate: e.end_date, installment: e.installment !== false,
   })
 
   _expenseRowOut = (exp, uid) => ({
     id: exp.id, user_id: uid, name: exp.name, amount: exp.amount, freq: exp.freq, day: exp.day,
     category_id: exp.categoryId || null, target_total: exp.targetTotal, end_date: exp.endDate,
+    installment: exp.installment,
   })
 
   handleLogin = async () => {
@@ -2411,13 +2430,14 @@ class Component extends DCLogic {
   openExpenseModal = (exp) => {
     if (exp) {
       this.setState({
-        showExpenseModal: true, editExpenseId: exp.id, expName: exp.name, expAmount: String(exp.amount),
-        expFreq: exp.freq, expDay: String(exp.day || 1), expCategoryId: exp.categoryId || '',
+        showExpenseModal: true, editExpenseId: exp.id, expName: exp.name, expInstallment: exp.installment,
+        expAmount: exp.installment ? String(exp.amount) : '', expFreq: exp.freq || 'monthly', expDay: String(exp.day || 1),
+        expCategoryId: exp.categoryId || '',
         expTargetTotal: exp.targetTotal != null ? String(exp.targetTotal) : '', expEndDate: exp.endDate || '',
       });
     } else {
       this.setState({
-        showExpenseModal: true, editExpenseId: null, expName: '', expAmount: '', expFreq: 'monthly',
+        showExpenseModal: true, editExpenseId: null, expName: '', expInstallment: false, expAmount: '', expFreq: 'monthly',
         expDay: String(new Date().getDate()), expCategoryId: '', expTargetTotal: '', expEndDate: '',
       });
     }
@@ -2428,19 +2448,33 @@ class Component extends DCLogic {
   saveExpense = async () => {
     const s = this.state;
     const name = s.expName.trim();
-    const amount = parseFloat(s.expAmount);
-    const day = Math.min(31, Math.max(1, parseInt(s.expDay) || 1));
-    const targetTotal = s.expTargetTotal.trim() ? parseFloat(s.expTargetTotal) : null;
+    const installment = s.expInstallment;
     const endDate = s.expEndDate || null;
-    if (!name || !amount || amount <= 0) return;
-    if (!targetTotal && !endDate) return; // precisa de pelo menos um tipo de teto
+    if (!name) return;
+    let amount, freq, day, targetTotal;
+    if (installment) {
+      amount = parseFloat(s.expAmount);
+      freq = s.expFreq;
+      day = Math.min(31, Math.max(1, parseInt(s.expDay) || 1));
+      targetTotal = s.expTargetTotal.trim() ? parseFloat(s.expTargetTotal) : null;
+      if (!amount || amount <= 0) return;
+      if (!targetTotal && !endDate) return; // precisa de pelo menos um tipo de teto
+    } else {
+      // Dívida sem parcelamento: não tem valor de parcela nem recorrência — só um valor total devido,
+      // pago quando/quanto o usuário quiser (ex: "devo R$3.123 pra alguém, sem prazo nem parcela fixa").
+      targetTotal = parseFloat(s.expTargetTotal);
+      if (!targetTotal || targetTotal <= 0) return;
+      amount = targetTotal;
+      freq = null;
+      day = null;
+    }
     let exp;
     let newExpenses;
     if (s.editExpenseId) {
-      exp = { id: s.editExpenseId, name, amount, freq: s.expFreq, day, categoryId: s.expCategoryId || null, targetTotal, endDate };
+      exp = { id: s.editExpenseId, name, installment, amount, freq, day, categoryId: s.expCategoryId || null, targetTotal, endDate };
       newExpenses = s.recurringExpenses.map(e => e.id === s.editExpenseId ? exp : e);
     } else {
-      exp = { id: 'e' + Date.now(), name, amount, freq: s.expFreq, day, categoryId: s.expCategoryId || null, targetTotal, endDate };
+      exp = { id: 'e' + Date.now(), name, installment, amount, freq, day, categoryId: s.expCategoryId || null, targetTotal, endDate };
       newExpenses = [...s.recurringExpenses, exp];
     }
     this.setState({ recurringExpenses: newExpenses, showExpenseModal: false });
@@ -2490,7 +2524,7 @@ class Component extends DCLogic {
     this._save('autoExpenseMonth', curKey);
     const toCreate = [];
     recurringExpenses.forEach(exp => {
-      if (exp.freq !== 'monthly') return;
+      if (!exp.installment || exp.freq !== 'monthly') return;
       if (exp.endDate && (curKey + '-01') > exp.endDate) return;
       const alreadyThisMonth = transactions.some(t => t.recurringExpenseId === exp.id && t.date && t.date.startsWith(curKey));
       if (alreadyThisMonth) return;
@@ -3412,18 +3446,20 @@ class Component extends DCLogic {
       }),
       hasGoals: s.goals.length > 0,
       noGoals: s.goals.length === 0,
-      // Despesas recorrentes com teto
+      // Dívidas (parceladas com teto, ou avulsas sem prazo/parcela fixa)
       showExpenseModal: s.showExpenseModal,
-      expName: s.expName, expAmount: s.expAmount, expFreq: s.expFreq, expDay: s.expDay,
+      expName: s.expName, expInstallment: s.expInstallment, expAmount: s.expAmount, expFreq: s.expFreq, expDay: s.expDay,
       expCategoryId: s.expCategoryId, expTargetTotal: s.expTargetTotal, expEndDate: s.expEndDate,
+      expNotInstallment: !s.expInstallment,
       setExpName: e => this.setState({ expName: e.target.value }),
+      setExpInstallment: e => this.setState({ expInstallment: e.target.checked }),
       setExpAmount: e => this.setState({ expAmount: e.target.value }),
       setExpFreq: e => this.setState({ expFreq: e.target.value }),
       setExpDay: e => this.setState({ expDay: e.target.value }),
       setExpCategoryId: e => this.setState({ expCategoryId: e.target.value }),
       setExpTargetTotal: e => this.setState({ expTargetTotal: e.target.value }),
       setExpEndDate: e => this.setState({ expEndDate: e.target.value }),
-      expModalTitle: s.editExpenseId ? 'Editar Despesa' : 'Nova Despesa',
+      expModalTitle: s.editExpenseId ? 'Editar Dívida' : 'Nova Dívida',
       saveExpense: this.saveExpense, closeExpenseModal: this.closeExpenseModal,
       openNewExpense: () => this.openExpenseModal(null),
       expenseItems: s.recurringExpenses.map(exp => {
@@ -3436,7 +3472,7 @@ class Component extends DCLogic {
         const isCompleted = (hasTarget && paid >= exp.targetTotal) || (hasEndDate && todayStr > exp.endDate);
         return {
           ...exp, catName: cat.name, catColor: cat.color, catIcon: 'ph ph-' + cat.icon,
-          freqLabel: freqMap[exp.freq] || 'Mensal',
+          subtitleLabel: exp.installment ? ((freqMap[exp.freq] || 'Mensal') + ' · ' + this.fmt(exp.amount) + '/parcela') : 'Sem parcelamento fixo',
           fmtAmount: this.fmt(exp.amount), fmtPaid: this.fmt(paid),
           hasTarget, fmtTarget: hasTarget ? this.fmt(exp.targetTotal) : '',
           fmtRemaining: hasTarget ? this.fmt(Math.max(0, exp.targetTotal - paid)) : '',

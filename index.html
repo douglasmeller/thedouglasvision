@@ -1177,6 +1177,113 @@
           </div>
         </sc-if>
 
+        <!-- ═══ TAREFAS ═══ -->
+        <sc-if value="{{ isTarefas }}" hint-placeholder-val="{{ false }}">
+          <div class="fade-in" style="padding: 20px; display: flex; flex-direction: column; gap: 16px; max-width: 720px; margin: 0 auto; width: 100%; box-sizing: border-box;">
+            <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+              <div style="font-size: 20px; font-weight: 600; color: #E2E8F0; letter-spacing: -0.3px;">Tarefas</div>
+              <button onClick="{{ openNewTask }}" style="display: flex; align-items: center; gap: 6px; padding: 9px 16px; background: linear-gradient(135deg, #2563EB, #06B6D4); border: none; border-radius: 9px; color: white; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; box-shadow: 0 2px 12px #2563EB33;">
+                <i class="ph ph-plus" style="font-size: 15px;"></i>Nova
+              </button>
+            </div>
+            <div style="display: flex; background: #111118; border-radius: 10px; padding: 4px; gap: 2px;">
+              <button onClick="{{ setTaskFilterPending }}" style="{{ taskFilterPendingStyle }}">Pendentes ({{ pendingTaskCount }})</button>
+              <button onClick="{{ setTaskFilterDone }}" style="{{ taskFilterDoneStyle }}">Concluídas ({{ doneTaskCount }})</button>
+              <button onClick="{{ setTaskFilterAll }}" style="{{ taskFilterAllStyle }}">Todas</button>
+            </div>
+            <sc-if value="{{ noTaskItems }}" hint-placeholder-val="{{ false }}">
+              <div style="background: #111118; border: 1px solid #151525; border-radius: 12px; padding: 48px 24px; display: flex; flex-direction: column; align-items: center; gap: 0; text-align: center;">
+                <div style="width: 56px; height: 56px; border-radius: 14px; background: #1A1A2A; display: flex; align-items: center; justify-content: center; margin-bottom: 14px;">
+                  <i class="ph ph-check-square" style="font-size: 26px; color: #2A3A55;"></i>
+                </div>
+                <div style="font-size: 15px; font-weight: 600; color: #334155; margin-bottom: 6px;">Nenhuma tarefa por aqui</div>
+                <div style="font-size: 12px; color: #1E2A3A; line-height: 1.6; max-width: 260px; margin-bottom: 16px;">Crie uma tarefa com título, prazo e prioridade — bem simples, sem enrolação.</div>
+                <button onClick="{{ openNewTask }}" style="padding: 9px 20px; background: linear-gradient(135deg, #2563EB, #06B6D4); border: none; border-radius: 9px; color: white; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit;">Criar primeira tarefa</button>
+              </div>
+            </sc-if>
+            <sc-if value="{{ hasTaskItems }}" hint-placeholder-val="{{ false }}">
+              <div style="display: flex; flex-direction: column; gap: 10px;">
+                <sc-for list="{{ taskItems }}" as="tk" hint-placeholder-count="5">
+                  <div style="background: #111118; border: 1px solid #151525; border-radius: 12px; padding: 14px 16px; display: flex; align-items: flex-start; gap: 12px;">
+                    <button onClick="{{ tk.onToggle }}" style="{{ tk.checkStyle }}" title="Marcar como concluída">
+                      <sc-if value="{{ tk.done }}" hint-placeholder-val="{{ false }}"><i class="ph ph-check" style="font-size: 13px;"></i></sc-if>
+                    </button>
+                    <div style="flex: 1; min-width: 0;">
+                      <div style="font-size: 14px; font-weight: 500; color: {{ tk.titleColor }}; text-decoration: {{ tk.titleDecor }}; overflow-wrap: break-word;">{{ tk.title }}</div>
+                      <sc-if value="{{ tk.hasNotes }}" hint-placeholder-val="{{ false }}">
+                        <div style="font-size: 12px; color: #334155; margin-top: 3px; line-height: 1.5;">{{ tk.notes }}</div>
+                      </sc-if>
+                      <div style="display: flex; align-items: center; gap: 6px; margin-top: 7px; flex-wrap: wrap;">
+                        <sc-if value="{{ tk.hasDueDate }}" hint-placeholder-val="{{ false }}">
+                          <span style="font-size: 10px; padding: 2px 7px; border-radius: 20px; background: {{ tk.dueDateColor }}22; color: {{ tk.dueDateColor }}; font-weight: 600;"><i class="ph ph-clock" style="font-size: 10px;"></i> {{ tk.fmtDueDate }}</span>
+                        </sc-if>
+                        <sc-if value="{{ tk.hasPriority }}" hint-placeholder-val="{{ false }}">
+                          <span style="font-size: 10px; padding: 2px 7px; border-radius: 20px; background: {{ tk.priorityColor }}22; color: {{ tk.priorityColor }}; font-weight: 600;">{{ tk.priorityLabel }}</span>
+                        </sc-if>
+                        <sc-if value="{{ tk.hasListName }}" hint-placeholder-val="{{ false }}">
+                          <span style="font-size: 10px; padding: 2px 7px; border-radius: 20px; background: #33415522; color: #64748B; font-weight: 600;">{{ tk.listName }}</span>
+                        </sc-if>
+                      </div>
+                    </div>
+                    <div style="display: flex; gap: 4px; flex-shrink: 0;">
+                      <button onClick="{{ tk.onEdit }}" style="background: none; border: 1px solid #1A1A28; border-radius: 6px; color: #334155; cursor: pointer; padding: 5px 7px; font-size: 13px; display: flex; align-items: center; line-height: 1;"><i class="ph ph-pencil-simple"></i></button>
+                      <button onClick="{{ tk.onDelete }}" style="background: none; border: 1px solid #1A1A28; border-radius: 6px; color: #EF444455; cursor: pointer; padding: 5px 7px; font-size: 13px; display: flex; align-items: center; line-height: 1;">
+                        <sc-if value="{{ tk.isDeleting }}" hint-placeholder-val="{{ false }}"><span class="btn-spinner" style="border-color: #EF444455; border-top-color: #EF4444;"></span></sc-if>
+                        <sc-if value="{{ tk.notDeleting }}" hint-placeholder-val="{{ true }}"><i class="ph ph-trash"></i></sc-if>
+                      </button>
+                    </div>
+                  </div>
+                </sc-for>
+              </div>
+            </sc-if>
+          </div>
+        </sc-if>
+
+        <!-- ═══ Tarefa Modal ═══ -->
+        <sc-if value="{{ showTaskModal }}" hint-placeholder-val="{{ false }}">
+          <div style="position: fixed; inset: 0; background: #00000099; z-index: 200; display: flex; align-items: center; justify-content: center; padding: 16px;">
+            <div class="modal-in" style="background: #111118; border: 1px solid #1E2A45; border-radius: 16px; padding: 24px; width: 100%; max-width: 380px; max-height: 90vh; overflow-y: auto;">
+              <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
+                <div style="font-size: 16px; font-weight: 600; color: #E2E8F0;">{{ taskModalTitle }}</div>
+                <button onClick="{{ closeTaskModal }}" style="background: none; border: none; color: #334155; cursor: pointer; font-size: 22px; line-height: 1; padding: 0; display: flex;">×</button>
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 14px;">
+                <div>
+                  <label style="display: block; font-size: 11px; color: #475569; margin-bottom: 6px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Título</label>
+                  <input type="text" value="{{ taskTitle }}" onInput="{{ setTaskTitle }}" placeholder="Ex: Ligar pro banco" style="width: 100%; box-sizing: border-box; background: #0D0D1A; border: 1px solid #1E2A45; border-radius: 8px; padding: 11px 14px; color: #E2E8F0; font-size: 14px; font-family: inherit;">
+                </div>
+                <div style="display: flex; gap: 10px;">
+                  <div style="flex: 1;">
+                    <label style="display: block; font-size: 11px; color: #475569; margin-bottom: 6px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Prazo <span style="color: #334155; font-weight: 400; text-transform: none;">(opcional)</span></label>
+                    <input type="date" value="{{ taskDueDate }}" onInput="{{ setTaskDueDate }}" style="width: 100%; box-sizing: border-box; background: #0D0D1A; border: 1px solid #1E2A45; border-radius: 8px; padding: 11px 14px; color: #E2E8F0; font-size: 14px; font-family: inherit;">
+                  </div>
+                  <div style="width: 120px;">
+                    <label style="display: block; font-size: 11px; color: #475569; margin-bottom: 6px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Prioridade</label>
+                    <select value="{{ taskPriority }}" onChange="{{ setTaskPriority }}" style="width: 100%; background: #0D0D1A; border: 1px solid #1E2A45; border-radius: 8px; padding: 11px 14px; color: #E2E8F0; font-size: 14px; font-family: inherit; cursor: pointer;">
+                      <option value="">—</option>
+                      <option value="low">Baixa</option>
+                      <option value="medium">Média</option>
+                      <option value="high">Alta</option>
+                    </select>
+                  </div>
+                </div>
+                <div>
+                  <label style="display: block; font-size: 11px; color: #475569; margin-bottom: 6px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Lista <span style="color: #334155; font-weight: 400; text-transform: none;">(opcional)</span></label>
+                  <input type="text" value="{{ taskListName }}" onInput="{{ setTaskListName }}" placeholder="Ex: Pessoal, Trabalho" style="width: 100%; box-sizing: border-box; background: #0D0D1A; border: 1px solid #1E2A45; border-radius: 8px; padding: 11px 14px; color: #E2E8F0; font-size: 14px; font-family: inherit;">
+                </div>
+                <div>
+                  <label style="display: block; font-size: 11px; color: #475569; margin-bottom: 6px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Notas <span style="color: #334155; font-weight: 400; text-transform: none;">(opcional)</span></label>
+                  <textarea value="{{ taskNotes }}" onInput="{{ setTaskNotes }}" rows="3" placeholder="Detalhes, links, contexto…" style="width: 100%; box-sizing: border-box; background: #0D0D1A; border: 1px solid #1E2A45; border-radius: 8px; padding: 11px 14px; color: #E2E8F0; font-size: 13px; font-family: inherit; line-height: 1.5; resize: vertical;"></textarea>
+                </div>
+              </div>
+              <button onClick="{{ saveTask }}" style="{{ saveTaskBtnStyle }}">
+                <sc-if value="{{ savingTask }}" hint-placeholder-val="{{ false }}"><span class="btn-spinner"></span></sc-if>
+                <span>{{ saveTaskLabel }}</span>
+              </button>
+            </div>
+          </div>
+        </sc-if>
+
         <!-- ═══ JARVIS (tela dedicada) ═══ -->
         <sc-if value="{{ isJarvisScreen }}" hint-placeholder-val="{{ false }}">
           <div class="fade-in" style="height: 100%; display: flex; flex-direction: column; position: relative;">
@@ -1243,7 +1350,18 @@
               <sc-if value="{{ hasJarvisMessages }}" hint-placeholder-val="{{ false }}">
                 <sc-for list="{{ jarvisMessages }}" as="msg" hint-placeholder-count="4">
                   <div style="display: flex; justify-content: {{ msg.bubbleAlign }};">
-                    <div class="jarvis-font" style="max-width: 82%; color: {{ msg.msgColor }}; text-shadow: {{ msg.msgGlow }}; font-size: 13px; line-height: 1.7; white-space: pre-wrap;">{{ msg.content }}</div>
+                    <div class="jarvis-font" style="max-width: 82%; color: {{ msg.msgColor }}; text-shadow: {{ msg.msgGlow }}; font-size: 13px; line-height: 1.7;">
+                      <sc-for list="{{ msg.lines }}" as="ln" hint-placeholder-count="2">
+                        <div style="{{ ln.lineStyle }}">
+                          <sc-if value="{{ ln.isBullet }}" hint-placeholder-val="{{ false }}">
+                            <span style="opacity: 0.55; flex-shrink: 0;">▹</span>
+                          </sc-if>
+                          <sc-for list="{{ ln.segments }}" as="seg" hint-placeholder-count="2">
+                            <span style="{{ seg.segStyle }}">{{ seg.text }}</span>
+                          </sc-for>
+                        </div>
+                      </sc-for>
+                    </div>
                   </div>
                 </sc-for>
               </sc-if>
@@ -1351,7 +1469,18 @@
             <sc-if value="{{ hasJarvisMessages }}" hint-placeholder-val="{{ false }}">
               <sc-for list="{{ jarvisMessages }}" as="msg" hint-placeholder-count="4">
                 <div style="display: flex; justify-content: {{ msg.bubbleAlign }};">
-                  <div class="jarvis-font" style="max-width: 88%; color: {{ msg.msgColor }}; text-shadow: {{ msg.msgGlow }}; font-size: 12px; line-height: 1.6; white-space: pre-wrap;">{{ msg.content }}</div>
+                  <div class="jarvis-font" style="max-width: 88%; color: {{ msg.msgColor }}; text-shadow: {{ msg.msgGlow }}; font-size: 12px; line-height: 1.6;">
+                    <sc-for list="{{ msg.lines }}" as="ln" hint-placeholder-count="2">
+                      <div style="{{ ln.lineStyle }}">
+                        <sc-if value="{{ ln.isBullet }}" hint-placeholder-val="{{ false }}">
+                          <span style="opacity: 0.55; flex-shrink: 0;">▹</span>
+                        </sc-if>
+                        <sc-for list="{{ ln.segments }}" as="seg" hint-placeholder-count="2">
+                          <span style="{{ seg.segStyle }}">{{ seg.text }}</span>
+                        </sc-for>
+                      </div>
+                    </sc-for>
+                  </div>
                 </div>
               </sc-for>
             </sc-if>
@@ -1461,12 +1590,16 @@
     <!-- ── Bottom Navigation (mobile) ── -->
     <sc-if value="{{ isMobile }}" hint-placeholder-val="{{ false }}">
       <nav style="position: fixed; bottom: 0; left: 0; right: 0; z-index: 100; background: #0D0D1A; border-top: 1px solid #1E2A45; display: flex; padding-bottom: env(safe-area-inset-bottom, 0px);">
-        <sc-for list="{{ navItems }}" as="nav" hint-placeholder-count="5">
+        <sc-for list="{{ mobilePrimaryNavItems }}" as="nav" hint-placeholder-count="4">
           <button onClick="{{ nav.onClick }}" style="{{ nav.bottomNavStyle }}">
             <i class="{{ nav.iconClass }}" style="font-size: 21px;"></i>
             <span style="font-size: 10px; line-height: 1; margin-top: 2px; font-weight: inherit;">{{ nav.label }}</span>
           </button>
         </sc-for>
+        <button onClick="{{ toggleSidebar }}" style="{{ mobileMoreStyle }}">
+          <i class="ph ph-dots-three-outline" style="font-size: 21px;"></i>
+          <span style="font-size: 10px; line-height: 1; margin-top: 2px; font-weight: inherit;">Mais</span>
+        </button>
       </nav>
     </sc-if>
 
@@ -1910,6 +2043,17 @@ class Component extends DCLogic {
     jarvisGlitching: false,
     jarvisListening: false,
     cfgJarvisNotes: '',
+    // Tarefas — primeiro módulo do TDV fora de Finanças.
+    tasks: [],
+    showTaskModal: false,
+    editTaskId: null,
+    taskTitle: '',
+    taskNotes: '',
+    taskDueDate: '',
+    taskPriority: '',
+    taskListName: '',
+    savingTask: false,
+    taskFilter: 'pending', // 'pending' | 'done' | 'all'
     user: null,
     transactions: [],
     categories: [],
@@ -2179,7 +2323,7 @@ class Component extends DCLogic {
   _loadFromSupabase = async (authUser) => {
     this.setState({ loading: true, loadingMsg: 'Carregando dados...' });
     const uid = authUser.id;
-    const [{ data: cats }, { data: txns }, { data: goals }, { data: profile }, { data: jarvisCtx }, { data: expenses }, { data: card }] = await Promise.all([
+    const [{ data: cats }, { data: txns }, { data: goals }, { data: profile }, { data: jarvisCtx }, { data: expenses }, { data: card }, { data: tasksData }] = await Promise.all([
       window._sb.from('categories').select('*').eq('user_id', uid),
       window._sb.from('transactions').select('*').eq('user_id', uid),
       window._sb.from('goals').select('*').eq('user_id', uid),
@@ -2187,6 +2331,7 @@ class Component extends DCLogic {
       window._sb.from('jarvis_context').select('personal_notes').eq('user_id', uid).maybeSingle(),
       window._sb.from('recurring_expenses').select('*').eq('user_id', uid),
       window._sb.from('card_settings').select('*').eq('user_id', uid).maybeSingle(),
+      window._sb.from('tasks').select('*').eq('user_id', uid),
     ]);
     let catList = (cats || []).map(c => ({ id: c.id, name: c.name, icon: c.icon, color: c.color, budget: c.budget || null }));
     if (catList.length === 0) {
@@ -2201,10 +2346,11 @@ class Component extends DCLogic {
     }));
     const expenseList = (expenses || []).map(e => this._expenseRowIn(e));
     const cardSettings = card ? { name: card.name, closingDay: Number(card.closing_day) } : null;
+    const taskList = (tasksData || []).map(t => this._taskRowIn(t));
     const name = profile?.name || authUser.user_metadata?.name || authUser.email.split('@')[0].replace(/[._-]/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
     const user = { id: uid, name, email: authUser.email };
     this.setState({
-      user, transactions: txnList, categories: catList, goals: goalList, recurringExpenses: expenseList,
+      user, transactions: txnList, categories: catList, goals: goalList, recurringExpenses: expenseList, tasks: taskList,
       cardSettings, cardName: cardSettings?.name || 'Cartão de Crédito', cardClosingDay: String(cardSettings?.closingDay || 1),
       cfgName: name, cfgEmail: authUser.email,
       cfgCurrency: profile?.currency || 'BRL',
@@ -2226,12 +2372,13 @@ class Component extends DCLogic {
   _refreshData = async () => {
     const uid = this.state.user?.id;
     if (!uid) return;
-    const [{ data: cats }, { data: txns }, { data: goals }, { data: expenses }, { data: card }] = await Promise.all([
+    const [{ data: cats }, { data: txns }, { data: goals }, { data: expenses }, { data: card }, { data: tasksData }] = await Promise.all([
       window._sb.from('categories').select('*').eq('user_id', uid),
       window._sb.from('transactions').select('*').eq('user_id', uid),
       window._sb.from('goals').select('*').eq('user_id', uid),
       window._sb.from('recurring_expenses').select('*').eq('user_id', uid),
       window._sb.from('card_settings').select('*').eq('user_id', uid).maybeSingle(),
+      window._sb.from('tasks').select('*').eq('user_id', uid),
     ]);
     const catList = (cats || []).map(c => ({ id: c.id, name: c.name, icon: c.icon, color: c.color, budget: c.budget || null }));
     const txnList = (txns || []).map(t => this._txnRowIn(t));
@@ -2241,13 +2388,25 @@ class Component extends DCLogic {
     }));
     const expenseList = (expenses || []).map(e => this._expenseRowIn(e));
     const cardSettings = card ? { name: card.name, closingDay: Number(card.closing_day) } : null;
+    const taskList = (tasksData || []).map(t => this._taskRowIn(t));
     // Se tem uma exclusão pendente na janela de "Desfazer" (até 5s), o servidor ainda não sabe
     // disso — sem esse filtro, um refresh nesse meio-tempo (outro dispositivo, o Jarvis mudando
     // algo) traria o lançamento de volta na tela antes do tempo de desfazer acabar de verdade.
     const pendingDeleteId = this.state.undoTxn?.id;
     const finalTxnList = pendingDeleteId ? txnList.filter(t => t.id !== pendingDeleteId) : txnList;
-    this.setState({ transactions: finalTxnList, categories: catList, goals: goalList, recurringExpenses: expenseList, cardSettings });
+    this.setState({ transactions: finalTxnList, categories: catList, goals: goalList, recurringExpenses: expenseList, cardSettings, tasks: taskList });
   }
+
+  _taskRowIn = (t) => ({
+    id: t.id, title: t.title, notes: t.notes || '', done: !!t.done,
+    dueDate: t.due_date, priority: t.priority || '', listName: t.list_name || '',
+  })
+
+  _taskRowOut = (task, uid) => ({
+    id: task.id, user_id: uid, title: task.title, notes: task.notes || null, done: task.done,
+    due_date: task.dueDate || null, priority: task.priority || null, list_name: task.listName || null,
+    completed_at: task.done ? new Date().toISOString() : null,
+  })
 
   _expenseRowIn = (e) => ({
     id: e.id, name: e.name, amount: Number(e.amount), freq: e.freq, day: e.day != null ? Number(e.day) : null,
@@ -2318,7 +2477,7 @@ class Component extends DCLogic {
 
   handleLogout = async () => {
     await window._sb.auth.signOut();
-    this.setState({ user: null, screen: 'login', loginEmail: '', loginPassword: '', sidebarOpen: false, transactions: [], categories: [], goals: [], recurringExpenses: [], jarvisMessages: [], jarvisLoaded: false, jarvisConversationId: null, jarvisConversations: [] });
+    this.setState({ user: null, screen: 'login', loginEmail: '', loginPassword: '', sidebarOpen: false, transactions: [], categories: [], goals: [], recurringExpenses: [], tasks: [], jarvisMessages: [], jarvisLoaded: false, jarvisConversationId: null, jarvisConversations: [] });
   }
 
   _jarvisMsg = (role, content, persona) => {
@@ -2334,6 +2493,31 @@ class Component extends DCLogic {
       msgColor,
       msgGlow: isUser ? 'none' : ('0 0 10px ' + msgColor + 'aa, 0 0 22px ' + msgColor + '55'),
     };
+  }
+
+  // Markdown simples do texto do Jarvis: **destaque** vira caixa-alta com letras espaçadas (não
+  // negrito comum — a fonte tech nem carrega peso bold, e negrito ficaria destoando do resto) e
+  // "- item"/"* item" vira marcador de lista de verdade em vez do traço aparecendo literalmente.
+  // Recalculado a cada render a partir do texto bruto — funciona igual durante o efeito de
+  // máquina de escrever, mesmo com um "**" ainda não fechado no meio da digitação.
+  _parseJarvisContent = (text) => {
+    const lines = (text || '').split('\n');
+    return lines.map((line, i) => {
+      const bulletMatch = line.match(/^(\s*)[-*]\s+(.*)$/);
+      const isBullet = !!bulletMatch;
+      const lineText = isBullet ? bulletMatch[2] : line;
+      const isEmpty = lineText.trim() === '';
+      const segments = [];
+      const re = /\*\*(.+?)\*\*/g;
+      let lastIndex = 0, m;
+      while ((m = re.exec(lineText)) !== null) {
+        if (m.index > lastIndex) segments.push({ key: segments.length, text: lineText.slice(lastIndex, m.index), em: false });
+        segments.push({ key: segments.length, text: m[1], em: true });
+        lastIndex = m.index + m[0].length;
+      }
+      if (lastIndex < lineText.length || segments.length === 0) segments.push({ key: segments.length, text: lineText.slice(lastIndex), em: false });
+      return { key: i, isBullet, isEmpty, segments };
+    });
   }
 
   _scrollJarvisToBottom = () => {
@@ -2941,6 +3125,60 @@ class Component extends DCLogic {
     this._toast('Fatura paga!');
   }
 
+  // ─── Tarefas ─────────────────────────────────────────────────────────────
+
+  openTaskModal = (task) => {
+    if (task) {
+      this.setState({
+        showTaskModal: true, editTaskId: task.id, taskTitle: task.title, taskNotes: task.notes || '',
+        taskDueDate: task.dueDate || '', taskPriority: task.priority || '', taskListName: task.listName || '',
+      });
+    } else {
+      this.setState({
+        showTaskModal: true, editTaskId: null, taskTitle: '', taskNotes: '',
+        taskDueDate: '', taskPriority: '', taskListName: '',
+      });
+    }
+  }
+
+  closeTaskModal = () => this.setState({ showTaskModal: false });
+
+  saveTask = async () => {
+    const s = this.state;
+    if (s.savingTask) return;
+    const title = s.taskTitle.trim();
+    if (!title) return;
+    const prevTask = s.editTaskId ? s.tasks.find(t => t.id === s.editTaskId) : null;
+    const task = {
+      id: s.editTaskId || 'k' + Date.now(),
+      title, notes: s.taskNotes.trim(), dueDate: s.taskDueDate || null,
+      priority: s.taskPriority || null, listName: s.taskListName.trim() || null,
+      done: prevTask ? prevTask.done : false,
+    };
+    this.setState({ savingTask: true });
+    const { error } = await window._sb.from('tasks').upsert(this._taskRowOut(task, s.user.id));
+    if (error) { this.setState({ savingTask: false }); this._toast('Não foi possível salvar a tarefa. Tente novamente.'); return; }
+    const tasks = s.editTaskId ? s.tasks.map(t => t.id === s.editTaskId ? task : t) : [...s.tasks, task];
+    this.setState({ tasks, showTaskModal: false, savingTask: false });
+    this._toast(s.editTaskId ? 'Tarefa atualizada!' : 'Tarefa criada!');
+  }
+
+  deleteTask = async (id) => {
+    this.setState({ deletingId: id });
+    const { error } = await window._sb.from('tasks').delete().eq('id', id);
+    if (error) { this.setState({ deletingId: null }); this._toast('Não foi possível excluir. Tente novamente.'); return; }
+    this.setState({ tasks: this.state.tasks.filter(t => t.id !== id), deletingId: null });
+    this._toast('Tarefa excluída.');
+  }
+
+  toggleTaskDone = async (id) => {
+    const task = this.state.tasks.find(t => t.id === id);
+    if (!task) return;
+    const updated = { ...task, done: !task.done };
+    this.setState({ tasks: this.state.tasks.map(t => t.id === id ? updated : t) });
+    await window._sb.from('tasks').update({ done: updated.done, completed_at: updated.done ? new Date().toISOString() : null }).eq('id', id);
+  }
+
   undoDelete = () => {
     if (this.state.undoTimer) clearTimeout(this.state.undoTimer);
     const { undoTxn } = this.state;
@@ -3126,10 +3364,11 @@ class Component extends DCLogic {
     const isLancamentos = screen === 'lancamentos';
     const isPlanejamento = screen === 'planejamento';
     const isCategorias = screen === 'categorias';
+    const isTarefas = screen === 'tarefas';
     const isConfiguracoes = screen === 'configuracoes';
     const isJarvisScreen = screen === 'jarvis';
 
-    const titles = { dashboard: 'Dashboard', lancamentos: 'Lançamentos', planejamento: 'Planejamento', categorias: 'Categorias', jarvis: 'Jarvis', configuracoes: 'Configurações' };
+    const titles = { dashboard: 'Dashboard', lancamentos: 'Lançamentos', planejamento: 'Planejamento', categorias: 'Categorias', tarefas: 'Tarefas', jarvis: 'Jarvis', configuracoes: 'Configurações' };
 
     // Modelos do J.A.R.V.I.S. — as chaves ('haiku'/'sonnet'/'opus') são o que vai pro backend e o
     // que já está gravado em jarvis_messages.persona, por isso não mudam junto com o nome exibido.
@@ -3212,9 +3451,14 @@ class Component extends DCLogic {
       { id: 'lancamentos',  label: 'Lançamentos',   icon: 'list-bullets' },
       { id: 'planejamento', label: 'Planejamento',  icon: 'calendar-check' },
       { id: 'categorias',   label: 'Categorias',    icon: 'tag' },
+      { id: 'tarefas',      label: 'Tarefas',       icon: 'check-square' },
       { id: 'jarvis',       label: 'Jarvis',         icon: 'robot' },
       { id: 'configuracoes',label: 'Configurações', icon: 'gear' },
     ];
+    // No celular só cabem ~5 ícones na barra inferior sem espremer — mostra os mais usados e
+    // deixa o resto (Planejamento, Categorias, Configurações) atrás do botão "Mais", que abre a
+    // gaveta lateral já existente (mesma usada no desktop, só que deslizando por cima no mobile).
+    const mobilePrimaryIds = new Set(['dashboard', 'lancamentos', 'tarefas', 'jarvis']);
     const navItems = navDefs.map(n => {
       const active = screen === n.id;
       return {
@@ -3239,6 +3483,15 @@ class Component extends DCLogic {
         onClick: () => { if (n.id === 'jarvis') this.goToJarvisScreen(); else this.setState({ screen: n.id, sidebarOpen: false }); },
       };
     });
+    const mobilePrimaryNavItems = navItems.filter(n => mobilePrimaryIds.has(n.id));
+    const mobileMoreActive = !mobilePrimaryIds.has(screen);
+    const mobileMoreStyle = {
+      flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+      gap: '2px', padding: '10px 4px', border: 'none', background: 'none', cursor: 'pointer',
+      color: mobileMoreActive ? '#60A5FA' : '#475569',
+      fontFamily: 'inherit', fontSize: '10px', fontWeight: mobileMoreActive ? '600' : '400',
+      minHeight: '56px', transition: 'color 0.15s',
+    };
 
     // Month data
     // Compras no cartão de crédito não contam pro saldo/patrimônio (dinheiro que ainda não saiu da
@@ -3701,10 +3954,10 @@ class Component extends DCLogic {
     }
 
     return {
-      isLogin, isApp, isDashboard, isLancamentos, isPlanejamento, isCategorias, isConfiguracoes,
+      isLogin, isApp, isDashboard, isLancamentos, isPlanejamento, isCategorias, isTarefas, isConfiguracoes,
       currentScreenTitle: titles[screen] || '',
       appShellHeight,
-      isMobile, sidebarOpen, sidebarStyle, navItems,
+      isMobile, sidebarOpen, sidebarStyle, navItems, mobilePrimaryNavItems, mobileMoreStyle,
       sidebarCollapsed, sidebarExpanded, collapseToggleStyle, logoRowStyle,
       sidebarHeaderStyle, sidebarFooterStyle, logoutBtnStyle,
       collapseToggleIcon: sidebarCollapsed ? 'ph ph-caret-right' : 'ph ph-caret-left',
@@ -4053,6 +4306,66 @@ class Component extends DCLogic {
       saveCatLabel: s.savingCat ? 'Salvando…' : 'Salvar',
       saveCatBtnStyle: { ..._actionBtn(s.savingCat, GRAD_BLUE, '#2563EB33'), marginTop: '20px' },
       iconOptions, colorOptions,
+      // tarefas
+      openNewTask: () => this.openTaskModal(null),
+      taskFilter: s.taskFilter,
+      setTaskFilterPending: () => this.setState({ taskFilter: 'pending' }),
+      setTaskFilterDone: () => this.setState({ taskFilter: 'done' }),
+      setTaskFilterAll: () => this.setState({ taskFilter: 'all' }),
+      taskFilterPendingStyle: { flex: 1, padding: '8px', border: 'none', borderRadius: '7px', fontSize: '13px', fontWeight: '600', fontFamily: 'inherit', cursor: 'pointer', transition: 'all 0.15s', background: s.taskFilter === 'pending' ? '#1E2A45' : 'transparent', color: s.taskFilter === 'pending' ? '#60A5FA' : '#475569' },
+      taskFilterDoneStyle: { flex: 1, padding: '8px', border: 'none', borderRadius: '7px', fontSize: '13px', fontWeight: '600', fontFamily: 'inherit', cursor: 'pointer', transition: 'all 0.15s', background: s.taskFilter === 'done' ? '#1E2A45' : 'transparent', color: s.taskFilter === 'done' ? '#60A5FA' : '#475569' },
+      taskFilterAllStyle: { flex: 1, padding: '8px', border: 'none', borderRadius: '7px', fontSize: '13px', fontWeight: '600', fontFamily: 'inherit', cursor: 'pointer', transition: 'all 0.15s', background: s.taskFilter === 'all' ? '#1E2A45' : 'transparent', color: s.taskFilter === 'all' ? '#60A5FA' : '#475569' },
+      taskItems: (() => {
+        const todayStr = new Date().toISOString().split('T')[0];
+        const priorityMap = { high: { label: 'Alta', color: '#EF4444' }, medium: { label: 'Média', color: '#F97316' }, low: { label: 'Baixa', color: '#3B82F6' } };
+        const items = s.tasks.map(t => {
+          const isOverdue = !t.done && !!t.dueDate && t.dueDate < todayStr;
+          const isDueToday = !t.done && t.dueDate === todayStr;
+          const pr = priorityMap[t.priority] || null;
+          return {
+            ...t, hasDueDate: !!t.dueDate, fmtDueDate: t.dueDate ? this.fmtDate(t.dueDate) : '',
+            isOverdue, isDueToday,
+            dueDateColor: isOverdue ? '#EF4444' : isDueToday ? '#F97316' : '#64748B',
+            hasPriority: !!pr, priorityLabel: pr ? pr.label : '', priorityColor: pr ? pr.color : '',
+            hasListName: !!t.listName, hasNotes: !!(t.notes && t.notes.trim()),
+            isDeleting: s.deletingId === t.id, notDeleting: s.deletingId !== t.id,
+            titleColor: t.done ? '#334155' : '#CBD5E1',
+            titleDecor: t.done ? 'line-through' : 'none',
+            checkStyle: {
+              width: '22px', height: '22px', borderRadius: '7px', flexShrink: 0, marginTop: '1px',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
+              border: '1.5px solid ' + (t.done ? '#22C55E' : '#334155'),
+              background: t.done ? '#22C55E' : 'transparent', color: '#0A0A0F',
+            },
+            onToggle: () => this.toggleTaskDone(t.id),
+            onEdit: () => this.openTaskModal(t),
+            onDelete: () => this.deleteTask(t.id),
+          };
+        }).sort((a, b) => {
+          if (a.done !== b.done) return a.done ? 1 : -1;
+          if (!!a.dueDate !== !!b.dueDate) return a.dueDate ? -1 : 1;
+          if (a.dueDate && b.dueDate && a.dueDate !== b.dueDate) return a.dueDate < b.dueDate ? -1 : 1;
+          return 0;
+        });
+        return items.filter(t => s.taskFilter === 'all' ? true : s.taskFilter === 'done' ? t.done : !t.done);
+      })(),
+      pendingTaskCount: s.tasks.filter(t => !t.done).length,
+      doneTaskCount: s.tasks.filter(t => t.done).length,
+      hasTaskItems: (s.taskFilter === 'all' ? s.tasks.length : s.taskFilter === 'done' ? s.tasks.filter(t => t.done).length : s.tasks.filter(t => !t.done).length) > 0,
+      noTaskItems: (s.taskFilter === 'all' ? s.tasks.length : s.taskFilter === 'done' ? s.tasks.filter(t => t.done).length : s.tasks.filter(t => !t.done).length) === 0,
+      showTaskModal: s.showTaskModal,
+      taskModalTitle: s.editTaskId ? 'Editar Tarefa' : 'Nova Tarefa',
+      taskTitle: s.taskTitle, taskNotes: s.taskNotes, taskDueDate: s.taskDueDate,
+      taskPriority: s.taskPriority, taskListName: s.taskListName,
+      setTaskTitle: e => this.setState({ taskTitle: e.target.value }),
+      setTaskNotes: e => this.setState({ taskNotes: e.target.value }),
+      setTaskDueDate: e => this.setState({ taskDueDate: e.target.value }),
+      setTaskPriority: e => this.setState({ taskPriority: e.target.value }),
+      setTaskListName: e => this.setState({ taskListName: e.target.value }),
+      saveTask: this.saveTask, closeTaskModal: this.closeTaskModal,
+      savingTask: s.savingTask,
+      saveTaskLabel: s.savingTask ? 'Salvando…' : 'Salvar',
+      saveTaskBtnStyle: { ..._actionBtn(s.savingTask, GRAD_BLUE, '#2563EB33'), marginTop: '20px' },
       // configurações
       txnCount: s.transactions.length,
       cfgName: s.cfgName, cfgEmail: s.cfgEmail, cfgCurrency: s.cfgCurrency,
@@ -4071,7 +4384,20 @@ class Component extends DCLogic {
       exportAllXlsx: () => this.exportXlsx(s.transactions),
       // Jarvis
       isJarvisScreen, showJarvisBubble: isApp && !isJarvisScreen,
-      jarvisMessages: s.jarvisMessages, hasJarvisMessages: s.jarvisMessages.length > 0, noJarvisMessages: s.jarvisMessages.length === 0,
+      jarvisMessages: s.jarvisMessages.map(msg => ({
+        ...msg,
+        lines: this._parseJarvisContent(msg.content).map(ln => ({
+          ...ln,
+          lineStyle: ln.isEmpty ? { height: '8px' } : (ln.isBullet ? { display: 'flex', alignItems: 'flex-start', gap: '7px', paddingLeft: '2px' } : {}),
+          segments: ln.segments.map(seg => ({
+            ...seg,
+            segStyle: seg.em
+              ? { textTransform: 'uppercase', letterSpacing: '0.07em' }
+              : {},
+          })),
+        })),
+      })),
+      hasJarvisMessages: s.jarvisMessages.length > 0, noJarvisMessages: s.jarvisMessages.length === 0,
       jarvisInput: s.jarvisInput,
       setJarvisInput: e => this.setState({ jarvisInput: e.target.value }),
       jarvisKeyDown: e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); this.sendJarvisMessage(); } },

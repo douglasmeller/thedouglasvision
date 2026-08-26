@@ -2353,22 +2353,24 @@ class Component extends DCLogic {
   // As três versões do J.A.R.V.I.S., na ordem em que aparecem no seletor. As chaves são as mesmas
   // de sempre ('haiku'/'sonnet'/'opus') porque é isso que o backend recebe e o que já está gravado
   // em jarvis_messages.persona — só o nome e as cores exibidas mudam.
+  // O Jarvis é sempre o mesmo — mesmo trato, mesma identidade visual (aquele azul de sempre) em
+  // qualquer versão. A única coisa que muda de fato entre elas é a capacidade por trás (o modelo).
+  // "dot" é só um apoio visual pra diferenciar as três linhas dentro do menu de seleção — não
+  // aparece em mais lugar nenhum, então não é um "personagem" diferente por versão.
   jarvisModels() {
+    const BLUE_ACCENT = '#38BDF8', BLUE_GLOW = '#38BDF866', BLUE_AVATAR = 'radial-gradient(circle, #0F2A3D, #081A28)';
     return {
       haiku: {
-        key: 'haiku', name: 'Mark III', tagline: 'Rápido e econômico',
-        accent: '#C08552', glow: '#C0855266',
-        avatarBg: 'radial-gradient(circle, #8C3A2B, #4A1C15)',
+        key: 'haiku', name: 'Mark III', tagline: 'Rápido e econômico', dot: '#C08552',
+        accent: BLUE_ACCENT, glow: BLUE_GLOW, avatarBg: BLUE_AVATAR,
       },
       sonnet: {
-        key: 'sonnet', name: 'Mark XLIII', tagline: 'Equilibrado — padrão',
-        accent: '#FBBF24', glow: '#FBBF2477',
-        avatarBg: 'radial-gradient(circle, #DC2626, #7F1D1D)',
+        key: 'sonnet', name: 'Mark XLIII', tagline: 'Equilibrado — padrão', dot: '#FBBF24',
+        accent: BLUE_ACCENT, glow: BLUE_GLOW, avatarBg: BLUE_AVATAR,
       },
       opus: {
-        key: 'opus', name: 'Visão', tagline: 'O mais capaz (e mais caro)',
-        accent: '#34D399', glow: '#34D39977',
-        avatarBg: 'radial-gradient(circle, #10B981, #7F1D1D)',
+        key: 'opus', name: 'Visão', tagline: 'O mais capaz (e mais caro)', dot: '#34D399',
+        accent: BLUE_ACCENT, glow: BLUE_GLOW, avatarBg: BLUE_AVATAR,
       },
     };
   }
@@ -4078,9 +4080,11 @@ class Component extends DCLogic {
             padding: '9px 11px', borderRadius: '9px', border: 'none', cursor: 'pointer',
             fontFamily: 'inherit', background: active ? m.accent + '1A' : 'transparent',
           },
+          // Só essa bolinha diferencia as versões — o resto (destaque, check, cor do nome) é sempre
+          // o azul do Jarvis, pra não recriar aquele efeito de "personagem diferente por versão".
           dotStyle: {
             width: '9px', height: '9px', borderRadius: '50%', flexShrink: 0,
-            background: m.accent, boxShadow: '0 0 7px ' + m.accent + '99',
+            background: m.dot, boxShadow: '0 0 7px ' + m.dot + '99',
           },
           nameStyle: { fontSize: '12.5px', fontWeight: '700', color: active ? m.accent : '#CBD5E1', letterSpacing: '0.3px' },
           onSelect: () => this.setJarvisModel(k),

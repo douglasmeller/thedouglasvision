@@ -63,6 +63,25 @@
     .jarvis-typing span { display: inline-block; width: 5px; height: 5px; border-radius: 50%; background: currentColor; margin-right: 3px; animation: jarvisTyping 1s infinite; }
     .jarvis-typing span:nth-child(2) { animation-delay: 0.15s; }
     .jarvis-typing span:nth-child(3) { animation-delay: 0.3s; }
+    /* Avatar do Jarvis com anéis de HUD girando ao redor — pra nunca ficar uma tela parada. */
+    @keyframes jarvisRingSpin { to { transform: rotate(360deg); } }
+    @keyframes jarvisRingSpinRev { to { transform: rotate(-360deg); } }
+    @keyframes jarvisRingBreathe { 0%, 100% { opacity: 0.55; } 50% { opacity: 1; } }
+    .jarvis-ring-wrap { position: relative; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .jarvis-ring { position: absolute; inset: 0; border-radius: 50%; pointer-events: none; box-sizing: border-box; }
+    .jarvis-ring-outer { inset: -6px; border: 1.5px solid transparent; border-top-color: currentColor; border-right-color: currentColor; opacity: 0.7; animation: jarvisRingSpin 5s linear infinite; }
+    .jarvis-ring-inner { inset: -2.5px; border: 1px dashed currentColor; opacity: 0.4; animation: jarvisRingSpinRev 9s linear infinite; }
+    .jarvis-ring-pulse { inset: -6px; border: 1.5px solid currentColor; opacity: 0.5; animation: jarvisRingBreathe 2.4s ease-in-out infinite; }
+    @media (prefers-reduced-motion: reduce) {
+      .jarvis-ring-outer, .jarvis-ring-inner, .jarvis-ring-pulse { animation: none; }
+    }
+    /* Indicador de "processando" — pulso tipo sonar em vez de três pontinhos. */
+    @keyframes jarvisSonar { 0% { transform: scale(0.25); opacity: 0.9; } 100% { transform: scale(1); opacity: 0; } }
+    .jarvis-sonar { position: relative; width: 20px; height: 20px; }
+    .jarvis-sonar span { position: absolute; inset: 0; border-radius: 50%; border: 1.5px solid currentColor; animation: jarvisSonar 1.4s ease-out infinite; }
+    .jarvis-sonar span:nth-child(2) { animation-delay: 0.45s; }
+    .jarvis-sonar span:nth-child(3) { animation-delay: 0.9s; }
+    .jarvis-sonar::after { content: ''; position: absolute; inset: 6px; border-radius: 50%; background: currentColor; }
     .jarvis-font { font-family: 'Share Tech Mono', 'Inter', monospace; }
     .jarvis-font-display { font-family: 'Orbitron', 'Inter', sans-serif; }
     @keyframes jarvisMicPulse { 0%, 100% { box-shadow: 0 0 0 0 #EF444466; } 50% { box-shadow: 0 0 0 7px #EF444400; } }
@@ -1162,8 +1181,12 @@
         <sc-if value="{{ isJarvisScreen }}" hint-placeholder-val="{{ false }}">
           <div class="fade-in" style="height: 100%; display: flex; flex-direction: column; position: relative;">
             <div style="padding: 16px 20px; border-bottom: 1px solid #151525; display: flex; align-items: center; gap: 10px; flex-shrink: 0;">
-              <div class="{{ jarvisGlitchClass }}" style="width: {{ jarvisHeaderIconSize }}; height: {{ jarvisHeaderIconSize }}; border-radius: 9px; overflow: hidden; flex-shrink: 0; background: {{ jarvisAvatarBg }}; box-shadow: 0 0 10px {{ jarvisGlowColor }}; padding: 1px; box-sizing: border-box;">
-                <img src="{{ jarvisLogoSrc }}" alt="" style="width: 100%; height: 100%; object-fit: contain;">
+              <div class="jarvis-ring-wrap" style="color: {{ jarvisAccentColor }};">
+                <span class="jarvis-ring jarvis-ring-outer"></span>
+                <span class="jarvis-ring jarvis-ring-inner"></span>
+                <div class="{{ jarvisGlitchClass }}" style="width: {{ jarvisHeaderIconSize }}; height: {{ jarvisHeaderIconSize }}; border-radius: 50%; overflow: hidden; flex-shrink: 0; background: {{ jarvisAvatarBg }}; box-shadow: 0 0 10px {{ jarvisGlowColor }}; padding: 1px; box-sizing: border-box;">
+                  <img src="{{ jarvisLogoSrc }}" alt="" style="width: 100%; height: 100%; object-fit: contain; border-radius: 50%;">
+                </div>
               </div>
               <div style="flex: 1; min-width: 0;">
                 <div class="jarvis-font-display {{ jarvisGlitchClass }}" style="font-size: 15px; font-weight: 700; color: #E2E8F0; letter-spacing: 0.5px;">{{ jarvisDisplayName }}</div>
@@ -1232,7 +1255,7 @@
               </sc-if>
               <sc-if value="{{ showJarvisTypingCursor }}" hint-placeholder-val="{{ false }}">
                 <div style="display: flex; justify-content: flex-start;">
-                  <div class="jarvis-typing" style="color: {{ jarvisAccentColor }}; text-shadow: 0 0 10px {{ jarvisGlowColor }}; padding: 6px 0;">
+                  <div class="jarvis-sonar" style="color: {{ jarvisAccentColor }}; filter: drop-shadow(0 0 6px {{ jarvisGlowColor }}); margin: 6px 4px;">
                     <span></span><span></span><span></span>
                   </div>
                 </div>
@@ -1255,14 +1278,22 @@
 
     <!-- ── Jarvis Chat Bubble (launcher — nas outras telas) ── -->
     <sc-if value="{{ showJarvisBubble }}" hint-placeholder-val="{{ false }}">
-      <button onClick="{{ toggleJarvisBubble }}" title="{{ jarvisDisplayName }}" style="{{ jarvisBubbleStyle }}">
-        <img src="{{ jarvisLogoSrc }}" alt="" style="width: 100%; height: 100%; object-fit: contain;">
-      </button>
+      <div class="jarvis-ring-wrap" style="{{ jarvisBubbleWrapStyle }}">
+        <span class="jarvis-ring jarvis-ring-outer"></span>
+        <span class="jarvis-ring jarvis-ring-inner"></span>
+        <button onClick="{{ toggleJarvisBubble }}" title="{{ jarvisDisplayName }}" style="{{ jarvisBubbleStyle }}">
+          <img src="{{ jarvisLogoSrc }}" alt="" style="width: 100%; height: 100%; object-fit: contain; border-radius: 50%;">
+        </button>
+      </div>
       <sc-if value="{{ jarvisOpen }}" hint-placeholder-val="{{ false }}">
         <div class="modal-in" style="{{ jarvisLauncherStyle }}">
           <div style="padding: 12px 14px; border-bottom: 1px solid #151525; display: flex; align-items: center; gap: 8px; flex-shrink: 0;">
-            <div class="{{ jarvisGlitchClass }}" style="width: 30px; height: 30px; border-radius: 8px; overflow: hidden; flex-shrink: 0; background: {{ jarvisAvatarBg }}; box-shadow: 0 0 8px {{ jarvisGlowColor }}; padding: 1px; box-sizing: border-box;">
-              <img src="{{ jarvisLogoSrc }}" alt="" style="width: 100%; height: 100%; object-fit: contain;">
+            <div class="jarvis-ring-wrap" style="color: {{ jarvisAccentColor }};">
+              <span class="jarvis-ring jarvis-ring-outer"></span>
+              <span class="jarvis-ring jarvis-ring-inner"></span>
+              <div class="{{ jarvisGlitchClass }}" style="width: 30px; height: 30px; border-radius: 50%; overflow: hidden; flex-shrink: 0; background: {{ jarvisAvatarBg }}; box-shadow: 0 0 8px {{ jarvisGlowColor }}; padding: 1px; box-sizing: border-box;">
+                <img src="{{ jarvisLogoSrc }}" alt="" style="width: 100%; height: 100%; object-fit: contain; border-radius: 50%;">
+              </div>
             </div>
             <div class="jarvis-font-display {{ jarvisGlitchClass }}" style="flex: 1; min-width: 0; font-size: 13px; font-weight: 700; color: #E2E8F0; letter-spacing: 0.3px;">{{ jarvisDisplayName }}</div>
             <button onClick="{{ startNewJarvisChatInline }}" title="Nova conversa" style="width: 28px; height: 28px; border-radius: 7px; background: transparent; border: 1px solid #1E2A45; color: #64748B; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
@@ -1332,7 +1363,7 @@
             </sc-if>
             <sc-if value="{{ showJarvisTypingCursor }}" hint-placeholder-val="{{ false }}">
               <div style="display: flex; justify-content: flex-start;">
-                <div class="jarvis-typing" style="color: {{ jarvisAccentColor }}; text-shadow: 0 0 10px {{ jarvisGlowColor }}; padding: 4px 0;">
+                <div class="jarvis-sonar" style="color: {{ jarvisAccentColor }}; filter: drop-shadow(0 0 6px {{ jarvisGlowColor }}); margin: 4px 4px;">
                   <span></span><span></span><span></span>
                 </div>
               </div>
@@ -3697,12 +3728,15 @@ class Component extends DCLogic {
         zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center',
         transition: 'transform 0.15s',
       },
+      jarvisBubbleWrapStyle: {
+        position: 'fixed', bottom: jarvisBubbleBottom, right: '24px', zIndex: 110,
+        width: jarvisBubbleSize, height: jarvisBubbleSize, color: jarvisAccentColor,
+      },
       jarvisBubbleStyle: {
-        position: 'fixed', bottom: jarvisBubbleBottom, right: '24px',
-        width: jarvisBubbleSize, height: jarvisBubbleSize, borderRadius: '50%',
+        width: '100%', height: '100%', borderRadius: '50%',
         background: jarvisAvatarBg, border: '1px solid ' + jarvisAccentColor + '55',
         color: 'white', cursor: 'pointer', boxShadow: '0 0 22px ' + jarvisAccentColor + '77, 0 4px 16px #00000055',
-        zIndex: 110, display: 'flex', alignItems: 'center', justifyContent: 'center',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
         overflow: 'hidden', padding: jarvisBubbleIconPad, boxSizing: 'border-box',
       },
       jarvisLauncherStyle: {

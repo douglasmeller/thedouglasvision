@@ -1175,11 +1175,29 @@
               <button onClick="{{ toggleJarvisConvList }}" title="Conversas" style="width: 34px; height: 34px; border-radius: 8px; background: transparent; border: 1px solid #1E2A45; color: #64748B; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
                 <i class="ph ph-clock-counter-clockwise" style="font-size: 16px;"></i>
               </button>
-              <div style="display: flex; gap: 5px; flex-shrink: 0;">
-                <button onClick="{{ setJarvisHaiku }}" style="{{ jarvisHaikuPillStyle }}">Jarvis</button>
-                <button onClick="{{ setJarvisSonnet }}" style="{{ jarvisSonnetPillStyle }}">Friday</button>
-              </div>
+              <button onClick="{{ toggleJarvisModelMenu }}" title="Trocar versão" style="{{ jarvisModelTriggerStyle }}">
+                <span>{{ jarvisModelLabel }}</span>
+                <i class="{{ jarvisModelCaretIcon }}" style="font-size: 11px;"></i>
+              </button>
             </div>
+
+            <!-- Seletor de versão -->
+            <sc-if value="{{ jarvisModelMenuOpen }}" hint-placeholder-val="{{ false }}">
+              <div class="modal-in" style="position: absolute; top: 68px; right: 20px; width: 250px; max-width: calc(100% - 40px); background: #111118; border: 1px solid #1E2A45; border-radius: 12px; box-shadow: 0 16px 40px #00000088; z-index: 45; padding: 6px;">
+                <sc-for list="{{ jarvisModelOptions }}" as="mo" hint-placeholder-count="3">
+                  <button onClick="{{ mo.onSelect }}" style="{{ mo.itemStyle }}">
+                    <span style="{{ mo.dotStyle }}"></span>
+                    <span style="flex: 1; min-width: 0;">
+                      <span class="jarvis-font-display" style="{{ mo.nameStyle }}">{{ mo.name }}</span>
+                      <span style="display: block; font-size: 10.5px; color: #475569; margin-top: 2px;">{{ mo.tagline }}</span>
+                    </span>
+                    <sc-if value="{{ mo.isActive }}" hint-placeholder-val="{{ false }}">
+                      <i class="ph ph-check" style="font-size: 13px; color: {{ mo.accent }}; flex-shrink: 0;"></i>
+                    </sc-if>
+                  </button>
+                </sc-for>
+              </div>
+            </sc-if>
 
             <!-- Painel de conversas -->
             <sc-if value="{{ jarvisShowConvList }}" hint-placeholder-val="{{ false }}">
@@ -1259,9 +1277,28 @@
           </div>
 
           <div style="padding: 8px 14px; border-bottom: 1px solid #151525; display: flex; gap: 5px; flex-shrink: 0;">
-            <button onClick="{{ setJarvisHaiku }}" style="{{ jarvisHaikuPillStyle }}">Jarvis</button>
-            <button onClick="{{ setJarvisSonnet }}" style="{{ jarvisSonnetPillStyle }}">Friday</button>
+            <button onClick="{{ toggleJarvisModelMenu }}" title="Trocar versão" style="{{ jarvisModelTriggerStyle }}">
+              <span>{{ jarvisModelLabel }}</span>
+              <i class="{{ jarvisModelCaretIcon }}" style="font-size: 11px;"></i>
+            </button>
           </div>
+
+          <sc-if value="{{ jarvisModelMenuOpen }}" hint-placeholder-val="{{ false }}">
+            <div class="modal-in" style="position: absolute; top: 84px; left: 14px; width: 240px; max-width: calc(100% - 28px); background: #151522; border: 1px solid #1E2A45; border-radius: 12px; box-shadow: 0 16px 40px #00000088; z-index: 15; padding: 6px;">
+              <sc-for list="{{ jarvisModelOptions }}" as="mo" hint-placeholder-count="3">
+                <button onClick="{{ mo.onSelect }}" style="{{ mo.itemStyle }}">
+                  <span style="{{ mo.dotStyle }}"></span>
+                  <span style="flex: 1; min-width: 0;">
+                    <span class="jarvis-font-display" style="{{ mo.nameStyle }}">{{ mo.name }}</span>
+                    <span style="display: block; font-size: 10.5px; color: #475569; margin-top: 2px;">{{ mo.tagline }}</span>
+                  </span>
+                  <sc-if value="{{ mo.isActive }}" hint-placeholder-val="{{ false }}">
+                    <i class="ph ph-check" style="font-size: 13px; color: {{ mo.accent }}; flex-shrink: 0;"></i>
+                  </sc-if>
+                </button>
+              </sc-for>
+            </div>
+          </sc-if>
 
           <sc-if value="{{ jarvisShowConvList }}" hint-placeholder-val="{{ false }}">
             <div class="modal-in" style="position: absolute; top: 52px; right: 14px; width: 240px; max-width: calc(100% - 28px); max-height: 50%; overflow-y: auto; background: #151522; border: 1px solid #1E2A45; border-radius: 12px; box-shadow: 0 16px 40px #00000088; z-index: 10; padding: 8px;">
@@ -1838,6 +1875,7 @@ class Component extends DCLogic {
     jarvisConversationId: null,
     jarvisConversations: [],
     jarvisShowConvList: false,
+    jarvisModelMenuOpen: false,
     jarvisGlitching: false,
     jarvisListening: false,
     cfgJarvisNotes: '',
@@ -1947,6 +1985,7 @@ class Component extends DCLogic {
         else if (s.showExpenseModal) this.closeExpenseModal();
         else if (s.showPayExpenseModal) this.closePayExpenseModal();
         else if (s.showClearConfirm) this.closeClearDataConfirm();
+        else if (s.jarvisModelMenuOpen) this.setState({ jarvisModelMenuOpen: false });
         else if (s.jarvisOpen) this.setState({ jarvisOpen: false });
         else if (s.showFiltersSheet) this.setState({ showFiltersSheet: false });
       } else if ((e.key === 'n' || e.key === 'N') && !e.ctrlKey && !e.metaKey) {
@@ -2253,9 +2292,11 @@ class Component extends DCLogic {
 
   _jarvisMsg = (role, content, persona) => {
     const isUser = role === 'user';
-    const p = persona === 'haiku' ? 'haiku' : 'sonnet';
-    // Sem balão de chat — a fala é distinguida por cor/brilho do texto: branco (usuário), azul (Jarvis), laranja (Friday).
-    const msgColor = isUser ? '#F8FAFC' : (p === 'haiku' ? '#38BDF8' : '#FB923C');
+    // Sem balão de chat — a fala é distinguida pela cor/brilho do texto: branco pro usuário, e a cor
+    // da versão do J.A.R.V.I.S. que respondeu (guardada por mensagem, não pela seleção do momento).
+    const models = this.jarvisModels();
+    const model = models[persona] || models.sonnet;
+    const msgColor = isUser ? '#F8FAFC' : model.accent;
     return {
       role, content, persona: persona || null, isUser,
       bubbleAlign: isUser ? 'flex-end' : 'flex-start',
@@ -2309,12 +2350,38 @@ class Component extends DCLogic {
     this.loadJarvisConversations();
   }
 
+  // As três versões do J.A.R.V.I.S., na ordem em que aparecem no seletor. As chaves são as mesmas
+  // de sempre ('haiku'/'sonnet'/'opus') porque é isso que o backend recebe e o que já está gravado
+  // em jarvis_messages.persona — só o nome e as cores exibidas mudam.
+  jarvisModels() {
+    return {
+      haiku: {
+        key: 'haiku', name: 'Mark III', tagline: 'Rápido e econômico',
+        accent: '#C08552', glow: '#C0855266',
+        avatarBg: 'radial-gradient(circle, #8C3A2B, #4A1C15)',
+      },
+      sonnet: {
+        key: 'sonnet', name: 'Mark XLIII', tagline: 'Equilibrado — padrão',
+        accent: '#FBBF24', glow: '#FBBF2477',
+        avatarBg: 'radial-gradient(circle, #DC2626, #7F1D1D)',
+      },
+      opus: {
+        key: 'opus', name: 'Visão', tagline: 'O mais capaz (e mais caro)',
+        accent: '#34D399', glow: '#34D39977',
+        avatarBg: 'radial-gradient(circle, #10B981, #7F1D1D)',
+      },
+    };
+  }
+
   setJarvisModel = (model) => {
+    this.setState({ jarvisModelMenuOpen: false });
     if (model === this.state.jarvisModel) return;
     this._save('jarvisModel', model);
     this.setState({ jarvisModel: model, jarvisGlitching: true });
     setTimeout(() => this.setState({ jarvisGlitching: false }), 550);
   }
+
+  toggleJarvisModelMenu = () => this.setState(st => ({ jarvisModelMenuOpen: !st.jarvisModelMenuOpen }));
 
   // Ditado por voz (Web Speech API) — preenche o campo de texto, o envio continua manual
   // (não envia sozinho: como o Jarvis executa ações sem confirmar, um erro de reconhecimento
@@ -3031,12 +3098,13 @@ class Component extends DCLogic {
 
     const titles = { dashboard: 'Dashboard', lancamentos: 'Lançamentos', planejamento: 'Planejamento', categorias: 'Categorias', jarvis: 'Jarvis', configuracoes: 'Configurações' };
 
-    // Jarvis persona theming: Jarvis (haiku) = azul/ciano, Friday (sonnet) = laranja
-    const jarvisAccentColor = s.jarvisModel === 'haiku' ? '#38BDF8' : '#F97316';
-    const jarvisGlowColor = s.jarvisModel === 'haiku' ? '#38BDF866' : '#F9731677';
-    const jarvisAvatarBg = s.jarvisModel === 'haiku'
-      ? 'radial-gradient(circle, #0F2A3D, #081A28)'
-      : 'radial-gradient(circle, #F97316, #9A3412)';
+    // Modelos do J.A.R.V.I.S. — as chaves ('haiku'/'sonnet'/'opus') são o que vai pro backend e o
+    // que já está gravado em jarvis_messages.persona, por isso não mudam junto com o nome exibido.
+    const M = this.jarvisModels();
+    const jarvisCur = M[s.jarvisModel] || M.sonnet;
+    const jarvisAccentColor = jarvisCur.accent;
+    const jarvisGlowColor = jarvisCur.glow;
+    const jarvisAvatarBg = jarvisCur.avatarBg;
     const jarvisBubbleSize = isMobile ? '64px' : '78px';
     const jarvisBubbleIconPad = isMobile ? '1px' : '1px';
     const jarvisHeaderIconSize = isMobile ? '42px' : '54px';
@@ -3979,29 +4047,45 @@ class Component extends DCLogic {
       cfgJarvisNotes: s.cfgJarvisNotes || '',
       setCfgJarvisNotes: e => this.setState({ cfgJarvisNotes: e.target.value }),
       saveJarvisNotes: this.saveJarvisNotes,
-      jarvisModelLabel: s.jarvisModel === 'haiku' ? 'Jarvis' : 'Friday',
-      jarvisDisplayName: s.jarvisModel === 'haiku' ? 'Jarvis' : 'Friday',
-      jarvisLogoSrc: s.jarvisModel === 'haiku' ? 'public/jarvis.png' : 'public/sexta-feira.png',
+      jarvisModelLabel: jarvisCur.name,
+      jarvisDisplayName: 'J.A.R.V.I.S.',
+      jarvisLogoSrc: 'public/jarvis.png',
       jarvisAvatarBg, jarvisGlowColor, jarvisAccentColor, jarvisBubbleIconPad, jarvisHeaderIconSize, jarvisGlitchClass,
       jarvisConvItems, hasJarvisConversations, noJarvisConversations, jarvisShowConvList: s.jarvisShowConvList,
       toggleJarvisConvList: this.toggleJarvisConvList,
       startNewJarvisChat: this.startNewJarvisChat,
       startNewJarvisChatInline: this.startNewJarvisChatInline,
       goToJarvisScreen: this.goToJarvisScreen,
-      setJarvisSonnet: () => this.setJarvisModel('sonnet'),
-      setJarvisHaiku: () => this.setJarvisModel('haiku'),
-      jarvisSonnetPillStyle: {
-        padding: '4px 10px', borderRadius: '20px', fontSize: '10px', fontWeight: '700', fontFamily: 'inherit',
-        cursor: 'pointer', border: '1px solid ' + (s.jarvisModel === 'sonnet' ? '#8B5CF677' : '#1E2A45'),
-        background: s.jarvisModel === 'sonnet' ? '#8B5CF62A' : 'transparent',
-        color: s.jarvisModel === 'sonnet' ? '#C4B5FD' : '#475569',
+      // Seletor de modelo estilo Claude/ChatGPT: mostra o atual, clica e abre a lista.
+      jarvisModelMenuOpen: s.jarvisModelMenuOpen,
+      toggleJarvisModelMenu: this.toggleJarvisModelMenu,
+      jarvisModelTriggerStyle: {
+        display: 'flex', alignItems: 'center', gap: '5px', flexShrink: 0,
+        padding: '5px 10px', borderRadius: '20px', fontSize: '11px', fontWeight: '700', fontFamily: 'inherit',
+        cursor: 'pointer', border: '1px solid ' + jarvisCur.accent + '66',
+        background: jarvisCur.accent + '1F', color: jarvisCur.accent, whiteSpace: 'nowrap',
       },
-      jarvisHaikuPillStyle: {
-        padding: '4px 10px', borderRadius: '20px', fontSize: '10px', fontWeight: '700', fontFamily: 'inherit',
-        cursor: 'pointer', border: '1px solid ' + (s.jarvisModel === 'haiku' ? '#06B6D477' : '#1E2A45'),
-        background: s.jarvisModel === 'haiku' ? '#06B6D42A' : 'transparent',
-        color: s.jarvisModel === 'haiku' ? '#67E8F9' : '#475569',
-      },
+      jarvisModelCaretIcon: s.jarvisModelMenuOpen ? 'ph ph-caret-up' : 'ph ph-caret-down',
+      jarvisModelOptions: Object.keys(M).map(k => {
+        const m = M[k];
+        const active = s.jarvisModel === k;
+        return {
+          key: k, name: m.name, tagline: m.tagline,
+          isActive: active, notActive: !active,
+          accent: m.accent,
+          itemStyle: {
+            display: 'flex', alignItems: 'center', gap: '10px', width: '100%', textAlign: 'left',
+            padding: '9px 11px', borderRadius: '9px', border: 'none', cursor: 'pointer',
+            fontFamily: 'inherit', background: active ? m.accent + '1A' : 'transparent',
+          },
+          dotStyle: {
+            width: '9px', height: '9px', borderRadius: '50%', flexShrink: 0,
+            background: m.accent, boxShadow: '0 0 7px ' + m.accent + '99',
+          },
+          nameStyle: { fontSize: '12.5px', fontWeight: '700', color: active ? m.accent : '#CBD5E1', letterSpacing: '0.3px' },
+          onSelect: () => this.setJarvisModel(k),
+        };
+      }),
       toggleJarvisListening: this.toggleJarvisListening,
       jarvisListening: s.jarvisListening,
       jarvisMicClass: s.jarvisListening ? 'jarvis-mic-pulse' : '',

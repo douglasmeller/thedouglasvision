@@ -44,6 +44,10 @@
     button:focus-visible { outline: 2px solid #2563EB; outline-offset: 2px; }
     input[type="number"]::-webkit-inner-spin-button { opacity: 0.4; }
     @keyframes spin { to { transform: rotate(360deg); } }
+    button { transition: transform 0.1s ease, opacity 0.15s ease, filter 0.15s ease; }
+    button:not(:disabled):active { transform: scale(0.96); filter: brightness(0.92); }
+    button:disabled { opacity: 0.65; cursor: default; }
+    .btn-spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid #FFFFFF55; border-top-color: #FFFFFF; border-radius: 50%; animation: spin 0.7s linear infinite; flex-shrink: 0; }
     @keyframes jarvisGlitch {
       0% { clip-path: inset(0 0 0 0); transform: translate(0,0); filter: hue-rotate(0deg); }
       10% { clip-path: inset(10% 0 60% 0); transform: translate(-3px,1px); filter: hue-rotate(40deg); }
@@ -871,7 +875,10 @@
                             <div style="font-size: 14px; font-weight: 600; color: #CBD5E1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ g.name }}</div>
                             <div style="display: flex; gap: 4px; flex-shrink: 0;">
                               <button onClick="{{ g.onEdit }}" style="background: none; border: 1px solid #1A1A28; border-radius: 6px; color: #334155; cursor: pointer; padding: 5px 7px; font-size: 13px; display: flex; align-items: center; line-height: 1;"><i class="ph ph-pencil-simple"></i></button>
-                              <button onClick="{{ g.onDelete }}" style="background: none; border: 1px solid #1A1A28; border-radius: 6px; color: #EF444455; cursor: pointer; padding: 5px 7px; font-size: 13px; display: flex; align-items: center; line-height: 1;"><i class="ph ph-trash"></i></button>
+                              <button onClick="{{ g.onDelete }}" style="background: none; border: 1px solid #1A1A28; border-radius: 6px; color: #EF444455; cursor: pointer; padding: 5px 7px; font-size: 13px; display: flex; align-items: center; line-height: 1;">
+                                <sc-if value="{{ g.isDeleting }}" hint-placeholder-val="{{ false }}"><span class="btn-spinner" style="border-color: #EF444455; border-top-color: #EF4444;"></span></sc-if>
+                                <sc-if value="{{ g.notDeleting }}" hint-placeholder-val="{{ true }}"><i class="ph ph-trash"></i></sc-if>
+                              </button>
                             </div>
                           </div>
                           <div style="display: flex; align-items: baseline; gap: 6px; margin-bottom: 10px;">
@@ -921,7 +928,10 @@
                             <div style="font-size: 14px; font-weight: 600; color: #CBD5E1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ e.name }}</div>
                             <div style="display: flex; gap: 4px; flex-shrink: 0;">
                               <button onClick="{{ e.onEdit }}" style="background: none; border: 1px solid #1A1A28; border-radius: 6px; color: #334155; cursor: pointer; padding: 5px 7px; font-size: 13px; display: flex; align-items: center; line-height: 1;"><i class="ph ph-pencil-simple"></i></button>
-                              <button onClick="{{ e.onDelete }}" style="background: none; border: 1px solid #1A1A28; border-radius: 6px; color: #EF444455; cursor: pointer; padding: 5px 7px; font-size: 13px; display: flex; align-items: center; line-height: 1;"><i class="ph ph-trash"></i></button>
+                              <button onClick="{{ e.onDelete }}" style="background: none; border: 1px solid #1A1A28; border-radius: 6px; color: #EF444455; cursor: pointer; padding: 5px 7px; font-size: 13px; display: flex; align-items: center; line-height: 1;">
+                                <sc-if value="{{ e.isDeleting }}" hint-placeholder-val="{{ false }}"><span class="btn-spinner" style="border-color: #EF444455; border-top-color: #EF4444;"></span></sc-if>
+                                <sc-if value="{{ e.notDeleting }}" hint-placeholder-val="{{ true }}"><i class="ph ph-trash"></i></sc-if>
+                              </button>
                             </div>
                           </div>
                           <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px; flex-wrap: wrap;">
@@ -969,7 +979,10 @@
                   </div>
                 </div>
                 <div style="font-size: 11px; color: #334155; line-height: 1.5;">Compras no cartão não descontam o saldo na hora — ficam acumuladas na fatura do mês até você marcar como paga.</div>
-                <button onClick="{{ saveCardSettings }}" style="align-self: flex-start; padding: 9px 20px; background: linear-gradient(135deg, #2563EB, #06B6D4); border: none; border-radius: 8px; color: white; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit;">Salvar</button>
+                <button onClick="{{ saveCardSettings }}" style="{{ saveCardBtnStyle }}">
+                  <sc-if value="{{ savingCard }}" hint-placeholder-val="{{ false }}"><span class="btn-spinner"></span></sc-if>
+                  <span>{{ saveCardLabel }}</span>
+                </button>
               </div>
 
               <div style="margin-top: 12px; background: #111118; border: 1px solid #151525; border-radius: 12px; padding: 16px 20px;">
@@ -994,7 +1007,10 @@
                         </div>
                         <div style="text-align: right;">
                           <div style="font-size: 18px; font-weight: 800; color: #F97316; letter-spacing: -0.5px;">{{ inv.fmtTotal }}</div>
-                          <button onClick="{{ inv.onPay }}" style="margin-top: 4px; padding: 5px 14px; background: #F9731618; border: 1px solid #F9731633; border-radius: 7px; color: #F97316; font-size: 11px; font-weight: 600; font-family: inherit; cursor: pointer; white-space: nowrap;">Pagar fatura</button>
+                          <button onClick="{{ inv.onPay }}" style="margin-top: 4px; padding: 5px 14px; background: #F9731618; border: 1px solid #F9731633; border-radius: 7px; color: #F97316; font-size: 11px; font-weight: 600; font-family: inherit; cursor: pointer; white-space: nowrap; display: flex; align-items: center; gap: 6px;">
+                            <sc-if value="{{ inv.isPaying }}" hint-placeholder-val="{{ false }}"><span class="btn-spinner" style="border-color: #F9731655; border-top-color: #F97316;"></span></sc-if>
+                            <span>{{ inv.payLabel }}</span>
+                          </button>
                         </div>
                       </div>
                       <div style="display: flex; flex-direction: column; gap: 6px; border-top: 1px solid #151525; padding-top: 10px;">
@@ -1037,7 +1053,10 @@
                     </div>
                     <div style="display: flex; gap: 4px;">
                       <button onClick="{{ cat.onEdit }}" style="background: none; border: 1px solid #1A1A28; border-radius: 6px; color: #334155; cursor: pointer; padding: 5px 7px; font-size: 13px; display: flex; align-items: center; line-height: 1;"><i class="ph ph-pencil-simple"></i></button>
-                      <button onClick="{{ cat.onDelete }}" style="background: none; border: 1px solid #1A1A28; border-radius: 6px; color: #EF444455; cursor: pointer; padding: 5px 7px; font-size: 13px; display: flex; align-items: center; line-height: 1;"><i class="ph ph-trash"></i></button>
+                      <button onClick="{{ cat.onDelete }}" style="background: none; border: 1px solid #1A1A28; border-radius: 6px; color: #EF444455; cursor: pointer; padding: 5px 7px; font-size: 13px; display: flex; align-items: center; line-height: 1;">
+                        <sc-if value="{{ cat.isDeleting }}" hint-placeholder-val="{{ false }}"><span class="btn-spinner" style="border-color: #EF444455; border-top-color: #EF4444;"></span></sc-if>
+                        <sc-if value="{{ cat.notDeleting }}" hint-placeholder-val="{{ true }}"><i class="ph ph-trash"></i></sc-if>
+                      </button>
                     </div>
                   </div>
                   <div style="font-size: 13px; font-weight: 600; color: #CBD5E1;">{{ cat.name }}</div>
@@ -1467,7 +1486,10 @@
               <input type="text" value="{{ txnNotes }}" onInput="{{ setTxnNotes }}" placeholder="Observações, referência, estabelecimento…" style="width: 100%; background: #0D0D1A; border: 1px solid #1E2A45; border-radius: 8px; padding: 11px 14px; color: #E2E8F0; font-size: 13px; font-family: inherit;">
             </div>
           </div>
-          <button onClick="{{ saveTxn }}" style="margin-top: 20px; width: 100%; padding: 13px; background: linear-gradient(135deg, #2563EB, #06B6D4); border: none; border-radius: 9px; color: white; font-size: 15px; font-weight: 600; cursor: pointer; font-family: inherit; box-shadow: 0 4px 16px #2563EB33;">Salvar</button>
+          <button onClick="{{ saveTxn }}" style="{{ saveTxnBtnStyle }}">
+            <sc-if value="{{ savingTxn }}" hint-placeholder-val="{{ false }}"><span class="btn-spinner"></span></sc-if>
+            <span>{{ saveTxnLabel }}</span>
+          </button>
         </div>
       </div>
     </sc-if>
@@ -1494,7 +1516,10 @@
               <input type="date" value="{{ goalDeadline }}" onInput="{{ setGoalDeadline }}" style="width: 100%; background: #0D0D1A; border: 1px solid #1E2A45; border-radius: 8px; padding: 11px 14px; color: #E2E8F0; font-size: 14px; font-family: inherit;">
             </div>
           </div>
-          <button onClick="{{ saveGoal }}" style="margin-top: 20px; width: 100%; padding: 14px; background: linear-gradient(135deg, #2563EB, #06B6D4); border: none; border-radius: 10px; color: white; font-size: 15px; font-weight: 600; font-family: inherit; cursor: pointer; letter-spacing: -0.3px;">Salvar Meta</button>
+          <button onClick="{{ saveGoal }}" style="{{ saveGoalBtnStyle }}">
+            <sc-if value="{{ savingGoal }}" hint-placeholder-val="{{ false }}"><span class="btn-spinner"></span></sc-if>
+            <span>{{ saveGoalLabel }}</span>
+          </button>
         </div>
       </div>
     </sc-if>
@@ -1567,7 +1592,10 @@
               <input type="date" value="{{ expEndDate }}" onInput="{{ setExpEndDate }}" style="width: 100%; background: #0D0D1A; border: 1px solid #1E2A45; border-radius: 8px; padding: 11px 14px; color: #E2E8F0; font-size: 14px; font-family: inherit;">
             </div>
           </div>
-          <button onClick="{{ saveExpense }}" style="margin-top: 20px; width: 100%; padding: 14px; background: linear-gradient(135deg, #2563EB, #06B6D4); border: none; border-radius: 10px; color: white; font-size: 15px; font-weight: 600; font-family: inherit; cursor: pointer; letter-spacing: -0.3px;">Salvar Dívida</button>
+          <button onClick="{{ saveExpense }}" style="{{ saveExpenseBtnStyle }}">
+            <sc-if value="{{ savingExpense }}" hint-placeholder-val="{{ false }}"><span class="btn-spinner"></span></sc-if>
+            <span>{{ saveExpenseLabel }}</span>
+          </button>
         </div>
       </div>
     </sc-if>
@@ -1585,7 +1613,10 @@
           <input type="number" inputmode="decimal" value="{{ payExpenseAmount }}" onInput="{{ setPayExpenseAmount }}" placeholder="0,00" min="0" step="0.01" autofocus style="width: 100%; background: #0D0D1A; border: 1px solid #1E2A45; border-radius: 9px; padding: 13px 16px; color: #E2E8F0; font-size: 22px; font-weight: 700; font-family: inherit; letter-spacing: -0.5px; margin-bottom: 20px;">
           <div style="display: flex; gap: 10px;">
             <button onClick="{{ closePayExpenseModal }}" style="flex: 1; padding: 12px; background: transparent; border: 1px solid #1E2A45; border-radius: 9px; color: #475569; font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit;">Cancelar</button>
-            <button onClick="{{ confirmPayExpense }}" style="flex: 1; padding: 12px; background: linear-gradient(135deg, #F97316, #C2410C); border: none; border-radius: 9px; color: white; font-size: 14px; font-weight: 700; cursor: pointer; font-family: inherit; box-shadow: 0 2px 12px #F9731633;">Pagar</button>
+            <button onClick="{{ confirmPayExpense }}" style="{{ payExpenseBtnStyle }}">
+              <sc-if value="{{ savingPayExpense }}" hint-placeholder-val="{{ false }}"><span class="btn-spinner"></span></sc-if>
+              <span>{{ payExpenseLabel }}</span>
+            </button>
           </div>
         </div>
       </div>
@@ -1628,7 +1659,10 @@
               <div style="font-size: 11px; color: #1E2A3A; margin-top: 5px;">Defina quanto planeja gastar nesta categoria por mês</div>
             </div>
           </div>
-          <button onClick="{{ saveCat }}" style="margin-top: 20px; width: 100%; padding: 13px; background: linear-gradient(135deg, #2563EB, #06B6D4); border: none; border-radius: 9px; color: white; font-size: 15px; font-weight: 600; cursor: pointer; font-family: inherit; box-shadow: 0 4px 16px #2563EB33;">Salvar</button>
+          <button onClick="{{ saveCat }}" style="{{ saveCatBtnStyle }}">
+            <sc-if value="{{ savingCat }}" hint-placeholder-val="{{ false }}"><span class="btn-spinner"></span></sc-if>
+            <span>{{ saveCatLabel }}</span>
+          </button>
         </div>
       </div>
     </sc-if>
@@ -1693,7 +1727,10 @@
           <input type="number" inputmode="decimal" value="{{ contribAmount }}" onInput="{{ setContribAmount }}" placeholder="0,00" min="0" step="0.01" autofocus style="width: 100%; background: #0D0D1A; border: 1px solid #1E2A45; border-radius: 9px; padding: 13px 16px; color: #E2E8F0; font-size: 22px; font-weight: 700; font-family: inherit; letter-spacing: -0.5px; margin-bottom: 20px;">
           <div style="display: flex; gap: 10px;">
             <button onClick="{{ closeContribModal }}" style="flex: 1; padding: 12px; background: transparent; border: 1px solid #1E2A45; border-radius: 9px; color: #475569; font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit;">Cancelar</button>
-            <button onClick="{{ confirmContrib }}" style="flex: 1; padding: 12px; background: linear-gradient(135deg, #22C55E, #16A34A); border: none; border-radius: 9px; color: white; font-size: 14px; font-weight: 700; cursor: pointer; font-family: inherit; box-shadow: 0 2px 12px #22C55E33;">+ Aportar</button>
+            <button onClick="{{ confirmContrib }}" style="{{ contribBtnStyle }}">
+              <sc-if value="{{ savingContrib }}" hint-placeholder-val="{{ false }}"><span class="btn-spinner"></span></sc-if>
+              <span>{{ contribBtnLabel }}</span>
+            </button>
           </div>
         </div>
       </div>
@@ -1864,6 +1901,11 @@ class Component extends DCLogic {
     showPayExpenseModal: false,
     payExpenseId: null,
     payExpenseAmount: '',
+    // Estados de "salvando"/"excluindo" — dão feedback visual (spinner + desabilita) enquanto a
+    // ação está em andamento, e um toast de confirmação (ou erro) quando termina.
+    savingTxn: false, savingCat: false, savingGoal: false, savingExpense: false,
+    savingContrib: false, savingPayExpense: false, savingCard: false, savingCfg: false,
+    savingJarvisNotes: false, payingInvoiceKey: null, deletingId: null,
     quickType: 'expense',
     quickAmount: '',
     quickCategoryId: '',
@@ -1980,6 +2022,14 @@ class Component extends DCLogic {
   }
   _save(k, v) {
     try { localStorage.setItem('tdv_' + k, JSON.stringify(v)); } catch(e) {}
+  }
+
+  // Toast de confirmação — usa um timer explícito pra sempre sumir sozinho depois de um tempo,
+  // em vez de depender de outra mudança de estado acontecer pra re-renderizar e "notar" que expirou.
+  _toast(msg) {
+    if (this._toastTimer) clearTimeout(this._toastTimer);
+    this.setState({ toastMsg: msg, toastTs: Date.now() });
+    this._toastTimer = setTimeout(() => this.setState({ toastTs: 0 }), 2800);
   }
 
   mKey(d) {
@@ -2132,13 +2182,13 @@ class Component extends DCLogic {
   _expenseRowIn = (e) => ({
     id: e.id, name: e.name, amount: Number(e.amount), freq: e.freq, day: e.day != null ? Number(e.day) : null,
     categoryId: e.category_id, targetTotal: e.target_total != null ? Number(e.target_total) : null,
-    endDate: e.end_date, installment: e.installment !== false,
+    endDate: e.end_date, installment: e.installment !== false, lastGeneratedMonth: e.last_generated_month || null,
   })
 
   _expenseRowOut = (exp, uid) => ({
     id: exp.id, user_id: uid, name: exp.name, amount: exp.amount, freq: exp.freq, day: exp.day,
     category_id: exp.categoryId || null, target_total: exp.targetTotal, end_date: exp.endDate,
-    installment: exp.installment,
+    installment: exp.installment, last_generated_month: exp.lastGeneratedMonth || null,
   })
 
   handleLogin = async () => {
@@ -2276,7 +2326,7 @@ class Component extends DCLogic {
     }
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SR) {
-      this.setState({ toastMsg: 'Reconhecimento de voz não é suportado neste navegador.', toastTs: Date.now() });
+      this._toast('Reconhecimento de voz não é suportado neste navegador.');
       return;
     }
     const rec = new SR();
@@ -2445,6 +2495,7 @@ class Component extends DCLogic {
 
   saveTxn = async () => {
     const s = this.state;
+    if (s.savingTxn) return;
     const amount = parseFloat(s.txnAmount);
     if (!s.txnDescription.trim() || !s.txnDate || isNaN(amount) || amount <= 0) return;
     const isCredit = s.txnType === 'expense' && s.txnPaymentMethod === 'credit_card';
@@ -2463,13 +2514,17 @@ class Component extends DCLogic {
       invoiceKey: isCredit ? this._invoiceKeyFor(s.txnDate, closingDay) : null,
       invoicePaid: isCredit ? !!prevTxn?.invoicePaid : false,
     };
+    this.setState({ savingTxn: true });
+    const row = this._txnRow(txn, s.user.id);
+    const { error } = s.editTxnId
+      ? await window._sb.from('transactions').update(row).eq('id', s.editTxnId)
+      : await window._sb.from('transactions').insert(row);
+    if (error) { this.setState({ savingTxn: false }); this._toast('Não foi possível salvar o lançamento. Tente novamente.'); return; }
     const transactions = s.editTxnId
       ? s.transactions.map(t => t.id === s.editTxnId ? txn : t)
       : [...s.transactions, txn];
-    this.setState({ transactions, showTxnModal: false, editTxnId: null });
-    const row = this._txnRow(txn, s.user.id);
-    if (s.editTxnId) await window._sb.from('transactions').update(row).eq('id', s.editTxnId);
-    else await window._sb.from('transactions').insert(row);
+    this.setState({ transactions, showTxnModal: false, editTxnId: null, savingTxn: false });
+    this._toast(s.editTxnId ? 'Lançamento atualizado!' : 'Lançamento salvo!');
   }
 
   deleteTxn = async (id) => {
@@ -2536,27 +2591,32 @@ class Component extends DCLogic {
   closeGoalModal = () => this.setState({ showGoalModal: false });
 
   saveGoal = async () => {
+    if (this.state.savingGoal) return;
     const { goalName, goalTarget, goalIcon, goalColor, goalDeadline, editGoalId, goals, user } = this.state;
     const name = goalName.trim();
     const target = parseFloat(goalTarget);
     if (!name || !target || target <= 0) return;
     let goal;
-    let newGoals;
     if (editGoalId) {
       goal = { id: editGoalId, name, target, icon: goalIcon, color: goalColor, deadline: goalDeadline || null };
-      newGoals = goals.map(g => g.id === editGoalId ? { ...g, ...goal } : g);
     } else {
       goal = { id: 'g' + Date.now(), name, target, current: 0, icon: goalIcon, color: goalColor, deadline: goalDeadline || null };
-      newGoals = [...goals, goal];
     }
-    this.setState({ goals: newGoals, showGoalModal: false });
+    this.setState({ savingGoal: true });
     const row = { id: goal.id, user_id: user.id, name: goal.name, target: goal.target, current: goal.current ?? 0, icon: goal.icon, color: goal.color, deadline: goal.deadline };
-    await window._sb.from('goals').upsert(row);
+    const { error } = await window._sb.from('goals').upsert(row);
+    if (error) { this.setState({ savingGoal: false }); this._toast('Não foi possível salvar a meta. Tente novamente.'); return; }
+    const newGoals = editGoalId ? goals.map(g => g.id === editGoalId ? { ...g, ...goal } : g) : [...goals, goal];
+    this.setState({ goals: newGoals, showGoalModal: false, savingGoal: false });
+    this._toast(editGoalId ? 'Meta atualizada!' : 'Meta criada!');
   }
 
   deleteGoal = async (id) => {
-    this.setState({ goals: this.state.goals.filter(g => g.id !== id) });
-    await window._sb.from('goals').delete().eq('id', id);
+    this.setState({ deletingId: id });
+    const { error } = await window._sb.from('goals').delete().eq('id', id);
+    if (error) { this.setState({ deletingId: null }); this._toast('Não foi possível excluir. Tente novamente.'); return; }
+    this.setState({ goals: this.state.goals.filter(g => g.id !== id), deletingId: null });
+    this._toast('Meta excluída.');
   }
 
   addGoalContrib = async (id, amount) => {
@@ -2564,15 +2624,19 @@ class Component extends DCLogic {
     const updated = goals.find(g => g.id === id);
     this.setState({ goals });
     await window._sb.from('goals').update({ current: updated.current }).eq('id', id);
+    this._toast('Aporte registrado!');
   }
 
   openContribModal = (id) => this.setState({ showContribModal: true, contribGoalId: id, contribAmount: '' });
   closeContribModal = () => this.setState({ showContribModal: false, contribGoalId: null, contribAmount: '' });
-  confirmContrib = () => {
+  confirmContrib = async () => {
+    if (this.state.savingContrib) return;
     const { contribGoalId, contribAmount } = this.state;
     const a = parseFloat(contribAmount);
     if (!a || a <= 0) return;
-    this.addGoalContrib(contribGoalId, a);
+    this.setState({ savingContrib: true });
+    await this.addGoalContrib(contribGoalId, a);
+    this.setState({ savingContrib: false });
     this.closeContribModal();
   }
 
@@ -2606,6 +2670,7 @@ class Component extends DCLogic {
 
   saveExpense = async () => {
     const s = this.state;
+    if (s.savingExpense) return;
     const name = s.expName.trim();
     const installment = s.expInstallment;
     const endDate = s.expEndDate || null;
@@ -2628,21 +2693,27 @@ class Component extends DCLogic {
       day = null;
     }
     let exp;
-    let newExpenses;
     if (s.editExpenseId) {
-      exp = { id: s.editExpenseId, name, installment, amount, freq, day, categoryId: s.expCategoryId || null, targetTotal, endDate };
-      newExpenses = s.recurringExpenses.map(e => e.id === s.editExpenseId ? exp : e);
+      exp = { id: s.editExpenseId, name, installment, amount, freq, day, categoryId: s.expCategoryId || null, targetTotal, endDate, lastGeneratedMonth: (s.recurringExpenses.find(e => e.id === s.editExpenseId) || {}).lastGeneratedMonth || null };
     } else {
-      exp = { id: 'e' + Date.now(), name, installment, amount, freq, day, categoryId: s.expCategoryId || null, targetTotal, endDate };
-      newExpenses = [...s.recurringExpenses, exp];
+      exp = { id: 'e' + Date.now(), name, installment, amount, freq, day, categoryId: s.expCategoryId || null, targetTotal, endDate, lastGeneratedMonth: null };
     }
-    this.setState({ recurringExpenses: newExpenses, showExpenseModal: false });
-    await window._sb.from('recurring_expenses').upsert(this._expenseRowOut(exp, s.user.id));
+    this.setState({ savingExpense: true });
+    const { error } = await window._sb.from('recurring_expenses').upsert(this._expenseRowOut(exp, s.user.id));
+    if (error) { this.setState({ savingExpense: false }); this._toast('Não foi possível salvar a dívida. Tente novamente.'); return; }
+    const newExpenses = s.editExpenseId
+      ? s.recurringExpenses.map(e => e.id === s.editExpenseId ? exp : e)
+      : [...s.recurringExpenses, exp];
+    this.setState({ recurringExpenses: newExpenses, showExpenseModal: false, savingExpense: false });
+    this._toast(s.editExpenseId ? 'Dívida atualizada!' : 'Dívida criada!');
   }
 
   deleteExpense = async (id) => {
-    this.setState({ recurringExpenses: this.state.recurringExpenses.filter(e => e.id !== id) });
-    await window._sb.from('recurring_expenses').delete().eq('id', id);
+    this.setState({ deletingId: id });
+    const { error } = await window._sb.from('recurring_expenses').delete().eq('id', id);
+    if (error) { this.setState({ deletingId: null }); this._toast('Não foi possível excluir. Tente novamente.'); return; }
+    this.setState({ recurringExpenses: this.state.recurringExpenses.filter(e => e.id !== id), deletingId: null });
+    this._toast('Dívida excluída.');
   }
 
   openPayExpenseModal = (id) => {
@@ -2656,6 +2727,7 @@ class Component extends DCLogic {
 
   confirmPayExpense = async () => {
     const s = this.state;
+    if (s.savingPayExpense) return;
     const exp = s.recurringExpenses.find(e => e.id === s.payExpenseId);
     let a = parseFloat(s.payExpenseAmount);
     if (!exp || !a || a <= 0) return;
@@ -2669,12 +2741,23 @@ class Component extends DCLogic {
       categoryId: exp.categoryId, date: new Date().toISOString().split('T')[0],
       recurring: true, recurringFreq: exp.freq, planned: false, recurringExpenseId: exp.id,
     };
-    this.setState({ transactions: [...s.transactions, txn], showPayExpenseModal: false, payExpenseId: null, payExpenseAmount: '' });
-    await window._sb.from('transactions').insert(this._txnRow(txn, s.user.id));
+    const curKey = this.mKey(new Date());
+    this.setState({ savingPayExpense: true });
+    const { error } = await Promise.all([
+      window._sb.from('transactions').insert(this._txnRow(txn, s.user.id)),
+      window._sb.from('recurring_expenses').update({ last_generated_month: curKey }).eq('id', exp.id),
+    ]).then(([r1]) => r1);
+    if (error) { this.setState({ savingPayExpense: false }); this._toast('Não foi possível registrar o pagamento. Tente novamente.'); return; }
+    const recurringExpenses = s.recurringExpenses.map(e => e.id === exp.id ? { ...e, lastGeneratedMonth: curKey } : e);
+    this.setState({ transactions: [...s.transactions, txn], recurringExpenses, showPayExpenseModal: false, payExpenseId: null, payExpenseAmount: '', savingPayExpense: false });
+    this._toast('Pagamento registrado!');
   }
 
-  // Roda uma vez por mês (como _autoRecurring): gera automaticamente a parcela do
-  // mês corrente pra cada despesa recorrente ainda dentro do teto.
+  // Roda uma vez por mês (como _autoRecurring): gera automaticamente a parcela do mês corrente
+  // pra cada despesa recorrente ainda dentro do teto. Usa last_generated_month (salvo no servidor,
+  // não no localStorage) pra decidir se já gerou a parcela deste mês — não "existe um lançamento
+  // batendo esse padrão agora", porque aí bastava o usuário excluir o lançamento pra ele "voltar
+  // sozinho" na próxima vez que o app rodasse essa checagem (inclusive em outro dispositivo).
   _autoRecurringExpenses = async () => {
     const { transactions, recurringExpenses, user } = this.state;
     const now = new Date();
@@ -2682,11 +2765,11 @@ class Component extends DCLogic {
     if (this._load('autoExpenseMonth') === curKey) return;
     this._save('autoExpenseMonth', curKey);
     const toCreate = [];
+    const stampedExpenseIds = [];
     recurringExpenses.forEach(exp => {
       if (!exp.installment || exp.freq !== 'monthly') return;
       if (exp.endDate && (curKey + '-01') > exp.endDate) return;
-      const alreadyThisMonth = transactions.some(t => t.recurringExpenseId === exp.id && t.date && t.date.startsWith(curKey));
-      if (alreadyThisMonth) return;
+      if (exp.lastGeneratedMonth === curKey) return;
       let amount = exp.amount;
       if (exp.targetTotal) {
         const remaining = exp.targetTotal - this._expensePaidSoFar(exp.id);
@@ -2701,10 +2784,15 @@ class Component extends DCLogic {
         date: curKey + '-' + String(day).padStart(2, '0'),
         recurring: true, recurringFreq: 'monthly', planned: true, recurringExpenseId: exp.id,
       });
+      stampedExpenseIds.push(exp.id);
     });
     if (toCreate.length === 0) return;
-    this.setState({ transactions: [...this.state.transactions, ...toCreate] });
-    await window._sb.from('transactions').insert(toCreate.map(t => this._txnRow(t, user.id)));
+    const updatedExpenses = recurringExpenses.map(e => stampedExpenseIds.includes(e.id) ? { ...e, lastGeneratedMonth: curKey } : e);
+    this.setState({ transactions: [...this.state.transactions, ...toCreate], recurringExpenses: updatedExpenses });
+    await Promise.all([
+      window._sb.from('transactions').insert(toCreate.map(t => this._txnRow(t, user.id))),
+      window._sb.from('recurring_expenses').update({ last_generated_month: curKey }).in('id', stampedExpenseIds),
+    ]);
   }
 
   // ─── Cartão de crédito ──────────────────────────────────────────────────
@@ -2717,14 +2805,19 @@ class Component extends DCLogic {
 
   saveCardSettings = async () => {
     const s = this.state;
+    if (s.savingCard) return;
     const name = s.cardName.trim() || 'Cartão de Crédito';
     const closingDay = Math.min(31, Math.max(1, parseInt(s.cardClosingDay) || 1));
-    this.setState({ cardSettings: { name, closingDay }, cardName: name, cardClosingDay: String(closingDay) });
-    await window._sb.from('card_settings').upsert({ user_id: s.user.id, name, closing_day: closingDay });
+    this.setState({ savingCard: true });
+    const { error } = await window._sb.from('card_settings').upsert({ user_id: s.user.id, name, closing_day: closingDay });
+    if (error) { this.setState({ savingCard: false }); this._toast('Não foi possível salvar o cartão. Tente novamente.'); return; }
+    this.setState({ cardSettings: { name, closingDay }, cardName: name, cardClosingDay: String(closingDay), savingCard: false });
+    this._toast('Cartão salvo!');
   }
 
   payInvoice = async (invoiceKey) => {
     const s = this.state;
+    if (s.payingInvoiceKey) return;
     const items = s.transactions.filter(t => t.paymentMethod === 'credit_card' && t.invoiceKey === invoiceKey && !t.invoicePaid);
     if (items.length === 0) return;
     const total = items.reduce((a, t) => a + t.amount, 0);
@@ -2737,12 +2830,15 @@ class Component extends DCLogic {
       recurringExpenseId: null, paymentMethod: null, invoiceKey: null, invoicePaid: false,
     };
     const itemIds = new Set(items.map(t => t.id));
-    const transactions = [...s.transactions.map(t => itemIds.has(t.id) ? { ...t, invoicePaid: true } : t), paymentTxn];
-    this.setState({ transactions });
-    await Promise.all([
+    this.setState({ payingInvoiceKey: invoiceKey });
+    const [{ error }] = await Promise.all([
       window._sb.from('transactions').insert(this._txnRow(paymentTxn, s.user.id)),
       window._sb.from('transactions').update({ invoice_paid: true }).eq('user_id', s.user.id).eq('invoice_key', invoiceKey).eq('payment_method', 'credit_card'),
     ]);
+    if (error) { this.setState({ payingInvoiceKey: null }); this._toast('Não foi possível pagar a fatura. Tente novamente.'); return; }
+    const transactions = [...s.transactions.map(t => itemIds.has(t.id) ? { ...t, invoicePaid: true } : t), paymentTxn];
+    this.setState({ transactions, payingInvoiceKey: null });
+    this._toast('Fatura paga!');
   }
 
   undoDelete = () => {
@@ -2773,7 +2869,7 @@ class Component extends DCLogic {
 
   exportXlsx = (filteredTxns) => {
     if (typeof XLSX === 'undefined') {
-      this.setState({ toastMsg: 'Biblioteca de exportação ainda carregando. Tente novamente.', toastTs: Date.now() });
+      this._toast('Biblioteca de exportação ainda carregando. Tente novamente.');
       setTimeout(() => this.setState({ toastTs: 0 }), 3500);
       return;
     }
@@ -2830,36 +2926,50 @@ class Component extends DCLogic {
   }
 
   saveCat = async () => {
-    const { catName, catIcon, catColor, catBudget, editCatId, user } = this.state;
-    if (!catName.trim()) return;
+    const { catName, catIcon, catColor, catBudget, editCatId, user, savingCat } = this.state;
+    if (savingCat || !catName.trim()) return;
     const budget = catBudget && parseFloat(catBudget) > 0 ? parseFloat(catBudget) : null;
     const cat = { id: editCatId || 'c' + Date.now(), name: catName.trim(), icon: catIcon, color: catColor, budget };
+    this.setState({ savingCat: true });
+    const { error } = await window._sb.from('categories').upsert({ ...cat, user_id: user.id });
+    if (error) { this.setState({ savingCat: false }); this._toast('Não foi possível salvar a categoria. Tente novamente.'); return; }
     const categories = editCatId
       ? this.state.categories.map(c => c.id === editCatId ? cat : c)
       : [...this.state.categories, cat];
-    this.setState({ categories, showCatModal: false, editCatId: null });
-    await window._sb.from('categories').upsert({ ...cat, user_id: user.id });
+    this.setState({ categories, showCatModal: false, editCatId: null, savingCat: false });
+    this._toast(editCatId ? 'Categoria atualizada!' : 'Categoria criada!');
   }
 
   deleteCat = async (id) => {
-    const categories = this.state.categories.filter(c => c.id !== id);
-    this.setState({ categories });
-    await window._sb.from('categories').delete().eq('id', id);
+    this.setState({ deletingId: id });
+    const { error } = await window._sb.from('categories').delete().eq('id', id);
+    if (error) { this.setState({ deletingId: null }); this._toast('Não foi possível excluir. Tente novamente.'); return; }
+    this.setState({ categories: this.state.categories.filter(c => c.id !== id), deletingId: null });
+    this._toast('Categoria excluída.');
   }
 
   saveCfg = async () => {
     const { cfgName, cfgEmail, cfgCurrency, cfgSavingsGoal, user } = this.state;
     const name = cfgName || 'Usuário';
     const savingsGoal = cfgSavingsGoal && parseFloat(cfgSavingsGoal) > 0 ? parseFloat(cfgSavingsGoal) : 0;
-    this.setState({ user: { ...user, name }, savingsGoal });
-    await window._sb.from('profiles').update({ name, currency: cfgCurrency, savings_goal: savingsGoal }).eq('id', user.id);
+    this.setState({ user: { ...user, name }, savingsGoal, savingCfg: true });
+    try {
+      await window._sb.from('profiles').update({ name, currency: cfgCurrency, savings_goal: savingsGoal }).eq('id', user.id);
+      this._toast('Perfil atualizado!');
+    } finally {
+      this.setState({ savingCfg: false });
+    }
   }
 
   saveJarvisNotes = async () => {
     const { cfgJarvisNotes, user } = this.state;
-    await window._sb.from('jarvis_context').upsert({ user_id: user.id, personal_notes: cfgJarvisNotes, updated_at: new Date().toISOString() });
-    this.setState({ toastMsg: 'Contexto do Jarvis atualizado!', toastTs: Date.now() });
-    setTimeout(() => this.setState({ toastTs: 0 }), 3000);
+    this.setState({ savingJarvisNotes: true });
+    try {
+      await window._sb.from('jarvis_context').upsert({ user_id: user.id, personal_notes: cfgJarvisNotes, updated_at: new Date().toISOString() });
+      this._toast('Contexto do Jarvis atualizado!');
+    } finally {
+      this.setState({ savingJarvisNotes: false });
+    }
   }
 
   openClearDataConfirm = () => this.setState({ showClearConfirm: true });
@@ -2878,6 +2988,19 @@ class Component extends DCLogic {
   renderVals() {
     const s = this.state;
     const { screen, isMobile, sidebarOpen } = s;
+
+    // Botão de ação (Salvar/Pagar/etc.) com spinner + label trocando enquanto a operação está em
+    // andamento — sem isso, clicar não dava nenhum retorno visual até o modal fechar sozinho.
+    const _actionBtn = (busy, gradient, shadowColor, idleLabel, busyLabel) => ({
+      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+      width: '100%', padding: '13px', border: 'none', borderRadius: '9px',
+      background: gradient, color: 'white', fontSize: '15px', fontWeight: '600',
+      cursor: busy ? 'default' : 'pointer', fontFamily: 'inherit',
+      boxShadow: '0 4px 16px ' + shadowColor, opacity: busy ? 0.85 : 1,
+    });
+    const GRAD_BLUE = 'linear-gradient(135deg, #2563EB, #06B6D4)';
+    const GRAD_GREEN = 'linear-gradient(135deg, #22C55E, #16A34A)';
+    const GRAD_ORANGE = 'linear-gradient(135deg, #F97316, #C2410C)';
 
     // Onboarding steps
     const defCatIds = new Set(['c1','c2','c3','c4','c5','c6','c7','c8']);
@@ -3232,6 +3355,7 @@ class Component extends DCLogic {
         fmtTotal: this.fmt(tot),
         hasBudget, pct, budgetBarColor,
         fmtBudget: hasBudget ? this.fmt(cat.budget) : '',
+        isDeleting: s.deletingId === cat.id, notDeleting: s.deletingId !== cat.id,
         onEdit: () => this.openCatModal(cat), onDelete: () => this.deleteCat(cat.id) };
     });
 
@@ -3636,6 +3760,9 @@ class Component extends DCLogic {
       setTxnNotes: e => this.setState({ txnNotes: e.target.value }),
       hasTxnNotes: !!(s.txnNotes && s.txnNotes.trim()),
       catOptions, saveTxn: this.saveTxn,
+      savingTxn: s.savingTxn,
+      saveTxnLabel: s.savingTxn ? 'Salvando…' : 'Salvar',
+      saveTxnBtnStyle: { ..._actionBtn(s.savingTxn, GRAD_BLUE, '#2563EB33'), marginTop: '20px' },
       closeTxnModal: () => this.setState({ showTxnModal: false, editTxnId: null }),
       // planejamento
       recurringItems, noRecurringItems: recurringItems.length === 0, hasRecurringItems: recurringItems.length > 0,
@@ -3672,12 +3799,19 @@ class Component extends DCLogic {
           fmtRemaining: this.fmt(Math.max(0, g.target - g.current)),
           daysLeft, hasDl: dl !== null,
           dlLabel: dl ? (daysLeft === 0 ? 'hoje' : daysLeft + ' dias') : '',
+          isDeleting: s.deletingId === g.id, notDeleting: s.deletingId !== g.id,
           onEdit: () => this.openGoalModal(g), onDelete: () => this.deleteGoal(g.id),
           onContrib: () => this.openContribModal(g.id),
         };
       }),
       hasGoals: s.goals.length > 0,
       noGoals: s.goals.length === 0,
+      savingGoal: s.savingGoal,
+      saveGoalLabel: s.savingGoal ? 'Salvando…' : 'Salvar Meta',
+      saveGoalBtnStyle: { ..._actionBtn(s.savingGoal, GRAD_BLUE, '#2563EB33'), marginTop: '20px', borderRadius: '10px', letterSpacing: '-0.3px' },
+      savingContrib: s.savingContrib,
+      contribBtnLabel: s.savingContrib ? 'Aportando…' : '+ Aportar',
+      contribBtnStyle: { ..._actionBtn(s.savingContrib, GRAD_GREEN, '#22C55E33'), flex: '1', padding: '12px', fontSize: '14px' },
       // Dívidas (parceladas com teto, ou avulsas sem prazo/parcela fixa)
       showExpenseModal: s.showExpenseModal,
       expName: s.expName, expInstallment: s.expInstallment, expAmount: s.expAmount, expFreq: s.expFreq, expDay: s.expDay,
@@ -3712,12 +3846,16 @@ class Component extends DCLogic {
           hasEndDate, endDateLabel: hasEndDate ? this.fmtDate(exp.endDate) : '',
           isCompleted, completedLabel: isCompleted ? 'Concluído' : 'Ativa',
           completedBg: isCompleted ? '#22C55E22' : '#3B82F622', completedTxt: isCompleted ? '#22C55E' : '#60A5FA',
+          isDeleting: s.deletingId === exp.id, notDeleting: s.deletingId !== exp.id,
           onEdit: () => this.openExpenseModal(exp), onDelete: () => this.deleteExpense(exp.id),
           onPay: () => this.openPayExpenseModal(exp.id),
         };
       }),
       hasExpenses: s.recurringExpenses.length > 0,
       noExpenses: s.recurringExpenses.length === 0,
+      savingExpense: s.savingExpense,
+      saveExpenseLabel: s.savingExpense ? 'Salvando…' : 'Salvar Dívida',
+      saveExpenseBtnStyle: { ..._actionBtn(s.savingExpense, GRAD_BLUE, '#2563EB33'), marginTop: '20px', borderRadius: '10px', letterSpacing: '-0.3px' },
       // Pagar parcela (despesa recorrente)
       showPayExpenseModal: s.showPayExpenseModal,
       payExpenseAmount: s.payExpenseAmount,
@@ -3725,11 +3863,17 @@ class Component extends DCLogic {
       confirmPayExpense: this.confirmPayExpense,
       closePayExpenseModal: this.closePayExpenseModal,
       payExpenseName: (s.recurringExpenses.find(e => e.id === s.payExpenseId) || {}).name || '',
+      savingPayExpense: s.savingPayExpense,
+      payExpenseLabel: s.savingPayExpense ? 'Pagando…' : 'Pagar',
+      payExpenseBtnStyle: { ..._actionBtn(s.savingPayExpense, GRAD_ORANGE, '#F9731633'), flex: '1', padding: '12px', fontSize: '14px' },
       // Cartão de crédito
       cardName: s.cardName, cardClosingDay: s.cardClosingDay,
       setCardName: this.setCardName, setCardClosingDay: this.setCardClosingDay,
       saveCardSettings: this.saveCardSettings,
       hasCardSettings: !!s.cardSettings,
+      savingCard: s.savingCard,
+      saveCardLabel: s.savingCard ? 'Salvando…' : 'Salvar',
+      saveCardBtnStyle: { ..._actionBtn(s.savingCard, GRAD_BLUE, '#2563EB33'), width: 'auto', alignSelf: 'flex-start', padding: '9px 20px', borderRadius: '8px', fontSize: '13px' },
       openInvoices: (() => {
         const groups = {};
         s.transactions.filter(t => t.paymentMethod === 'credit_card' && !t.invoicePaid).forEach(t => {
@@ -3741,10 +3885,12 @@ class Component extends DCLogic {
           const items = groups[key].slice().sort((a, b) => new Date(a.date) - new Date(b.date));
           const total = items.reduce((a, t) => a + t.amount, 0);
           const monthLabel = new Date(key + '-01T12:00:00').toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+          const isPaying = s.payingInvoiceKey === key;
           return {
             key, monthLabel, fmtTotal: this.fmt(total), count: items.length,
             countPlural: items.length === 1 ? '' : 's',
             items: items.map(t => ({ id: t.id, description: t.description, fmtAmount: this.fmt(t.amount), fmtDate: this.fmtDate(t.date) })),
+            isPaying, payLabel: isPaying ? 'Pagando…' : 'Pagar fatura',
             onPay: () => this.payInvoice(key),
           };
         });
@@ -3799,6 +3945,9 @@ class Component extends DCLogic {
       setCatName: e => this.setState({ catName: e.target.value }),
       setCatBudget: e => this.setState({ catBudget: e.target.value }),
       saveCat: this.saveCat, closeCatModal: () => this.setState({ showCatModal: false, editCatId: null }),
+      savingCat: s.savingCat,
+      saveCatLabel: s.savingCat ? 'Salvando…' : 'Salvar',
+      saveCatBtnStyle: { ..._actionBtn(s.savingCat, GRAD_BLUE, '#2563EB33'), marginTop: '20px' },
       iconOptions, colorOptions,
       // configurações
       txnCount: s.transactions.length,
@@ -3813,7 +3962,7 @@ class Component extends DCLogic {
       openClearDataConfirm: this.openClearDataConfirm,
       closeClearDataConfirm: this.closeClearDataConfirm,
       clearData: this.clearData,
-      showToast: !!s.toastMsg && s.toastTs && (Date.now() - s.toastTs < 3600),
+      showToast: !!s.toastMsg && !!s.toastTs,
       toastMsg: s.toastMsg,
       exportAllXlsx: () => this.exportXlsx(s.transactions),
       // Jarvis

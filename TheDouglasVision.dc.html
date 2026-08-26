@@ -2489,7 +2489,9 @@ class Component extends DCLogic {
     const msgColor = isUser ? '#F8FAFC' : model.accent;
     return {
       role, content, persona: persona || null, isUser,
-      bubbleAlign: isUser ? 'flex-end' : 'flex-start',
+      // As duas ficam à esquerda agora — visual de log de terminal/prompt de comando, não de chat
+      // de app. Só a cor (branco vs azul) distingue quem falou, sem precisar de balão nem alinhamento.
+      bubbleAlign: 'flex-start',
       msgColor,
       msgGlow: isUser ? 'none' : ('0 0 10px ' + msgColor + 'aa, 0 0 22px ' + msgColor + '55'),
     };

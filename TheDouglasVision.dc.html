@@ -1147,6 +1147,17 @@
               <textarea value="{{ cfgJarvisNotes }}" onInput="{{ setCfgJarvisNotes }}" rows="8" placeholder="Ex: minha renda principal é..." style="width: 100%; box-sizing: border-box; background: #0D0D1A; border: 1px solid #1E2A45; border-radius: 8px; padding: 12px 14px; color: #E2E8F0; font-size: 13px; font-family: inherit; line-height: 1.6; resize: vertical;"></textarea>
               <button onClick="{{ saveJarvisNotes }}" style="align-self: flex-start; padding: 9px 20px; background: linear-gradient(135deg, #8B5CF6, #06B6D4); border: none; border-radius: 8px; color: white; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit;">Salvar Contexto</button>
             </div>
+            <!-- IronHand (básico por enquanto — vira setor próprio quando o TDV for reestruturado) -->
+            <div style="background: #111118; border: 1px solid #151525; border-radius: 12px; padding: 20px; display: flex; flex-direction: column; gap: 12px;">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <i class="ph ph-hand-pointing" style="font-size: 15px; color: #38BDF8;"></i>
+                <div style="font-size: 10px; font-weight: 600; color: #334155; text-transform: uppercase; letter-spacing: 1px;">IronHand</div>
+              </div>
+              <div style="font-size: 13px; color: #334155; line-height: 1.6;">Controle o PC por gestos, pela webcam. Roda local — este botão abre o programa (na primeira vez, o Windows pede confirmação uma única vez).</div>
+              <button onClick="{{ openIronHand }}" style="align-self: flex-start; display: flex; align-items: center; gap: 7px; padding: 9px 20px; background: transparent; border: 1px solid #38BDF855; border-radius: 8px; color: #38BDF8; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit;">
+                <i class="ph ph-play" style="font-size: 14px;"></i>Abrir IronHand
+              </button>
+            </div>
             <!-- Danger -->
             <div style="background: #111118; border: 1px solid #EF444420; border-radius: 12px; padding: 20px;">
               <div style="font-size: 10px; font-weight: 600; color: #EF444466; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px;">Zona de Perigo</div>
@@ -2469,6 +2480,14 @@ class Component extends DCLogic {
   handleLogout = async () => {
     await window._sb.auth.signOut();
     this.setState({ user: null, screen: 'login', loginEmail: '', loginPassword: '', sidebarOpen: false, transactions: [], categories: [], goals: [], recurringExpenses: [], tasks: [], jarvisMessages: [], jarvisLoaded: false, jarvisConversationId: null, jarvisConversations: [] });
+  }
+
+  // Abre o IronHand (processo local, python main.py) via um protocolo
+  // customizado do Windows (ironhand://) — o mesmo mecanismo por trás de
+  // botões tipo "Abrir no Spotify". Precisa do .reg em IronHand/ importado
+  // uma vez (ver README) pra o Windows saber pra onde mandar o ironhand://.
+  openIronHand = () => {
+    window.location.href = 'ironhand://start';
   }
 
   _jarvisMsg = (role, content, persona) => {
@@ -4132,6 +4151,7 @@ class Component extends DCLogic {
         display: 'flex', flexDirection: 'column',
       },
       handleLogout: this.handleLogout,
+      openIronHand: this.openIronHand,
       shareReport: this.shareMonthlyReport, shareCopied: s.shareCopied,
       shareBg: s.shareCopied ? '#22C55E18' : '#111118',
       shareBorder: s.shareCopied ? '1px solid #22C55E44' : '1px solid #1A1A28',

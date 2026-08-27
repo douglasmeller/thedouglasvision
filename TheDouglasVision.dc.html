@@ -1409,6 +1409,11 @@
             <button onClick="{{ goToJarvisScreen }}" title="Expandir" style="width: 28px; height: 28px; border-radius: 7px; background: transparent; border: 1px solid #1E2A45; color: #64748B; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
               <i class="ph ph-arrows-out-simple" style="font-size: 14px;"></i>
             </button>
+            <sc-if value="{{ jarvisPipSupported }}" hint-placeholder-val="{{ false }}">
+              <button onClick="{{ openJarvisPip }}" title="Flutuar por cima de tudo" style="width: 28px; height: 28px; border-radius: 7px; background: transparent; border: 1px solid #1E2A45; color: #64748B; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                <i class="ph ph-picture-in-picture" style="font-size: 14px;"></i>
+              </button>
+            </sc-if>
           </div>
 
           <div style="padding: 8px 14px; border-bottom: 1px solid #151525; display: flex; gap: 5px; flex-shrink: 0;">
@@ -2725,6 +2730,72 @@ class Component extends DCLogic {
     }
   }
 
+  // Bolha do Jarvis flutuando por cima de qualquer app, via Document
+  // Picture-in-Picture (Chrome/Edge). A janela PiP roda no MESMO contexto
+  // JS da página — não reaproveitamos os componentes do DCLogic (o motor de
+  // template não é "document-aware"), só o estado/métodos reais por trás
+  // (jarvisMessages, sendJarvisMessage) — o HTML da bolha é montado à mão e
+  // redesenhado manualmente sempre que renderVals() roda.
+  openJarvisPip = async () => {
+    if (!('documentPictureInPicture' in window)) {
+      this._toast('Seu navegador não suporta janela flutuante ainda.');
+      return;
+    }
+    if (this._jarvisPipWindow) { this._jarvisPipWindow.focus(); return; }
+
+    const pip = await documentPictureInPicture.requestWindow({ width: 340, height: 480 });
+    this._jarvisPipWindow = pip;
+    pip.addEventListener('pagehide', () => { this._jarvisPipWindow = null; });
+
+    const cur = this.jarvisModels()[this.state.jarvisModel] || this.jarvisModels().sonnet;
+    pip.document.title = this.state.jarvisDisplayName || 'J.A.R.V.I.S.';
+    pip.document.body.style.cssText = 'margin:0;background:#0A0A12;display:flex;flex-direction:column;height:100vh;overflow:hidden;font-family:-apple-system,"Segoe UI",sans-serif;';
+    pip.document.body.innerHTML = `
+      <div style="display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid #1E2A45;flex-shrink:0;">
+        <div style="width:26px;height:26px;border-radius:50%;overflow:hidden;flex-shrink:0;background:${cur.avatarBg};box-shadow:0 0 8px ${cur.glow};">
+          <img src="${this.state.jarvisLogoSrc || 'public/jarvis.png'}" style="width:100%;height:100%;object-fit:contain;">
+        </div>
+        <div style="flex:1;min-width:0;font-size:12.5px;font-weight:700;color:#E2E8F0;">${this.state.jarvisDisplayName || 'J.A.R.V.I.S.'}</div>
+      </div>
+      <div id="pip-msgs" style="flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:8px;"></div>
+      <div style="display:flex;gap:6px;padding:10px;border-top:1px solid #1E2A45;flex-shrink:0;">
+        <input id="pip-input" type="text" placeholder="Pergunte ao Jarvis..." style="flex:1;min-width:0;background:#0D0D1A;border:1px solid #1E2A45;border-radius:8px;padding:9px 11px;color:#E2E8F0;font-size:13px;box-sizing:border-box;">
+        <button id="pip-send" style="width:36px;height:36px;border-radius:8px;background:linear-gradient(135deg,#8B5CF6,#06B6D4);border:none;color:white;cursor:pointer;flex-shrink:0;font-size:15px;">➤</button>
+      </div>
+    `;
+
+    const input = pip.document.getElementById('pip-input');
+    const send = () => {
+      const text = input.value;
+      if (!text.trim() || this.state.jarvisLoading) return;
+      input.value = '';
+      this.setState({ jarvisInput: text }, () => this.sendJarvisMessage());
+    };
+    pip.document.getElementById('pip-send').addEventListener('click', send);
+    input.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } });
+    input.focus();
+
+    this._renderJarvisPip();
+  }
+
+  _renderJarvisPip = () => {
+    const pip = this._jarvisPipWindow;
+    const box = pip && pip.document.getElementById('pip-msgs');
+    if (!box) return;
+    const s = this.state;
+    const cur = this.jarvisModels()[s.jarvisModel] || this.jarvisModels().sonnet;
+    const esc = (t) => (t || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    let html = s.jarvisMessages.map(msg => {
+      const color = msg.isUser ? '#F8FAFC' : cur.accent;
+      const glow = msg.isUser ? 'none' : ('0 0 8px ' + color + 'aa');
+      return `<div style="font-size:12px;line-height:1.6;color:${color};text-shadow:${glow};white-space:pre-wrap;">${esc(msg.content)}</div>`;
+    }).join('');
+    if (!html) html = '<div style="color:#334155;font-size:12px;text-align:center;margin-top:20px;">Comece uma conversa</div>';
+    if (s.jarvisLoading) html += `<div style="color:${cur.accent};font-size:11px;opacity:0.6;">...</div>`;
+    box.innerHTML = html;
+    box.scrollTop = box.scrollHeight;
+  }
+
   openTxnModal = (txn) => {
     if (txn) {
       this.setState({
@@ -3940,6 +4011,8 @@ class Component extends DCLogic {
       filteredTxns.forEach(t => groupedFilteredTxns.push({ ...t, isHeader: false, isTxn: true, showDateInline: true }));
     }
 
+    if (this._jarvisPipWindow) this._renderJarvisPip();
+
     return {
       isLogin, isApp, isDashboard, isLancamentos, isPlanejamento, isCategorias, isTarefas, isConfiguracoes,
       currentScreenTitle: titles[screen] || '',
@@ -4390,6 +4463,8 @@ class Component extends DCLogic {
       jarvisOpen: s.jarvisOpen,
       toggleJarvisBubble: this.toggleJarvisBubble,
       sendJarvisMessage: this.sendJarvisMessage,
+      jarvisPipSupported: typeof documentPictureInPicture !== 'undefined',
+      openJarvisPip: this.openJarvisPip,
       cfgJarvisNotes: s.cfgJarvisNotes || '',
       setCfgJarvisNotes: e => this.setState({ cfgJarvisNotes: e.target.value }),
       saveJarvisNotes: this.saveJarvisNotes,

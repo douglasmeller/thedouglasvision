@@ -122,7 +122,7 @@
         </div>
       </div>
       <sc-if value="{{ hasLoginError }}" hint-placeholder-val="{{ false }}">
-        <div style="margin-top: 12px; padding: 9px 12px; background: #EF444416; border: 1px solid #EF444440; border-radius: 7px; font-size: 12px; color: #F87171;">{{ loginError }}</div>
+        <div class="jarvis-font" style="margin-top: 12px; padding: 9px 12px; background: #EF444420; border: 1px solid #EF4444; border-radius: 7px; font-size: 12px; color: #F87171; text-shadow: 0 0 6px #EF444488; letter-spacing: 1px; text-transform: uppercase;">⚠ {{ loginError }}</div>
       </sc-if>
       <button onClick="{{ handleLogin }}" style="margin-top: 20px; width: 100%; padding: 13px; background: linear-gradient(135deg, #2563EB, #06B6D4); border: none; border-radius: 9px; color: white; font-size: 15px; font-weight: 600; cursor: pointer; font-family: inherit; letter-spacing: -0.2px; box-shadow: 0 4px 16px #2563EB44;">Entrar</button>
     </div>
@@ -167,10 +167,6 @@
         </sc-for>
       </div>
       <div style="{{ sidebarFooterStyle }}">
-        <sc-if value="{{ sidebarExpanded }}" hint-placeholder-val="{{ true }}">
-          <div style="font-size: 13px; font-weight: 500; color: #94A3B8; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ userName }}</div>
-          <div style="font-size: 11px; color: #2A3A50; margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ userEmail }}</div>
-        </sc-if>
         <button onClick="{{ handleLogout }}" title="Sair" style="{{ logoutBtnStyle }}">
           <i class="ph ph-sign-out" style="font-size: 13px;"></i>
           <sc-if value="{{ sidebarExpanded }}" hint-placeholder-val="{{ true }}">
@@ -1106,14 +1102,6 @@
             <div style="background: #111118; border: 1px solid #151525; border-radius: 12px; padding: 20px; display: flex; flex-direction: column; gap: 14px;">
               <div style="font-size: 10px; font-weight: 600; color: #334155; text-transform: uppercase; letter-spacing: 1px;">Perfil</div>
               <div>
-                <label style="display: block; font-size: 11px; color: #475569; margin-bottom: 6px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Nome</label>
-                <input type="text" value="{{ cfgName }}" onInput="{{ setCfgName }}" placeholder="Seu nome" style="width: 100%; background: #0D0D1A; border: 1px solid #1E2A45; border-radius: 8px; padding: 10px 14px; color: #E2E8F0; font-size: 14px; font-family: inherit;">
-              </div>
-              <div>
-                <label style="display: block; font-size: 11px; color: #475569; margin-bottom: 6px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">E-mail</label>
-                <input type="email" value="{{ cfgEmail }}" onInput="{{ setCfgEmail }}" placeholder="seu@email.com" style="width: 100%; background: #0D0D1A; border: 1px solid #1E2A45; border-radius: 8px; padding: 10px 14px; color: #E2E8F0; font-size: 14px; font-family: inherit;">
-              </div>
-              <div>
                 <label style="display: block; font-size: 11px; color: #475569; margin-bottom: 6px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Moeda</label>
                 <select value="{{ cfgCurrency }}" onChange="{{ setCfgCurrency }}" style="width: 100%; background: #0D0D1A; border: 1px solid #1E2A45; border-radius: 8px; padding: 10px 14px; color: #E2E8F0; font-size: 14px; font-family: inherit; cursor: pointer;">
                   <option value="BRL">R$ — Real Brasileiro</option>
@@ -1168,8 +1156,6 @@
             <!-- Conta / Logout -->
             <div style="background: #111118; border: 1px solid #151525; border-radius: 12px; padding: 20px;">
               <div style="font-size: 10px; font-weight: 600; color: #334155; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px;">Conta</div>
-              <div style="font-size: 13px; font-weight: 500; color: #94A3B8; margin-bottom: 2px;">{{ userName }}</div>
-              <div style="font-size: 11px; color: #334155; margin-bottom: 14px;">{{ userEmail }}</div>
               <button onClick="{{ handleLogout }}" style="display: flex; align-items: center; gap: 7px; padding: 9px 18px; background: transparent; border: 1px solid #1E2A45; border-radius: 8px; color: #64748B; font-size: 13px; font-weight: 500; cursor: pointer; font-family: inherit;">
                 <i class="ph ph-sign-out" style="font-size: 15px;"></i>Sair da conta
               </button>
@@ -2127,8 +2113,6 @@ class Component extends DCLogic {
     catName: '',
     catIcon: 'tag',
     catColor: '#2563EB',
-    cfgName: '',
-    cfgEmail: '',
     cfgSavingsGoal: '',
     savingsGoal: 0,
   };
@@ -2347,12 +2331,11 @@ class Component extends DCLogic {
     const expenseList = (expenses || []).map(e => this._expenseRowIn(e));
     const cardSettings = card ? { name: card.name, closingDay: Number(card.closing_day) } : null;
     const taskList = (tasksData || []).map(t => this._taskRowIn(t));
-    const name = profile?.name || authUser.user_metadata?.name || authUser.email.split('@')[0].replace(/[._-]/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+    const name = 'Douglas';
     const user = { id: uid, name, email: authUser.email };
     this.setState({
       user, transactions: txnList, categories: catList, goals: goalList, recurringExpenses: expenseList, tasks: taskList,
       cardSettings, cardName: cardSettings?.name || 'Cartão de Crédito', cardClosingDay: String(cardSettings?.closingDay || 1),
-      cfgName: name, cfgEmail: authUser.email,
       cfgCurrency: profile?.currency || 'BRL',
       savingsGoal: Number(profile?.savings_goal || 0),
       cfgSavingsGoal: profile?.savings_goal ? String(profile.savings_goal) : '',
@@ -2426,10 +2409,10 @@ class Component extends DCLogic {
 
   handleLogin = async () => {
     const { loginPassword } = this.state;
-    if (!loginPassword) { this.setState({ loginError: 'Insira sua senha' }); return; }
+    if (!loginPassword) { this.setState({ loginError: 'PASSWORD REQUIRED' }); return; }
     this.setState({ loading: true, loadingMsg: 'Autenticando...' });
     const { data, error } = await window._sb.auth.signInWithPassword({ email: this.OWNER_EMAIL, password: loginPassword });
-    if (error) { this.setState({ loginError: 'Senha incorreta', loading: false }); return; }
+    if (error) { this.setState({ loginError: 'INCORRECT PASSWORD', loading: false }); return; }
     await this._loadFromSupabase(data.user);
   }
 
@@ -3292,12 +3275,11 @@ class Component extends DCLogic {
   }
 
   saveCfg = async () => {
-    const { cfgName, cfgEmail, cfgCurrency, cfgSavingsGoal, user } = this.state;
-    const name = cfgName || 'Usuário';
+    const { cfgCurrency, cfgSavingsGoal, user } = this.state;
     const savingsGoal = cfgSavingsGoal && parseFloat(cfgSavingsGoal) > 0 ? parseFloat(cfgSavingsGoal) : 0;
-    this.setState({ user: { ...user, name }, savingsGoal, savingCfg: true });
+    this.setState({ savingsGoal, savingCfg: true });
     try {
-      await window._sb.from('profiles').update({ name, currency: cfgCurrency, savings_goal: savingsGoal }).eq('id', user.id);
+      await window._sb.from('profiles').update({ currency: cfgCurrency, savings_goal: savingsGoal }).eq('id', user.id);
       this._toast('Perfil atualizado!');
     } finally {
       this.setState({ savingCfg: false });
@@ -4005,7 +3987,6 @@ class Component extends DCLogic {
         boxShadow: '0 16px 40px #00000088', zIndex: 110, overflow: 'hidden',
         display: 'flex', flexDirection: 'column',
       },
-      userName: s.user?.name || 'Usuário', userEmail: s.user?.email || '',
       handleLogout: this.handleLogout,
       shareReport: this.shareMonthlyReport, shareCopied: s.shareCopied,
       shareBg: s.shareCopied ? '#22C55E18' : '#111118',
@@ -4373,9 +4354,7 @@ class Component extends DCLogic {
       saveTaskBtnStyle: { ..._actionBtn(s.savingTask, GRAD_BLUE, '#2563EB33'), marginTop: '20px' },
       // configurações
       txnCount: s.transactions.length,
-      cfgName: s.cfgName, cfgEmail: s.cfgEmail, cfgCurrency: s.cfgCurrency,
-      setCfgName: e => this.setState({ cfgName: e.target.value }),
-      setCfgEmail: e => this.setState({ cfgEmail: e.target.value }),
+      cfgCurrency: s.cfgCurrency,
       setCfgCurrency: e => this.setState({ cfgCurrency: e.target.value }),
       cfgSavingsGoal: s.cfgSavingsGoal || '',
       setCfgSavingsGoal: e => this.setState({ cfgSavingsGoal: e.target.value }),

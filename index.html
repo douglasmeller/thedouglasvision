@@ -2743,39 +2743,65 @@ class Component extends DCLogic {
     }
     if (this._jarvisPipWindow) { this._jarvisPipWindow.focus(); return; }
 
-    const pip = await documentPictureInPicture.requestWindow({ width: 340, height: 480 });
+    const BUBBLE = 84, PANEL_W = 340, PANEL_H = 480;
+    const pip = await documentPictureInPicture.requestWindow({ width: BUBBLE, height: BUBBLE });
     this._jarvisPipWindow = pip;
     pip.addEventListener('pagehide', () => { this._jarvisPipWindow = null; });
 
     const cur = this.jarvisModels()[this.state.jarvisModel] || this.jarvisModels().sonnet;
     pip.document.title = this.state.jarvisDisplayName || 'J.A.R.V.I.S.';
-    pip.document.body.style.cssText = 'margin:0;background:#0A0A12;display:flex;flex-direction:column;height:100vh;overflow:hidden;font-family:-apple-system,"Segoe UI",sans-serif;';
-    pip.document.body.innerHTML = `
-      <div style="display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid #1E2A45;flex-shrink:0;">
-        <div style="width:26px;height:26px;border-radius:50%;overflow:hidden;flex-shrink:0;background:${cur.avatarBg};box-shadow:0 0 8px ${cur.glow};">
-          <img src="${this.state.jarvisLogoSrc || 'public/jarvis.png'}" style="width:100%;height:100%;object-fit:contain;">
-        </div>
-        <div style="flex:1;min-width:0;font-size:12.5px;font-weight:700;color:#E2E8F0;">${this.state.jarvisDisplayName || 'J.A.R.V.I.S.'}</div>
-      </div>
-      <div id="pip-msgs" style="flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:8px;"></div>
-      <div style="display:flex;gap:6px;padding:10px;border-top:1px solid #1E2A45;flex-shrink:0;">
-        <input id="pip-input" type="text" placeholder="Pergunte ao Jarvis..." style="flex:1;min-width:0;background:#0D0D1A;border:1px solid #1E2A45;border-radius:8px;padding:9px 11px;color:#E2E8F0;font-size:13px;box-sizing:border-box;">
-        <button id="pip-send" style="width:36px;height:36px;border-radius:8px;background:linear-gradient(135deg,#8B5CF6,#06B6D4);border:none;color:white;cursor:pointer;flex-shrink:0;font-size:15px;">➤</button>
-      </div>
-    `;
+    pip.document.body.style.cssText = 'margin:0;padding:0;overflow:hidden;font-family:-apple-system,"Segoe UI",sans-serif;';
 
-    const input = pip.document.getElementById('pip-input');
-    const send = () => {
-      const text = input.value;
-      if (!text.trim() || this.state.jarvisLoading) return;
-      input.value = '';
-      this.setState({ jarvisInput: text }, () => this.sendJarvisMessage());
+    // Começa só como a bolinha (igual dentro do TDV); clicar expande pro
+    // chat completo na mesma janela PiP, sem abrir uma janela nova.
+    // pip.resizeTo tenta encolher/crescer a janela real — se o navegador não
+    // deixar, a troca de conteúdo ainda funciona, só não muda o tamanho.
+    const renderBubble = () => {
+      pip.document.body.style.background = 'transparent';
+      pip.document.body.innerHTML = `
+        <button id="pip-bubble-btn" style="width:100%;height:100%;border-radius:50%;border:1px solid ${cur.accent}55;background:${cur.avatarBg};box-shadow:0 0 22px ${cur.accent}77;cursor:pointer;padding:2px;box-sizing:border-box;overflow:hidden;">
+          <img src="${this.state.jarvisLogoSrc || 'public/jarvis.png'}" style="width:100%;height:100%;object-fit:contain;border-radius:50%;">
+        </button>
+      `;
+      pip.document.getElementById('pip-bubble-btn').addEventListener('click', expand);
     };
-    pip.document.getElementById('pip-send').addEventListener('click', send);
-    input.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } });
-    input.focus();
 
-    this._renderJarvisPip();
+    const expand = () => {
+      try { pip.resizeTo(PANEL_W, PANEL_H); } catch (e) { /* navegador pode não deixar redimensionar a janela PiP */ }
+      pip.document.body.style.cssText = 'margin:0;padding:0;overflow:hidden;font-family:-apple-system,"Segoe UI",sans-serif;background:#0A0A12;display:flex;flex-direction:column;height:100vh;box-sizing:border-box;';
+      pip.document.body.innerHTML = `
+        <div style="display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid #1E2A45;flex-shrink:0;">
+          <button id="pip-collapse" title="Recolher" style="width:26px;height:26px;border-radius:50%;overflow:hidden;flex-shrink:0;background:${cur.avatarBg};box-shadow:0 0 8px ${cur.glow};border:none;cursor:pointer;padding:1px;">
+            <img src="${this.state.jarvisLogoSrc || 'public/jarvis.png'}" style="width:100%;height:100%;object-fit:contain;border-radius:50%;">
+          </button>
+          <div style="flex:1;min-width:0;font-size:12.5px;font-weight:700;color:#E2E8F0;">${this.state.jarvisDisplayName || 'J.A.R.V.I.S.'}</div>
+        </div>
+        <div id="pip-msgs" style="flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:8px;"></div>
+        <div style="display:flex;gap:6px;padding:10px;border-top:1px solid #1E2A45;flex-shrink:0;">
+          <input id="pip-input" type="text" placeholder="Pergunte ao Jarvis..." style="flex:1;min-width:0;background:#0D0D1A;border:1px solid #1E2A45;border-radius:8px;padding:9px 11px;color:#E2E8F0;font-size:13px;box-sizing:border-box;">
+          <button id="pip-send" style="width:36px;height:36px;border-radius:8px;background:linear-gradient(135deg,#8B5CF6,#06B6D4);border:none;color:white;cursor:pointer;flex-shrink:0;font-size:15px;">➤</button>
+        </div>
+      `;
+      pip.document.getElementById('pip-collapse').addEventListener('click', collapse);
+      const input = pip.document.getElementById('pip-input');
+      const send = () => {
+        const text = input.value;
+        if (!text.trim() || this.state.jarvisLoading) return;
+        input.value = '';
+        this.setState({ jarvisInput: text }, () => this.sendJarvisMessage());
+      };
+      pip.document.getElementById('pip-send').addEventListener('click', send);
+      input.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } });
+      input.focus();
+      this._renderJarvisPip();
+    };
+
+    const collapse = () => {
+      try { pip.resizeTo(BUBBLE, BUBBLE); } catch (e) { /* idem */ }
+      renderBubble();
+    };
+
+    renderBubble();
   }
 
   _renderJarvisPip = () => {

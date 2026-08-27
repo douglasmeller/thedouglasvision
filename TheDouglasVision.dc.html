@@ -2780,7 +2780,11 @@ class Component extends DCLogic {
     // (pip.innerWidth/Height) em vez de assumir o que foi pedido, e
     // recalculamos toda vez que a janela muda de tamanho.
     const renderBubble = () => {
-      pip.document.body.style.background = 'transparent';
+      // A janela PiP não fica de verdade transparente sobre o desktop (isso
+      // não é algo que o Chrome expõe pra conteúdo arbitrário) — o melhor
+      // que dá é preencher de preto, pra não sobrar branco em volta da bolha.
+      pip.document.documentElement.style.background = '#000';
+      pip.document.body.style.background = '#000';
       const side = Math.max(40, Math.min(pip.innerWidth, pip.innerHeight) - 16);
       pip.document.body.innerHTML = `
         <div style="width:100%;height:100vh;display:flex;align-items:center;justify-content:center;">
@@ -2799,6 +2803,7 @@ class Component extends DCLogic {
     const expand = () => {
       bubbleMode = false;
       try { pip.resizeTo(PANEL_W, PANEL_H); } catch (e) { /* navegador pode não deixar redimensionar a janela PiP */ }
+      pip.document.documentElement.style.background = '#0A0A12';
       pip.document.body.style.background = '#0A0A12';
       pip.document.body.innerHTML = `
         <div style="display:flex;flex-direction:column;height:100vh;">

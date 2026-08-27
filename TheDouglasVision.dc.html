@@ -60,6 +60,8 @@
     }
     .jarvis-glitch { animation: jarvisGlitch 0.5s steps(2, end) both; }
     @keyframes jarvisTyping { 0%, 100% { opacity: 0.3; } 50% { opacity: 1; } }
+    @keyframes loginCursorBlink { 0%, 49% { opacity: 1; } 50%, 100% { opacity: 0; } }
+    .login-cursor-blink { animation: loginCursorBlink 1s step-end infinite; }
     .jarvis-typing span { display: inline-block; width: 5px; height: 5px; border-radius: 50%; background: currentColor; margin-right: 3px; animation: jarvisTyping 1s infinite; }
     .jarvis-typing span:nth-child(2) { animation-delay: 0.15s; }
     .jarvis-typing span:nth-child(3) { animation-delay: 0.3s; }
@@ -108,14 +110,12 @@
       </div>
       <div style="display: flex; flex-direction: column; gap: 14px;">
         <div>
-          <label style="display: block; font-size: 11px; color: #475569; margin-bottom: 6px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">E-mail</label>
-          <input type="email" value="{{ loginEmail }}" onInput="{{ setEmail }}" onKeyDown="{{ loginKeyDown }}" placeholder="seu@email.com" style="width: 100%; background: #0D0D1A; border: 1px solid #1E2A45; border-radius: 8px; padding: 11px 14px; color: #E2E8F0; font-size: 14px; font-family: inherit;">
-        </div>
-        <div>
-          <label style="display: block; font-size: 11px; color: #475569; margin-bottom: 6px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Senha</label>
+          <label class="jarvis-font-display" style="display: flex; align-items: center; gap: 6px; font-size: 11px; color: #38BDF8; margin-bottom: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 2.5px; text-shadow: 0 0 8px #38BDF866;">
+            ENTER PASSWORD<span class="login-cursor-blink">_</span>
+          </label>
           <div style="position: relative;">
-            <input type="{{ passwordInputType }}" value="{{ loginPassword }}" onInput="{{ setPassword }}" onKeyDown="{{ loginKeyDown }}" placeholder="••••••••" style="width: 100%; box-sizing: border-box; background: #0D0D1A; border: 1px solid #1E2A45; border-radius: 8px; padding: 11px 40px 11px 14px; color: #E2E8F0; font-size: 14px; font-family: inherit;">
-            <button type="button" onClick="{{ togglePasswordVisibility }}" style="position: absolute; right: 4px; top: 50%; transform: translateY(-50%); background: none; border: none; color: #475569; cursor: pointer; padding: 7px; display: flex; align-items: center; justify-content: center;">
+            <input type="{{ passwordInputType }}" value="{{ loginPassword }}" onInput="{{ setPassword }}" onKeyDown="{{ loginKeyDown }}" placeholder="••••••••" autofocus class="jarvis-font" style="width: 100%; box-sizing: border-box; background: #0D0D1A; border: 1px solid #38BDF877; border-radius: 8px; padding: 13px 40px 13px 14px; color: #E2E8F0; font-size: 15px; letter-spacing: 3px; box-shadow: 0 0 18px #38BDF833, inset 0 0 14px #38BDF811;">
+            <button type="button" onClick="{{ togglePasswordVisibility }}" style="position: absolute; right: 4px; top: 50%; transform: translateY(-50%); background: none; border: none; color: #38BDF8; cursor: pointer; padding: 7px; display: flex; align-items: center; justify-content: center;">
               <i class="{{ passwordEyeIcon }}" style="font-size: 16px;"></i>
             </button>
           </div>
@@ -2420,13 +2420,16 @@ class Component extends DCLogic {
     installment: exp.installment, last_generated_month: exp.lastGeneratedMonth || null,
   })
 
+  // App de uso pessoal — só existe uma conta, então a tela de login pede só a senha
+  // (o e-mail nunca muda, não faz sentido pedir de novo toda vez).
+  OWNER_EMAIL = 'ymellerguirado@gmail.com'
+
   handleLogin = async () => {
-    const { loginEmail, loginPassword } = this.state;
-    if (!loginEmail) { this.setState({ loginError: 'Insira seu e-mail' }); return; }
+    const { loginPassword } = this.state;
     if (!loginPassword) { this.setState({ loginError: 'Insira sua senha' }); return; }
     this.setState({ loading: true, loadingMsg: 'Autenticando...' });
-    const { data, error } = await window._sb.auth.signInWithPassword({ email: loginEmail, password: loginPassword });
-    if (error) { this.setState({ loginError: 'E-mail ou senha incorretos', loading: false }); return; }
+    const { data, error } = await window._sb.auth.signInWithPassword({ email: this.OWNER_EMAIL, password: loginPassword });
+    if (error) { this.setState({ loginError: 'Senha incorreta', loading: false }); return; }
     await this._loadFromSupabase(data.user);
   }
 

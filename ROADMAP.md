@@ -18,11 +18,14 @@ Ideias e próximos passos discutidos, ainda não implementados.
 ## Exportação Excel
 - Deixar o relatório mais bonito: filtros, valores de receita positivos e despesa negativos, cores, negrito, destaques visuais.
 
-## Login só com senha
-- Tirar o campo de e-mail da tela de login — digitar só a senha já basta pra entrar.
-- Faz sentido porque o app é de uso pessoal (só o Douglas usa); o e-mail sempre vai ser o mesmo.
-- Douglas vai usar uma senha mais forte já pensando nisso (já que ela sozinha passa a ser a única barreira).
-- Caminho provável de implementação: manter o Supabase Auth por trás (e-mail/senha) como está, só esconder o campo de e-mail na UI e preencher ele automaticamente com o e-mail fixo do Douglas ao enviar o login — não precisa trocar o método de autenticação, só simplificar a tela.
+## Login só com senha (feito)
+- Campo de e-mail sumiu da tela — só a senha, com visual de terminal (ENTER PASSWORD, fonte monoespaçada, brilho azul).
+- E-mail continua fixo internamente (Supabase Auth por trás não mudou), só não aparece mais pro usuário digitar.
+
+## Traduzir o TDV pra inglês
+- Douglas quer, no futuro, mudar quase todo o texto do app pra inglês (não é urgente — "depois").
+- Primeiro passo já deu: o prompt de senha ficou em inglês (ENTER PASSWORD) como um gostinho da direção.
+- Quando for pra valer, decidir se é o app inteiro de uma vez ou por partes, e se o Jarvis também passa a responder em inglês por padrão ou continua em português.
 
 ---
 *Este arquivo é só uma lista de intenção — nada aqui foi implementado ainda.*

@@ -429,7 +429,7 @@ async function buildSnapshot(sb: SupabaseClient) {
   const patrimonio = allIncome - allExpense + goalsTotal;
 
   const now = new Date();
-  const curMonth = now.toISOString().slice(0, 7);
+  const curMonth = now.toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" }).slice(0, 7);
   const curTxns = T.filter((t) => (t.date || "").startsWith(curMonth));
   const monthIncome = curTxns.filter((t) => t.type === "income").reduce((a, t) => a + Number(t.amount), 0);
   const monthExpense = curTxns.filter((t) => t.type === "expense").reduce((a, t) => a + Number(t.amount), 0);
@@ -488,9 +488,16 @@ const VERSION_NAMES: Record<string, string> = {
 
 function buildSystemPrompt(personaKey: string, personalNotes: string | null, summary: string | null, snapshot: string) {
   const versionName = VERSION_NAMES[personaKey] || VERSION_NAMES.sonnet;
+  // Fuso de Brasília explícito — o servidor roda em UTC, e pegar a data via
+  // toISOString() puro erraria o dia perto da virada da meia-noite local.
+  const now = new Date();
+  const todayISO = now.toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" }); // AAAA-MM-DD
+  const todayFull = now.toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo", weekday: "long", day: "numeric", month: "long", year: "numeric" });
   return `${JARVIS_STYLE}
 
 Você está rodando na versão "${versionName}". Se o Sr. Douglas perguntar em qual versão você está, responda com esse nome — mas não fique mencionando isso espontaneamente.
+
+DATA DE HOJE: ${todayISO} (${todayFull}), horário de Brasília. Essa é a data real agora — não confunda com a data em que essa conversa começou nem com datas mencionadas em mensagens antigas do histórico. Quando o Sr. Douglas pedir pra criar um lançamento sem dizer a data, use a data de hoje.
 
 Você tem acesso a ferramentas para consultar e modificar os dados financeiros reais do usuário (lançamentos, categorias, metas). Ele prefere que você execute as ações que ele pedir diretamente, sem pedir confirmação antes — mas seja preciso e nunca invente dados que não pediu pra você inventar (ex: nunca invente um valor de lançamento que ele não informou).
 

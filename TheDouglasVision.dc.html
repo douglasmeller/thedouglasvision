@@ -2750,36 +2750,73 @@ class Component extends DCLogic {
 
     const cur = this.jarvisModels()[this.state.jarvisModel] || this.jarvisModels().sonnet;
     pip.document.title = this.state.jarvisDisplayName || 'J.A.R.V.I.S.';
-    pip.document.body.style.cssText = 'margin:0;padding:0;overflow:hidden;font-family:-apple-system,"Segoe UI",sans-serif;';
+
+    // O documento da janela PiP nasce em branco — sem isso, nenhum CSS do
+    // app (incluindo os anéis do HUD) chegaria até lá. Cópia direta das
+    // regras (não um <link> pro CSS todo), só o que a bolha/painel usam.
+    const style = pip.document.createElement('style');
+    style.textContent = `
+      * { box-sizing: border-box; }
+      body { margin: 0; overflow: hidden; font-family: -apple-system, 'Segoe UI', sans-serif; }
+      @keyframes jarvisRingSpin { to { transform: rotate(360deg); } }
+      @keyframes jarvisRingSpinRev { to { transform: rotate(-360deg); } }
+      .jarvis-ring-wrap { position: relative; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
+      .jarvis-ring { position: absolute; inset: 0; border-radius: 50%; pointer-events: none; }
+      .jarvis-ring-outer { inset: -6px; border: 1.5px solid transparent; border-top-color: currentColor; border-right-color: currentColor; opacity: 0.7; animation: jarvisRingSpin 5s linear infinite; }
+      .jarvis-ring-inner { inset: -2.5px; border: 1px dashed currentColor; opacity: 0.4; animation: jarvisRingSpinRev 9s linear infinite; }
+      @media (prefers-reduced-motion: reduce) { .jarvis-ring-outer, .jarvis-ring-inner { animation: none; } }
+      @keyframes jarvisSonar { 0% { transform: scale(0.25); opacity: 0.9; } 100% { transform: scale(1); opacity: 0; } }
+      .jarvis-sonar { position: relative; width: 16px; height: 16px; }
+      .jarvis-sonar span { position: absolute; inset: 0; border-radius: 50%; border: 1.5px solid currentColor; animation: jarvisSonar 1.4s ease-out infinite; }
+      .jarvis-sonar span:nth-child(2) { animation-delay: 0.45s; }
+      .jarvis-sonar span:nth-child(3) { animation-delay: 0.9s; }
+    `;
+    pip.document.head.appendChild(style);
 
     // Começa só como a bolinha (igual dentro do TDV); clicar expande pro
-    // chat completo na mesma janela PiP, sem abrir uma janela nova.
-    // pip.resizeTo tenta encolher/crescer a janela real — se o navegador não
-    // deixar, a troca de conteúdo ainda funciona, só não muda o tamanho.
+    // chat completo na mesma janela PiP, sem abrir uma janela nova. O Chrome
+    // tem um tamanho mínimo pra janela PiP maior que a bolha — pedir 84x84
+    // não garante 84x84 de volta, então SEMPRE medimos o tamanho real
+    // (pip.innerWidth/Height) em vez de assumir o que foi pedido, e
+    // recalculamos toda vez que a janela muda de tamanho.
     const renderBubble = () => {
       pip.document.body.style.background = 'transparent';
+      const side = Math.max(40, Math.min(pip.innerWidth, pip.innerHeight) - 16);
       pip.document.body.innerHTML = `
-        <button id="pip-bubble-btn" style="width:100%;height:100%;border-radius:50%;border:1px solid ${cur.accent}55;background:${cur.avatarBg};box-shadow:0 0 22px ${cur.accent}77;cursor:pointer;padding:2px;box-sizing:border-box;overflow:hidden;">
-          <img src="${this.state.jarvisLogoSrc || 'public/jarvis.png'}" style="width:100%;height:100%;object-fit:contain;border-radius:50%;">
-        </button>
+        <div style="width:100%;height:100vh;display:flex;align-items:center;justify-content:center;">
+          <div class="jarvis-ring-wrap" style="width:${side}px;height:${side}px;color:${cur.accent};">
+            <span class="jarvis-ring jarvis-ring-outer"></span>
+            <span class="jarvis-ring jarvis-ring-inner"></span>
+            <button id="pip-bubble-btn" style="width:100%;height:100%;border-radius:50%;border:1px solid ${cur.accent}55;background:${cur.avatarBg};box-shadow:0 0 22px ${cur.accent}77;cursor:pointer;padding:2px;overflow:hidden;">
+              <img src="${this.state.jarvisLogoSrc || 'public/jarvis.png'}" style="width:100%;height:100%;object-fit:contain;border-radius:50%;">
+            </button>
+          </div>
+        </div>
       `;
       pip.document.getElementById('pip-bubble-btn').addEventListener('click', expand);
     };
 
     const expand = () => {
+      bubbleMode = false;
       try { pip.resizeTo(PANEL_W, PANEL_H); } catch (e) { /* navegador pode não deixar redimensionar a janela PiP */ }
-      pip.document.body.style.cssText = 'margin:0;padding:0;overflow:hidden;font-family:-apple-system,"Segoe UI",sans-serif;background:#0A0A12;display:flex;flex-direction:column;height:100vh;box-sizing:border-box;';
+      pip.document.body.style.background = '#0A0A12';
       pip.document.body.innerHTML = `
-        <div style="display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid #1E2A45;flex-shrink:0;">
-          <button id="pip-collapse" title="Recolher" style="width:26px;height:26px;border-radius:50%;overflow:hidden;flex-shrink:0;background:${cur.avatarBg};box-shadow:0 0 8px ${cur.glow};border:none;cursor:pointer;padding:1px;">
-            <img src="${this.state.jarvisLogoSrc || 'public/jarvis.png'}" style="width:100%;height:100%;object-fit:contain;border-radius:50%;">
-          </button>
-          <div style="flex:1;min-width:0;font-size:12.5px;font-weight:700;color:#E2E8F0;">${this.state.jarvisDisplayName || 'J.A.R.V.I.S.'}</div>
-        </div>
-        <div id="pip-msgs" style="flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:8px;"></div>
-        <div style="display:flex;gap:6px;padding:10px;border-top:1px solid #1E2A45;flex-shrink:0;">
-          <input id="pip-input" type="text" placeholder="Pergunte ao Jarvis..." style="flex:1;min-width:0;background:#0D0D1A;border:1px solid #1E2A45;border-radius:8px;padding:9px 11px;color:#E2E8F0;font-size:13px;box-sizing:border-box;">
-          <button id="pip-send" style="width:36px;height:36px;border-radius:8px;background:linear-gradient(135deg,#8B5CF6,#06B6D4);border:none;color:white;cursor:pointer;flex-shrink:0;font-size:15px;">➤</button>
+        <div style="display:flex;flex-direction:column;height:100vh;">
+          <div style="display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid #1E2A45;flex-shrink:0;">
+            <div class="jarvis-ring-wrap" style="width:26px;height:26px;color:${cur.accent};">
+              <span class="jarvis-ring jarvis-ring-outer"></span>
+              <span class="jarvis-ring jarvis-ring-inner"></span>
+              <button id="pip-collapse" title="Recolher" style="width:100%;height:100%;border-radius:50%;overflow:hidden;background:${cur.avatarBg};box-shadow:0 0 8px ${cur.glow};border:none;cursor:pointer;padding:1px;">
+                <img src="${this.state.jarvisLogoSrc || 'public/jarvis.png'}" style="width:100%;height:100%;object-fit:contain;border-radius:50%;">
+              </button>
+            </div>
+            <div style="flex:1;min-width:0;font-size:12.5px;font-weight:700;color:#E2E8F0;">${this.state.jarvisDisplayName || 'J.A.R.V.I.S.'}</div>
+          </div>
+          <div id="pip-msgs" style="flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:8px;"></div>
+          <div style="display:flex;gap:6px;padding:10px;border-top:1px solid #1E2A45;flex-shrink:0;">
+            <input id="pip-input" type="text" placeholder="Pergunte ao Jarvis..." style="flex:1;min-width:0;background:#0D0D1A;border:1px solid #1E2A45;border-radius:8px;padding:9px 11px;color:#E2E8F0;font-size:13px;">
+            <button id="pip-send" style="width:36px;height:36px;border-radius:8px;background:linear-gradient(135deg,#8B5CF6,#06B6D4);border:none;color:white;cursor:pointer;flex-shrink:0;font-size:15px;">➤</button>
+          </div>
         </div>
       `;
       pip.document.getElementById('pip-collapse').addEventListener('click', collapse);
@@ -2796,10 +2833,13 @@ class Component extends DCLogic {
       this._renderJarvisPip();
     };
 
+    let bubbleMode = true;
     const collapse = () => {
+      bubbleMode = true;
       try { pip.resizeTo(BUBBLE, BUBBLE); } catch (e) { /* idem */ }
       renderBubble();
     };
+    pip.addEventListener('resize', () => { if (bubbleMode) renderBubble(); });
 
     renderBubble();
   }
@@ -2817,7 +2857,7 @@ class Component extends DCLogic {
       return `<div style="font-size:12px;line-height:1.6;color:${color};text-shadow:${glow};white-space:pre-wrap;">${esc(msg.content)}</div>`;
     }).join('');
     if (!html) html = '<div style="color:#334155;font-size:12px;text-align:center;margin-top:20px;">Comece uma conversa</div>';
-    if (s.jarvisLoading) html += `<div style="color:${cur.accent};font-size:11px;opacity:0.6;">...</div>`;
+    if (s.jarvisLoading) html += `<div class="jarvis-sonar" style="color:${cur.accent};margin:4px 4px;"><span></span><span></span><span></span></div>`;
     box.innerHTML = html;
     box.scrollTop = box.scrollHeight;
   }

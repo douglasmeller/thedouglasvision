@@ -36,10 +36,16 @@ Ideias e próximos passos discutidos, ainda não implementados.
 - Isso é maior que os módulos já em andamento (Tarefas, Calendário, Notas) — é a estrutura de navegação inteira do app mudando. Vale desenhar/alinhar a arquitetura de rotas antes de sair implementando.
 
 ## IronHand como setor do sistema
-- Hoje o IronHand é um projeto Python separado (`C:\Users\ymell\Downloads\Pessoal\Projetos\IronHand`), rodando local via `python main.py`, sem nenhuma integração com o TDV além do webhook opcional já existente.
-- Douglas quer que ele vire outro "setor" do sistema (TDV) — mas rodando **sempre ativo** enquanto ele deixar ligado, não algo que abre e fecha manual toda hora.
-- Como o TDV é um PWA rodando no navegador e o IronHand precisa de acesso à webcam/mouse/teclado do SO, ele não pode literalmente "rodar dentro" do navegador — precisa continuar como processo local (webcam + PyAutoGUI), e o TDV vira uma janela de controle/status por cima dele (ligar/desligar, ver status, talvez configurar) via algum canal local (o webhook já existente é o candidato natural, ou expor uma portinha HTTP local que o TDV consulta).
-- Ainda não decidido: como o TDV "enxerga" que o IronHand está ligado quando ele roda numa máquina fora do ar do domínio (thedouglasvision.com é hospedado, o IronHand roda local) — precisa de desenho antes de implementar.
+- **Botão "Abrir IronHand" em Configurações (feito)**: dispara o IronHand local via protocolo customizado do Windows (`ironhand://`) — precisa de um `.reg` importado uma vez por computador (`IronHand/ironhand_protocol.reg`).
+- **Gestos e estabilidade (feito)**: clique por polegar dobrado (em vez de pinça, que atrapalhava a mira do cursor), disparo único pra Alt+Tab/Shift+Alt+Tab/mostrar área de trabalho/visão de tarefas, correção do handedness invertido, correção do crash no FAILSAFE, gestos novos (jogar janela pro lado, Win+Tab com as duas mãos abertas, pausar/retomar com os dois punhos fechados), resolução da câmera reduzida (960x540 → 640x360) pra tirar o "pulinho" do cursor.
+- **Ainda pendente**: isso hoje é só um "abre e fecha" — a visão de **sempre ativo** (rodar em segundo plano, TDV enxergar se está ligado, iniciar sozinho com o Windows) ainda não foi desenhada nem implementada. Como o TDV é um PWA e o IronHand precisa de webcam/mouse/teclado do SO, ele não pode rodar "dentro" do navegador — continua sendo processo local, e o TDV vira no máximo uma janela de controle/status por cima dele via algum canal local (webhook já existente, ou uma portinha HTTP local).
+- Ainda não decidido: como o TDV "enxerga" que o IronHand está ligado quando ele roda numa máquina fora do ar do domínio (thedouglasvision.com é hospedado, o IronHand roda local).
+- **Iniciar com o Windows**: mencionado como próximo passo fácil (atalho na pasta Inicializar ou Agendador de Tarefas) — ainda não implementado.
+
+## Bolha do Jarvis flutuante (feito)
+- Botão "flutuar" no popover do Jarvis abre uma mini janela sempre-por-cima (Document Picture-in-Picture), começando recolhida como só a bolinha com os anéis HUD girando — clica e expande pro chat completo, com um botão pra recolher de volta.
+- Chat de verdade dentro da janela flutuante (não é mockup): reaproveita o mesmo `sendJarvisMessage` da tela principal.
+- Limitação conhecida: não dá pra abrir a bolha do zero com um atalho de teclado global (isso precisaria de um processo nativo tipo o IronHand) — só fica flutuando depois de aberta uma vez a partir do TDV.
 
 ---
-*Este arquivo é só uma lista de intenção — nada aqui foi implementado ainda.*
+*Itens marcados "(feito)" já foram implementados. O resto ainda é intenção — nada além disso foi construído.*

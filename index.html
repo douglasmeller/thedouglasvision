@@ -1341,6 +1341,179 @@
           </div>
         </sc-if>
 
+        <!-- ═══ AGENDA ═══ -->
+        <sc-if value="{{ isAgenda }}" hint-placeholder-val="{{ false }}">
+          <div class="fade-in" style="padding: 20px; display: flex; flex-direction: column; gap: 16px; max-width: 820px; margin: 0 auto; width: 100%; box-sizing: border-box;">
+            <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+              <div style="font-size: 20px; font-weight: 600; color: #E2E8F0; letter-spacing: -0.3px;">Agenda</div>
+              <button onClick="{{ openNewEvent }}" style="display: flex; align-items: center; gap: 6px; padding: 9px 16px; background: linear-gradient(135deg, #2563EB, #06B6D4); border: none; border-radius: 9px; color: white; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; box-shadow: 0 2px 12px #2563EB33;">
+                <i class="ph ph-plus" style="font-size: 15px;"></i>Novo Evento
+              </button>
+            </div>
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+              <button onClick="{{ prevAgendaMonth }}" style="background: none; border: 1px solid #1E2A45; border-radius: 7px; color: #64748B; cursor: pointer; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                <i class="ph ph-caret-left" style="font-size: 14px;"></i>
+              </button>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <div style="font-size: 14px; font-weight: 600; color: #E2E8F0; text-transform: capitalize;">{{ agendaMonthLabel }}</div>
+                <sc-if value="{{ agendaNotCurrentMonth }}" hint-placeholder-val="{{ false }}">
+                  <button onClick="{{ resetAgendaMonth }}" style="font-size: 11px; color: #3B82F6; background: none; border: none; cursor: pointer; font-family: inherit; white-space: nowrap; padding: 0; font-weight: 600;">Hoje</button>
+                </sc-if>
+              </div>
+              <button onClick="{{ nextAgendaMonth }}" style="background: none; border: 1px solid #1E2A45; border-radius: 7px; color: #64748B; cursor: pointer; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                <i class="ph ph-caret-right" style="font-size: 14px;"></i>
+              </button>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; font-size: 10px; color: #334155; text-transform: uppercase; text-align: center; font-weight: 600;">
+              <div>Dom</div><div>Seg</div><div>Ter</div><div>Qua</div><div>Qui</div><div>Sex</div><div>Sáb</div>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px;">
+              <sc-for list="{{ agendaDays }}" as="d" hint-placeholder-count="35">
+                <button onClick="{{ d.onClick }}" style="{{ d.cellStyle }}">
+                  <span style="font-size: 11px; font-weight: 600; color: {{ d.dayNumColor }};">{{ d.dayNum }}</span>
+                  <sc-for list="{{ d.eventDots }}" as="ev" hint-placeholder-count="2">
+                    <span style="font-size: 9px; color: #60A5FA; background: #2563EB1A; border-radius: 4px; padding: 1px 4px; margin-top: 2px; width: 100%; box-sizing: border-box; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ ev.title }}</span>
+                  </sc-for>
+                  <sc-if value="{{ d.hasExtra }}" hint-placeholder-val="{{ false }}">
+                    <span style="font-size: 9px; color: #475569; margin-top: 2px;">+{{ d.extraCount }}</span>
+                  </sc-if>
+                </button>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- ═══ Evento Modal ═══ -->
+        <sc-if value="{{ showEventModal }}" hint-placeholder-val="{{ false }}">
+          <div style="position: fixed; inset: 0; background: #00000099; z-index: 200; display: flex; align-items: center; justify-content: center; padding: 16px;">
+            <div class="modal-in" style="background: #111118; border: 1px solid #1E2A45; border-radius: 16px; padding: 24px; width: 100%; max-width: 380px; max-height: 90vh; overflow-y: auto;">
+              <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+                <div style="font-size: 16px; font-weight: 600; color: #E2E8F0;">{{ eventModalDateLabel }}</div>
+                <button onClick="{{ closeEventModal }}" style="background: none; border: none; color: #334155; cursor: pointer; font-size: 22px; line-height: 1; padding: 0; display: flex;">×</button>
+              </div>
+              <sc-if value="{{ hasAgendaDayEvents }}" hint-placeholder-val="{{ false }}">
+                <div style="display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px;">
+                  <sc-for list="{{ agendaDayEvents }}" as="ev" hint-placeholder-count="2">
+                    <div style="display: flex; align-items: center; gap: 8px; background: #0D0D1A; border: 1px solid #1E2A45; border-radius: 8px; padding: 8px 10px;">
+                      <div style="flex: 1; min-width: 0;">
+                        <div style="font-size: 13px; color: #E2E8F0; overflow-wrap: break-word;">{{ ev.title }}</div>
+                        <sc-if value="{{ ev.hasTime }}" hint-placeholder-val="{{ false }}">
+                          <div style="font-size: 11px; color: #64748B; margin-top: 2px;">{{ ev.time }}</div>
+                        </sc-if>
+                      </div>
+                      <button onClick="{{ ev.onEdit }}" style="background: none; border: 1px solid #1A1A28; border-radius: 6px; color: #334155; cursor: pointer; padding: 5px 7px; font-size: 12px; display: flex; align-items: center; line-height: 1; flex-shrink: 0;"><i class="ph ph-pencil-simple"></i></button>
+                      <button onClick="{{ ev.onDelete }}" style="background: none; border: 1px solid #1A1A28; border-radius: 6px; color: #EF444455; cursor: pointer; padding: 5px 7px; font-size: 12px; display: flex; align-items: center; line-height: 1; flex-shrink: 0;">
+                        <sc-if value="{{ ev.isDeleting }}" hint-placeholder-val="{{ false }}"><span class="btn-spinner" style="border-color: #EF444455; border-top-color: #EF4444;"></span></sc-if>
+                        <sc-if value="{{ ev.notDeleting }}" hint-placeholder-val="{{ true }}"><i class="ph ph-trash"></i></sc-if>
+                      </button>
+                    </div>
+                  </sc-for>
+                </div>
+              </sc-if>
+              <div style="font-size: 10px; font-weight: 600; color: #334155; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px;">{{ eventModalTitle }}</div>
+              <div style="display: flex; flex-direction: column; gap: 14px;">
+                <div>
+                  <label style="display: block; font-size: 11px; color: #475569; margin-bottom: 6px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Título</label>
+                  <input type="text" value="{{ eventTitle }}" onInput="{{ setEventTitle }}" placeholder="Ex: Consulta médica" style="width: 100%; box-sizing: border-box; background: #0D0D1A; border: 1px solid #1E2A45; border-radius: 8px; padding: 11px 14px; color: #E2E8F0; font-size: 14px; font-family: inherit;">
+                </div>
+                <div>
+                  <label style="display: block; font-size: 11px; color: #475569; margin-bottom: 6px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Hora <span style="color: #334155; font-weight: 400; text-transform: none;">(opcional)</span></label>
+                  <input type="time" value="{{ eventTime }}" onInput="{{ setEventTime }}" style="width: 100%; box-sizing: border-box; background: #0D0D1A; border: 1px solid #1E2A45; border-radius: 8px; padding: 11px 14px; color: #E2E8F0; font-size: 14px; font-family: inherit;">
+                </div>
+                <div>
+                  <label style="display: block; font-size: 11px; color: #475569; margin-bottom: 6px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Notas <span style="color: #334155; font-weight: 400; text-transform: none;">(opcional)</span></label>
+                  <textarea value="{{ eventNotes }}" onInput="{{ setEventNotes }}" rows="2" placeholder="Detalhes, local, contexto…" style="width: 100%; box-sizing: border-box; background: #0D0D1A; border: 1px solid #1E2A45; border-radius: 8px; padding: 11px 14px; color: #E2E8F0; font-size: 13px; font-family: inherit; line-height: 1.5; resize: vertical;"></textarea>
+                </div>
+              </div>
+              <button onClick="{{ saveEvent }}" style="{{ saveEventBtnStyle }}">
+                <sc-if value="{{ savingEvent }}" hint-placeholder-val="{{ false }}"><span class="btn-spinner"></span></sc-if>
+                <span>{{ saveEventLabel }}</span>
+              </button>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- ═══ ANOTAÇÕES ═══ -->
+        <sc-if value="{{ isNotas }}" hint-placeholder-val="{{ false }}">
+          <sc-if value="{{ isNoteList }}" hint-placeholder-val="{{ true }}">
+            <div class="fade-in" style="padding: 20px; display: flex; flex-direction: column; gap: 16px; max-width: 820px; margin: 0 auto; width: 100%; box-sizing: border-box;">
+              <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+                <div style="font-size: 20px; font-weight: 600; color: #E2E8F0; letter-spacing: -0.3px;">Anotações</div>
+                <button onClick="{{ newNote }}" style="display: flex; align-items: center; gap: 6px; padding: 9px 16px; background: linear-gradient(135deg, #2563EB, #06B6D4); border: none; border-radius: 9px; color: white; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; box-shadow: 0 2px 12px #2563EB33;">
+                  <i class="ph ph-plus" style="font-size: 15px;"></i>Nova Nota
+                </button>
+              </div>
+              <sc-if value="{{ noNoteItems }}" hint-placeholder-val="{{ false }}">
+                <div style="background: #111118; border: 1px solid #151525; border-radius: 12px; padding: 48px 24px; display: flex; flex-direction: column; align-items: center; gap: 0; text-align: center;">
+                  <div style="width: 56px; height: 56px; border-radius: 14px; background: #1A1A2A; display: flex; align-items: center; justify-content: center; margin-bottom: 14px;">
+                    <i class="ph ph-note-pencil" style="font-size: 26px; color: #2A3A55;"></i>
+                  </div>
+                  <div style="font-size: 15px; font-weight: 600; color: #334155; margin-bottom: 6px;">Nenhuma nota ainda</div>
+                  <div style="font-size: 12px; color: #1E2A3A; line-height: 1.6; max-width: 260px; margin-bottom: 16px;">Cria uma nota e já começa a digitar — salva sozinho, sem precisar clicar em nada.</div>
+                  <button onClick="{{ newNote }}" style="padding: 9px 20px; background: linear-gradient(135deg, #2563EB, #06B6D4); border: none; border-radius: 9px; color: white; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit;">Criar primeira nota</button>
+                </div>
+              </sc-if>
+              <sc-if value="{{ hasNoteItems }}" hint-placeholder-val="{{ false }}">
+                <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px;">
+                  <sc-for list="{{ noteItems }}" as="nt" hint-placeholder-count="4">
+                    <div onClick="{{ nt.onOpen }}" style="text-align: left; background: #111118; border: 1px solid #151525; border-radius: 12px; padding: 14px 16px; cursor: pointer; font-family: inherit; display: flex; flex-direction: column; gap: 6px; min-height: 90px; box-sizing: border-box;">
+                      <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 6px;">
+                        <div style="font-size: 13px; font-weight: 600; color: {{ nt.titleColor }}; overflow-wrap: break-word; flex: 1;">{{ nt.displayTitle }}</div>
+                        <button onClick="{{ nt.onDelete }}" style="background: none; border: none; color: #EF444455; cursor: pointer; padding: 0; font-size: 13px; display: flex; align-items: center; flex-shrink: 0;">
+                          <sc-if value="{{ nt.isDeleting }}" hint-placeholder-val="{{ false }}"><span class="btn-spinner" style="border-color: #EF444455; border-top-color: #EF4444;"></span></sc-if>
+                          <sc-if value="{{ nt.notDeleting }}" hint-placeholder-val="{{ true }}"><i class="ph ph-trash"></i></sc-if>
+                        </button>
+                      </div>
+                      <div style="font-size: 12px; color: #64748B; line-height: 1.5; flex: 1; overflow-wrap: break-word;">{{ nt.preview }}</div>
+                      <div style="font-size: 10px; color: #334155;">{{ nt.fmtUpdated }}</div>
+                    </div>
+                  </sc-for>
+                </div>
+              </sc-if>
+            </div>
+          </sc-if>
+
+          <!-- ── Editor de nota ── -->
+          <sc-if value="{{ isNoteEditor }}" hint-placeholder-val="{{ false }}">
+            <div class="fade-in" style="padding: 20px; display: flex; flex-direction: column; gap: 12px; max-width: 820px; margin: 0 auto; width: 100%; box-sizing: border-box;">
+              <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+                <button onClick="{{ closeNoteEditor }}" style="display: flex; align-items: center; gap: 6px; background: none; border: none; color: #64748B; cursor: pointer; font-size: 13px; font-family: inherit; padding: 0;">
+                  <i class="ph ph-arrow-left" style="font-size: 15px;"></i>Anotações
+                </button>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                  <span style="font-size: 11px; color: #334155;">{{ noteSaveLabel }}</span>
+                  <button onClick="{{ deleteCurrentNote }}" style="background: none; border: 1px solid #1A1A28; border-radius: 6px; color: #EF444488; cursor: pointer; padding: 6px 8px; font-size: 13px; display: flex; align-items: center; line-height: 1;"><i class="ph ph-trash"></i></button>
+                </div>
+              </div>
+              <input id="note-title-input" type="text" value="{{ noteTitle }}" onInput="{{ setNoteTitle }}" placeholder="Sem título" style="width: 100%; box-sizing: border-box; background: transparent; border: none; color: #E2E8F0; font-size: 20px; font-weight: 600; font-family: inherit; padding: 0;">
+              <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 6px; background: #111118; border: 1px solid #151525; border-radius: 10px; padding: 8px;">
+                <button onMouseDown="{{ preventFocusLoss }}" onClick="{{ noteBold }}" title="Negrito" style="width: 30px; height: 30px; border-radius: 6px; background: transparent; border: 1px solid #1E2A45; color: #94A3B8; cursor: pointer; font-weight: 700; font-size: 13px; display: flex; align-items: center; justify-content: center;">B</button>
+                <select onMouseDown="{{ preventFocusLoss }}" onChange="{{ noteExecFontSize }}" style="height: 30px; border-radius: 6px; background: #0D0D1A; border: 1px solid #1E2A45; color: #94A3B8; cursor: pointer; font-size: 12px; font-family: inherit; padding: 0 6px;">
+                  <option value="">Tamanho</option>
+                  <option value="2">Pequeno</option>
+                  <option value="3">Normal</option>
+                  <option value="5">Grande</option>
+                  <option value="7">Título</option>
+                </select>
+                <button onMouseDown="{{ preventFocusLoss }}" onClick="{{ noteOrderedList }}" title="Lista numerada" style="width: 30px; height: 30px; border-radius: 6px; background: transparent; border: 1px solid #1E2A45; color: #94A3B8; cursor: pointer; display: flex; align-items: center; justify-content: center;"><i class="ph ph-list-numbers" style="font-size: 14px;"></i></button>
+                <button onMouseDown="{{ preventFocusLoss }}" onClick="{{ noteUnorderedList }}" title="Lista com marcadores" style="width: 30px; height: 30px; border-radius: 6px; background: transparent; border: 1px solid #1E2A45; color: #94A3B8; cursor: pointer; display: flex; align-items: center; justify-content: center;"><i class="ph ph-list-bullets" style="font-size: 14px;"></i></button>
+                <button onMouseDown="{{ preventFocusLoss }}" onClick="{{ noteInsertChecklist }}" title="Checklist" style="width: 30px; height: 30px; border-radius: 6px; background: transparent; border: 1px solid #1E2A45; color: #94A3B8; cursor: pointer; display: flex; align-items: center; justify-content: center;"><i class="ph ph-check-square" style="font-size: 14px;"></i></button>
+                <button onMouseDown="{{ preventFocusLoss }}" onClick="{{ noteInsertTable }}" title="Tabela" style="width: 30px; height: 30px; border-radius: 6px; background: transparent; border: 1px solid #1E2A45; color: #94A3B8; cursor: pointer; display: flex; align-items: center; justify-content: center;"><i class="ph ph-table" style="font-size: 14px;"></i></button>
+                <button onMouseDown="{{ preventFocusLoss }}" onClick="{{ noteInsertLink }}" title="Link" style="width: 30px; height: 30px; border-radius: 6px; background: transparent; border: 1px solid #1E2A45; color: #94A3B8; cursor: pointer; display: flex; align-items: center; justify-content: center;"><i class="ph ph-link" style="font-size: 14px;"></i></button>
+                <div style="width: 1px; height: 20px; background: #1E2A45; margin: 0 2px;"></div>
+                <sc-for list="{{ noteColorOptions }}" as="co" hint-placeholder-count="7">
+                  <button onMouseDown="{{ preventFocusLoss }}" onClick="{{ co.onClick }}" title="Cor do texto" style="{{ co.swatchStyle }}"></button>
+                </sc-for>
+                <div style="width: 1px; height: 20px; background: #1E2A45; margin: 0 2px;"></div>
+                <sc-for list="{{ noteHighlightOptions }}" as="ho" hint-placeholder-count="5">
+                  <button onMouseDown="{{ preventFocusLoss }}" onClick="{{ ho.onClick }}" title="Marca-texto" style="{{ ho.swatchStyle }}"></button>
+                </sc-for>
+              </div>
+              <div id="note-editor-el" contenteditable="true" onInput="{{ handleNoteInput }}" style="flex: 1; min-height: 320px; background: #111118; border: 1px solid #151525; border-radius: 10px; padding: 18px; color: #E2E8F0; font-size: 14px; line-height: 1.7; outline: none; overflow-wrap: break-word;"></div>
+            </div>
+          </sc-if>
+        </sc-if>
+
         <!-- ═══ JARVIS (tela dedicada) ═══ -->
         <sc-if value="{{ isJarvisScreen }}" hint-placeholder-val="{{ false }}">
           <div class="fade-in" style="height: 100%; display: flex; flex-direction: column; position: relative;">
@@ -2116,6 +2289,26 @@ class Component extends DCLogic {
     taskListName: '',
     savingTask: false,
     taskFilter: 'pending', // 'pending' | 'done' | 'all'
+
+    // Agenda
+    agendaEvents: [],
+    agendaMonthOffset: 0,
+    showEventModal: false,
+    eventModalDate: '',
+    editEventId: null,
+    eventTitle: '',
+    eventDate: '',
+    eventTime: '',
+    eventNotes: '',
+    savingEvent: false,
+
+    // Anotações — inspirado no dontpad: digitar já salva sozinho, sem botão.
+    notes: [],
+    editingNoteId: null,
+    noteTitle: '',
+    noteContent: '',
+    noteSaveStatus: 'idle', // 'idle' | 'saving' | 'saved'
+    savedNoteAt: '',
     user: null,
     transactions: [],
     categories: [],
@@ -2384,7 +2577,7 @@ class Component extends DCLogic {
   _loadFromSupabase = async (authUser) => {
     this.setState({ loading: true, loadingMsg: 'Carregando dados...' });
     const uid = authUser.id;
-    const [{ data: cats }, { data: txns }, { data: goals }, { data: profile }, { data: jarvisCtx }, { data: expenses }, { data: card }, { data: tasksData }] = await Promise.all([
+    const [{ data: cats }, { data: txns }, { data: goals }, { data: profile }, { data: jarvisCtx }, { data: expenses }, { data: card }, { data: tasksData }, { data: eventsData }, { data: notesData }] = await Promise.all([
       window._sb.from('categories').select('*').eq('user_id', uid),
       window._sb.from('transactions').select('*').eq('user_id', uid),
       window._sb.from('goals').select('*').eq('user_id', uid),
@@ -2393,6 +2586,8 @@ class Component extends DCLogic {
       window._sb.from('recurring_expenses').select('*').eq('user_id', uid),
       window._sb.from('card_settings').select('*').eq('user_id', uid).maybeSingle(),
       window._sb.from('tasks').select('*').eq('user_id', uid),
+      window._sb.from('agenda_events').select('*').eq('user_id', uid),
+      window._sb.from('notes').select('*').eq('user_id', uid),
     ]);
     let catList = (cats || []).map(c => ({ id: c.id, name: c.name, icon: c.icon, color: c.color, budget: c.budget || null }));
     if (catList.length === 0) {
@@ -2408,10 +2603,13 @@ class Component extends DCLogic {
     const expenseList = (expenses || []).map(e => this._expenseRowIn(e));
     const cardSettings = card ? { name: card.name, closingDay: Number(card.closing_day) } : null;
     const taskList = (tasksData || []).map(t => this._taskRowIn(t));
+    const eventList = (eventsData || []).map(ev => this._eventRowIn(ev));
+    const noteList = (notesData || []).map(n => this._noteRowIn(n));
     const name = 'Douglas';
     const user = { id: uid, name, email: authUser.email };
     this.setState({
       user, transactions: txnList, categories: catList, goals: goalList, recurringExpenses: expenseList, tasks: taskList,
+      agendaEvents: eventList, notes: noteList,
       cardSettings, cardName: cardSettings?.name || 'Cartão de Crédito', cardClosingDay: String(cardSettings?.closingDay || 1),
       cfgCurrency: profile?.currency || 'BRL',
       savingsGoal: Number(profile?.savings_goal || 0),
@@ -2432,13 +2630,15 @@ class Component extends DCLogic {
   _refreshData = async () => {
     const uid = this.state.user?.id;
     if (!uid) return;
-    const [{ data: cats }, { data: txns }, { data: goals }, { data: expenses }, { data: card }, { data: tasksData }] = await Promise.all([
+    const [{ data: cats }, { data: txns }, { data: goals }, { data: expenses }, { data: card }, { data: tasksData }, { data: eventsData }, { data: notesData }] = await Promise.all([
       window._sb.from('categories').select('*').eq('user_id', uid),
       window._sb.from('transactions').select('*').eq('user_id', uid),
       window._sb.from('goals').select('*').eq('user_id', uid),
       window._sb.from('recurring_expenses').select('*').eq('user_id', uid),
       window._sb.from('card_settings').select('*').eq('user_id', uid).maybeSingle(),
       window._sb.from('tasks').select('*').eq('user_id', uid),
+      window._sb.from('agenda_events').select('*').eq('user_id', uid),
+      window._sb.from('notes').select('*').eq('user_id', uid),
     ]);
     const catList = (cats || []).map(c => ({ id: c.id, name: c.name, icon: c.icon, color: c.color, budget: c.budget || null }));
     const txnList = (txns || []).map(t => this._txnRowIn(t));
@@ -2454,7 +2654,12 @@ class Component extends DCLogic {
     // algo) traria o lançamento de volta na tela antes do tempo de desfazer acabar de verdade.
     const pendingDeleteId = this.state.undoTxn?.id;
     const finalTxnList = pendingDeleteId ? txnList.filter(t => t.id !== pendingDeleteId) : txnList;
-    this.setState({ transactions: finalTxnList, categories: catList, goals: goalList, recurringExpenses: expenseList, cardSettings, tasks: taskList });
+    const eventList = (eventsData || []).map(ev => this._eventRowIn(ev));
+    const patch = { transactions: finalTxnList, categories: catList, goals: goalList, recurringExpenses: expenseList, cardSettings, tasks: taskList, agendaEvents: eventList };
+    // Não pisa na lista de notas enquanto uma está sendo editada — o autosave (debounce) pode
+    // ainda não ter batido no servidor, e um refresh nesse meio-tempo mostraria uma prévia velha.
+    if (!this.state.editingNoteId) patch.notes = (notesData || []).map(n => this._noteRowIn(n));
+    this.setState(patch);
   }
 
   _taskRowIn = (t) => ({
@@ -2466,6 +2671,22 @@ class Component extends DCLogic {
     id: task.id, user_id: uid, title: task.title, notes: task.notes || null, done: task.done,
     due_date: task.dueDate || null, priority: task.priority || null, list_name: task.listName || null,
     completed_at: task.done ? new Date().toISOString() : null,
+  })
+
+  _eventRowIn = (ev) => ({
+    id: ev.id, title: ev.title, date: ev.date, time: ev.time || '', notes: ev.notes || '',
+  })
+
+  _eventRowOut = (ev, uid) => ({
+    id: ev.id, user_id: uid, title: ev.title, date: ev.date, time: ev.time || null, notes: ev.notes || null,
+  })
+
+  _noteRowIn = (n) => ({
+    id: n.id, title: n.title || '', content: n.content || '', updatedAt: n.updated_at,
+  })
+
+  _noteRowOut = (n, uid) => ({
+    id: n.id, user_id: uid, title: n.title || '', content: n.content || '', updated_at: new Date().toISOString(),
   })
 
   _expenseRowIn = (e) => ({
@@ -2540,7 +2761,7 @@ class Component extends DCLogic {
 
   handleLogout = async () => {
     await window._sb.auth.signOut();
-    this.setState({ user: null, screen: 'login', loginEmail: '', loginPassword: '', sidebarOpen: false, transactions: [], categories: [], goals: [], recurringExpenses: [], tasks: [], jarvisMessages: [], jarvisLoaded: false, jarvisConversationId: null, jarvisConversations: [] });
+    this.setState({ user: null, screen: 'login', loginEmail: '', loginPassword: '', sidebarOpen: false, transactions: [], categories: [], goals: [], recurringExpenses: [], tasks: [], agendaEvents: [], notes: [], editingNoteId: null, jarvisMessages: [], jarvisLoaded: false, jarvisConversationId: null, jarvisConversations: [] });
   }
 
   // Abre o IronHand (processo local, python main.py) via um protocolo
@@ -3389,6 +3610,157 @@ class Component extends DCLogic {
     await window._sb.from('tasks').update({ done: updated.done, completed_at: updated.done ? new Date().toISOString() : null }).eq('id', id);
   }
 
+  // ─── Agenda ──────────────────────────────────────────────────────────────
+
+  openEventModal = (dateKey, event) => {
+    if (event) {
+      this.setState({
+        showEventModal: true, eventModalDate: dateKey, editEventId: event.id,
+        eventTitle: event.title, eventDate: event.date, eventTime: event.time || '', eventNotes: event.notes || '',
+      });
+    } else {
+      this.setState({
+        showEventModal: true, eventModalDate: dateKey, editEventId: null,
+        eventTitle: '', eventDate: dateKey, eventTime: '', eventNotes: '',
+      });
+    }
+  }
+
+  closeEventModal = () => this.setState({ showEventModal: false, editEventId: null, eventTitle: '', eventTime: '', eventNotes: '' });
+
+  saveEvent = async () => {
+    const s = this.state;
+    if (s.savingEvent) return;
+    const title = s.eventTitle.trim();
+    if (!title || !s.eventDate) return;
+    const event = {
+      id: s.editEventId || 'ev' + Date.now(),
+      title, date: s.eventDate, time: s.eventTime || null, notes: s.eventNotes.trim() || null,
+    };
+    this.setState({ savingEvent: true });
+    const { error } = await window._sb.from('agenda_events').upsert(this._eventRowOut(event, s.user.id));
+    if (error) { this.setState({ savingEvent: false }); this._toast('Não foi possível salvar o evento. Tente novamente.'); return; }
+    const agendaEvents = s.editEventId ? s.agendaEvents.map(e => e.id === s.editEventId ? event : e) : [...s.agendaEvents, event];
+    this.setState({ agendaEvents, editEventId: null, eventTitle: '', eventTime: '', eventNotes: '', savingEvent: false });
+    this._toast(s.editEventId ? 'Evento atualizado!' : 'Evento criado!');
+  }
+
+  deleteEvent = async (id) => {
+    this.setState({ deletingId: id });
+    const { error } = await window._sb.from('agenda_events').delete().eq('id', id);
+    if (error) { this.setState({ deletingId: null }); this._toast('Não foi possível excluir. Tente novamente.'); return; }
+    this.setState({ agendaEvents: this.state.agendaEvents.filter(e => e.id !== id), deletingId: null });
+    this._toast('Evento excluído.');
+  }
+
+  prevAgendaMonth = () => this.setState(st => ({ agendaMonthOffset: st.agendaMonthOffset - 1 }));
+  nextAgendaMonth = () => this.setState(st => ({ agendaMonthOffset: st.agendaMonthOffset + 1 }));
+  resetAgendaMonth = () => this.setState({ agendaMonthOffset: 0 });
+
+  // ─── Anotações — autosave o tempo todo, sem botão de salvar (espírito dontpad) ─
+
+  preventFocusLoss = (e) => e.preventDefault();
+
+  openNote = (note) => {
+    this.setState({ editingNoteId: note.id, noteTitle: note.title, noteContent: note.content, noteSaveStatus: 'idle' }, () => {
+      const el = document.getElementById('note-editor-el');
+      if (el) el.innerHTML = note.content || '';
+    });
+  }
+
+  newNote = async () => {
+    const s = this.state;
+    const note = { id: 'nt' + Date.now(), title: '', content: '', updatedAt: new Date().toISOString() };
+    this.setState({ notes: [note, ...s.notes], editingNoteId: note.id, noteTitle: '', noteContent: '', noteSaveStatus: 'idle' }, () => {
+      const el = document.getElementById('note-editor-el');
+      if (el) el.innerHTML = '';
+      const titleEl = document.getElementById('note-title-input');
+      if (titleEl) titleEl.focus();
+    });
+    await window._sb.from('notes').upsert(this._noteRowOut(note, s.user.id));
+  }
+
+  closeNoteEditor = () => {
+    clearTimeout(this._noteSaveTimer);
+    if (this._noteSavePending) this.saveNoteContent();
+    this.setState({ editingNoteId: null });
+  }
+
+  setNoteTitle = (e) => {
+    this.setState({ noteTitle: e.target.value });
+    this.scheduleNoteSave();
+  }
+
+  handleNoteInput = (e) => {
+    this.setState({ noteContent: e.target.innerHTML });
+    this.scheduleNoteSave();
+  }
+
+  scheduleNoteSave = () => {
+    this._noteSavePending = true;
+    clearTimeout(this._noteSaveTimer);
+    this._noteSaveTimer = setTimeout(() => this.saveNoteContent(), 1200);
+  }
+
+  saveNoteContent = async () => {
+    const s = this.state;
+    const id = s.editingNoteId;
+    if (!id) return;
+    this._noteSavePending = false;
+    this.setState({ noteSaveStatus: 'saving' });
+    const note = { id, title: s.noteTitle, content: s.noteContent };
+    const { error } = await window._sb.from('notes').upsert(this._noteRowOut(note, s.user.id));
+    if (error) { this.setState({ noteSaveStatus: 'idle' }); this._toast('Não foi possível salvar a nota.'); return; }
+    const now = new Date();
+    const savedAt = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
+    this.setState(st => ({
+      noteSaveStatus: 'saved', savedNoteAt: savedAt,
+      notes: st.notes.map(n => n.id === id ? { ...n, title: note.title, content: note.content, updatedAt: now.toISOString() } : n),
+    }));
+  }
+
+  deleteNote = async (id) => {
+    this.setState({ deletingId: id });
+    const { error } = await window._sb.from('notes').delete().eq('id', id);
+    if (error) { this.setState({ deletingId: null }); this._toast('Não foi possível excluir. Tente novamente.'); return; }
+    const editingNoteId = this.state.editingNoteId === id ? null : this.state.editingNoteId;
+    this.setState({ notes: this.state.notes.filter(n => n.id !== id), deletingId: null, editingNoteId });
+    this._toast('Nota excluída.');
+  }
+
+  noteExec = (cmd, value) => {
+    const el = document.getElementById('note-editor-el');
+    if (el) el.focus();
+    document.execCommand(cmd, false, value);
+    this.handleNoteInput({ target: el });
+  }
+
+  noteExecFontSize = (e) => {
+    const size = e.target.value;
+    if (!size) return;
+    const el = document.getElementById('note-editor-el');
+    if (el) el.focus();
+    document.execCommand('fontSize', false, size);
+    this.handleNoteInput({ target: el });
+  }
+
+  noteInsertLink = () => {
+    const url = window.prompt('Link (URL):');
+    if (!url) return;
+    this.noteExec('createLink', url);
+  }
+
+  noteInsertChecklist = () => {
+    this.noteExec('insertHTML', '<div style="display:flex;align-items:center;gap:6px;"><input type="checkbox">&nbsp;</div>');
+  }
+
+  noteInsertTable = () => {
+    const cell = '<td style="border:1px solid #1E2A45;padding:6px 10px;min-width:60px;">&nbsp;</td>';
+    const row = '<tr>' + cell.repeat(3) + '</tr>';
+    const table = '<table style="border-collapse:collapse;margin:8px 0;">' + row.repeat(3) + '</table>';
+    this.noteExec('insertHTML', table);
+  }
+
   undoDelete = () => {
     if (this.state.undoTimer) clearTimeout(this.state.undoTimer);
     const { undoTxn } = this.state;
@@ -3576,10 +3948,12 @@ class Component extends DCLogic {
     const isCategorias = screen === 'categorias';
     const isFinanceSector = isDashboard || isLancamentos || isPlanejamento || isCategorias;
     const isTarefas = screen === 'tarefas';
+    const isAgenda = screen === 'agenda';
+    const isNotas = screen === 'notas';
     const isConfiguracoes = screen === 'configuracoes';
     const isJarvisScreen = screen === 'jarvis';
 
-    const titles = { home: 'Home', dashboard: 'Dashboard', lancamentos: 'Lançamentos', planejamento: 'Planejamento', categorias: 'Categorias', tarefas: 'Tarefas', jarvis: 'Jarvis', configuracoes: 'Configurações' };
+    const titles = { home: 'Home', dashboard: 'Dashboard', lancamentos: 'Lançamentos', planejamento: 'Planejamento', categorias: 'Categorias', tarefas: 'Tarefas', agenda: 'Agenda', notas: 'Anotações', jarvis: 'Jarvis', configuracoes: 'Configurações' };
 
     // Modelos do J.A.R.V.I.S. — as chaves ('haiku'/'sonnet'/'opus') são o que vai pro backend e o
     // que já está gravado em jarvis_messages.persona, por isso não mudam junto com o nome exibido.
@@ -3665,6 +4039,8 @@ class Component extends DCLogic {
       { id: 'home',          label: 'Home',           icon: 'house' },
       { id: 'finance',       label: 'Finance',        icon: 'wallet' },
       { id: 'tarefas',       label: 'Tarefas',        icon: 'check-square' },
+      { id: 'agenda',        label: 'Agenda',         icon: 'calendar-blank' },
+      { id: 'notas',         label: 'Anotações',      icon: 'note-pencil' },
       { id: 'jarvis',        label: 'Jarvis',         icon: 'robot' },
       { id: 'configuracoes', label: 'Configurações',  icon: 'gear' },
     ];
@@ -3728,6 +4104,65 @@ class Component extends DCLogic {
           color: active ? '#60A5FA' : '#64748B', whiteSpace: 'nowrap', flexShrink: 0,
         },
         onClick: () => this.setState({ screen: f.id }),
+      };
+    });
+
+    // Agenda — grade de mês. Reaproveita fmtDate/o mesmo espírito de navegação por mês do Dashboard.
+    const agendaBase = new Date();
+    agendaBase.setDate(1);
+    agendaBase.setMonth(agendaBase.getMonth() + s.agendaMonthOffset);
+    const agendaYear = agendaBase.getFullYear(), agendaMonthIdx = agendaBase.getMonth();
+    const agendaMonthLabel = agendaBase.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+    const agendaFirstDow = new Date(agendaYear, agendaMonthIdx, 1).getDay();
+    const agendaDaysInMonth = new Date(agendaYear, agendaMonthIdx + 1, 0).getDate();
+    const agendaTodayStr = new Date().toISOString().split('T')[0];
+    const agendaEventsByDate = {};
+    s.agendaEvents.forEach(ev => { (agendaEventsByDate[ev.date] = agendaEventsByDate[ev.date] || []).push(ev); });
+    const agendaTotalCells = Math.ceil((agendaFirstDow + agendaDaysInMonth) / 7) * 7;
+    const agendaDays = [];
+    for (let i = 0; i < agendaTotalCells; i++) {
+      const cellDate = new Date(agendaYear, agendaMonthIdx, i - agendaFirstDow + 1);
+      const dateKey = cellDate.getFullYear() + '-' + String(cellDate.getMonth() + 1).padStart(2, '0') + '-' + String(cellDate.getDate()).padStart(2, '0');
+      const dayEvents = (agendaEventsByDate[dateKey] || []).slice().sort((a, b) => (a.time || '99:99').localeCompare(b.time || '99:99'));
+      const isToday = dateKey === agendaTodayStr;
+      agendaDays.push({
+        dateKey, dayNum: cellDate.getDate(),
+        isCurrentMonth: cellDate.getMonth() === agendaMonthIdx,
+        isToday,
+        cellStyle: {
+          minHeight: '64px', padding: '5px', borderRadius: '8px', cursor: 'pointer',
+          background: isToday ? '#2563EB14' : 'transparent',
+          border: isToday ? '1px solid #2563EB55' : '1px solid #151525',
+          opacity: cellDate.getMonth() === agendaMonthIdx ? 1 : 0.35,
+          display: 'flex', flexDirection: 'column', alignItems: 'flex-start', textAlign: 'left',
+          fontFamily: 'inherit', width: '100%', boxSizing: 'border-box',
+        },
+        dayNumColor: isToday ? '#60A5FA' : '#64748B',
+        eventDots: dayEvents.slice(0, 3).map(ev => ({ id: ev.id, title: ev.title })),
+        hasExtra: dayEvents.length > 3,
+        extraCount: dayEvents.length - 3,
+        onClick: () => this.openEventModal(dateKey, null),
+      });
+    }
+    const agendaDayEvents = (agendaEventsByDate[s.eventModalDate] || []).slice()
+      .sort((a, b) => (a.time || '99:99').localeCompare(b.time || '99:99'))
+      .map(ev => ({
+        ...ev, hasTime: !!ev.time,
+        isDeleting: s.deletingId === ev.id, notDeleting: s.deletingId !== ev.id,
+        onEdit: () => this.openEventModal(s.eventModalDate, ev),
+        onDelete: () => this.deleteEvent(ev.id),
+      }));
+
+    // Anotações — lista + editor (contenteditable fora do binding de template, ver openNote/newNote).
+    const noteItems = s.notes.slice().sort((a, b) => (b.updatedAt || '').localeCompare(a.updatedAt || '')).map(n => {
+      const preview = (n.content || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 100);
+      return {
+        ...n, preview: preview || 'Nota em branco',
+        displayTitle: n.title || 'Sem título', titleColor: n.title ? '#E2E8F0' : '#475569',
+        fmtUpdated: n.updatedAt ? this.fmtDate(n.updatedAt.split('T')[0]) : '',
+        isDeleting: s.deletingId === n.id, notDeleting: s.deletingId !== n.id,
+        onOpen: () => this.openNote(n),
+        onDelete: (e) => { if (e && e.stopPropagation) e.stopPropagation(); this.deleteNote(n.id); },
       };
     });
 
@@ -4194,7 +4629,7 @@ class Component extends DCLogic {
     if (this._jarvisPipWindow) this._renderJarvisPip();
 
     return {
-      isLogin, isApp, isHome, isDashboard, isLancamentos, isPlanejamento, isCategorias, isFinanceSector, financeSubNavItems, isTarefas, isConfiguracoes,
+      isLogin, isApp, isHome, isDashboard, isLancamentos, isPlanejamento, isCategorias, isFinanceSector, financeSubNavItems, isTarefas, isAgenda, isNotas, isConfiguracoes,
       currentScreenTitle: titles[screen] || '',
       appShellHeight,
       isMobile, sidebarOpen, sidebarStyle, navItems, mobilePrimaryNavItems, mobileMoreStyle,
@@ -4608,6 +5043,51 @@ class Component extends DCLogic {
       savingTask: s.savingTask,
       saveTaskLabel: s.savingTask ? 'Salvando…' : 'Salvar',
       saveTaskBtnStyle: { ..._actionBtn(s.savingTask, GRAD_BLUE, '#2563EB33'), marginTop: '20px' },
+      // agenda
+      agendaMonthLabel, agendaDays,
+      prevAgendaMonth: this.prevAgendaMonth, nextAgendaMonth: this.nextAgendaMonth, resetAgendaMonth: this.resetAgendaMonth,
+      agendaNotCurrentMonth: s.agendaMonthOffset !== 0,
+      openNewEvent: () => this.openEventModal(agendaTodayStr, null),
+      showEventModal: s.showEventModal,
+      eventModalDateLabel: s.eventModalDate ? this.fmtDate(s.eventModalDate) : '',
+      agendaDayEvents, hasAgendaDayEvents: agendaDayEvents.length > 0,
+      eventModalTitle: s.editEventId ? 'Editar Evento' : 'Novo Evento',
+      eventTitle: s.eventTitle, eventTime: s.eventTime, eventNotes: s.eventNotes,
+      setEventTitle: e => this.setState({ eventTitle: e.target.value }),
+      setEventTime: e => this.setState({ eventTime: e.target.value }),
+      setEventNotes: e => this.setState({ eventNotes: e.target.value }),
+      saveEvent: this.saveEvent, closeEventModal: this.closeEventModal,
+      savingEvent: s.savingEvent,
+      saveEventLabel: s.savingEvent ? 'Salvando…' : (s.editEventId ? 'Salvar' : 'Adicionar'),
+      saveEventBtnStyle: { ..._actionBtn(s.savingEvent, GRAD_BLUE, '#2563EB33'), marginTop: '4px' },
+      // anotações
+      noteItems, hasNoteItems: noteItems.length > 0, noNoteItems: noteItems.length === 0,
+      newNote: this.newNote,
+      editingNoteId: s.editingNoteId,
+      isNoteEditor: !!s.editingNoteId,
+      isNoteList: !s.editingNoteId,
+      noteTitle: s.noteTitle,
+      setNoteTitle: this.setNoteTitle,
+      handleNoteInput: this.handleNoteInput,
+      closeNoteEditor: this.closeNoteEditor,
+      deleteCurrentNote: () => this.deleteNote(s.editingNoteId),
+      noteSaveLabel: s.noteSaveStatus === 'saving' ? 'Salvando…' : s.noteSaveStatus === 'saved' ? ('Salvo às ' + s.savedNoteAt) : '',
+      preventFocusLoss: this.preventFocusLoss,
+      noteBold: () => this.noteExec('bold'),
+      noteOrderedList: () => this.noteExec('insertOrderedList'),
+      noteUnorderedList: () => this.noteExec('insertUnorderedList'),
+      noteExecFontSize: this.noteExecFontSize,
+      noteInsertLink: this.noteInsertLink,
+      noteInsertChecklist: this.noteInsertChecklist,
+      noteInsertTable: this.noteInsertTable,
+      noteColorOptions: ['#E2E8F0', '#EF4444', '#F97316', '#EAB308', '#22C55E', '#38BDF8', '#A78BFA'].map(c => ({
+        color: c, onClick: () => this.noteExec('foreColor', c),
+        swatchStyle: { width: '18px', height: '18px', borderRadius: '50%', background: c, border: '1px solid #1E2A45', cursor: 'pointer', padding: 0, flexShrink: 0 },
+      })),
+      noteHighlightOptions: ['#FDE047', '#86EFAC', '#93C5FD', '#FCA5A5', '#D8B4FE'].map(c => ({
+        color: c, onClick: () => this.noteExec('hiliteColor', c),
+        swatchStyle: { width: '18px', height: '18px', borderRadius: '50%', background: c, border: '1px solid #1E2A45', cursor: 'pointer', padding: 0, flexShrink: 0 },
+      })),
       // configurações
       txnCount: s.transactions.length,
       cfgCurrency: s.cfgCurrency,

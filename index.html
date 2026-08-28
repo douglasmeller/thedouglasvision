@@ -192,6 +192,52 @@
       <!-- Screens -->
       <div style="{{ contentStyle }}">
 
+        <!-- ═══ HOME ═══ -->
+        <sc-if value="{{ isHome }}" hint-placeholder-val="{{ false }}">
+          <div class="fade-in" style="padding: 20px 20px; display: flex; flex-direction: column; gap: 16px; max-width: 820px; margin: 0 auto; width: 100%; box-sizing: border-box;">
+            <div style="font-size: 21px; font-weight: 600; color: #E2E8F0; letter-spacing: -0.3px;">{{ greeting }}, {{ firstName }} 👋</div>
+
+            <button onClick="{{ goToFinanceFromHome }}" style="text-align: left; background: #111118; border: 1px solid #151525; border-radius: 12px; padding: 18px 20px; cursor: pointer; font-family: inherit; display: flex; flex-direction: column; gap: 10px;">
+              <div style="display: flex; align-items: center; gap: 7px;">
+                <i class="ph ph-wallet" style="font-size: 14px; color: #06B6D4;"></i>
+                <span style="font-size: 10px; font-weight: 600; color: #334155; text-transform: uppercase; letter-spacing: 0.8px; flex: 1;">Finance</span>
+                <i class="ph ph-caret-right" style="font-size: 13px; color: #334155;"></i>
+              </div>
+              <div style="font-size: clamp(20px, 6vw, 30px); font-weight: 800; color: #06B6D4; letter-spacing: -1.5px;">{{ totalBalance }}</div>
+              <div style="display: flex; gap: 18px; font-size: 12px;">
+                <span style="color: #22C55E;">+{{ incomeFormatted }}</span>
+                <span style="color: #EF4444;">-{{ expenseFormatted }}</span>
+              </div>
+            </button>
+
+            <button onClick="{{ goToTarefasFromHome }}" style="text-align: left; background: #111118; border: 1px solid #151525; border-radius: 12px; padding: 18px 20px; cursor: pointer; font-family: inherit; display: flex; align-items: center; gap: 12px;">
+              <i class="ph ph-check-square" style="font-size: 18px; color: #A78BFA; flex-shrink: 0;"></i>
+              <div style="flex: 1;">
+                <div style="font-size: 10px; font-weight: 600; color: #334155; text-transform: uppercase; letter-spacing: 0.8px;">Tarefas</div>
+                <div style="font-size: 14px; color: #E2E8F0; margin-top: 2px;">{{ pendingTaskCount }} pendentes</div>
+              </div>
+              <i class="ph ph-caret-right" style="font-size: 13px; color: #334155;"></i>
+            </button>
+
+            <button onClick="{{ goToJarvisScreen }}" style="text-align: left; background: #111118; border: 1px solid #151525; border-radius: 12px; padding: 18px 20px; cursor: pointer; font-family: inherit; display: flex; align-items: center; gap: 12px;">
+              <i class="ph ph-robot" style="font-size: 18px; color: {{ jarvisAccentColor }}; flex-shrink: 0;"></i>
+              <div style="flex: 1;">
+                <div style="font-size: 14px; color: #E2E8F0;">Perguntar ao {{ jarvisDisplayName }}</div>
+              </div>
+              <i class="ph ph-caret-right" style="font-size: 13px; color: #334155;"></i>
+            </button>
+          </div>
+        </sc-if>
+
+        <!-- ═══ FINANCE (sub-nav) ═══ -->
+        <sc-if value="{{ isFinanceSector }}" hint-placeholder-val="{{ true }}">
+          <div style="display: flex; gap: 4px; padding: 14px 20px 0; overflow-x: auto; max-width: 820px; margin: 0 auto; width: 100%; box-sizing: border-box;">
+            <sc-for list="{{ financeSubNavItems }}" as="fn" hint-placeholder-count="4">
+              <button onClick="{{ fn.onClick }}" style="{{ fn.style }}">{{ fn.label }}</button>
+            </sc-for>
+          </div>
+        </sc-if>
+
         <!-- ═══ DASHBOARD ═══ -->
         <sc-if value="{{ isDashboard }}" hint-placeholder-val="{{ true }}">
           <div class="fade-in" style="padding: 20px 20px; display: flex; flex-direction: column; gap: 18px; max-width: 820px; margin: 0 auto; width: 100%; box-sizing: border-box;">
@@ -1115,6 +1161,20 @@
                 <div style="font-size: 11px; color: #1E2A3A; margin-top: 5px;">Quanto você quer guardar por mês. Aparece como card de progresso no Dashboard.</div>
               </div>
               <button onClick="{{ saveCfg }}" style="align-self: flex-start; padding: 9px 20px; background: linear-gradient(135deg, #2563EB, #06B6D4); border: none; border-radius: 8px; color: white; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit;">Salvar Perfil</button>
+            </div>
+            <!-- Navegação (por dispositivo, não vai pro Supabase) -->
+            <div style="background: #111118; border: 1px solid #151525; border-radius: 12px; padding: 20px; display: flex; flex-direction: column; gap: 14px;">
+              <div style="font-size: 10px; font-weight: 600; color: #334155; text-transform: uppercase; letter-spacing: 1px;">Navegação</div>
+              <div>
+                <label style="display: block; font-size: 11px; color: #475569; margin-bottom: 6px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Abrir neste dispositivo em</label>
+                <select value="{{ cfgDefaultScreen }}" onChange="{{ setCfgDefaultScreen }}" style="width: 100%; background: #0D0D1A; border: 1px solid #1E2A45; border-radius: 8px; padding: 10px 14px; color: #E2E8F0; font-size: 14px; font-family: inherit; cursor: pointer;">
+                  <option value="home">Home</option>
+                  <option value="dashboard">Finance</option>
+                  <option value="tarefas">Tarefas</option>
+                  <option value="jarvis">Jarvis</option>
+                </select>
+                <div style="font-size: 11px; color: #1E2A3A; margin-top: 5px;">Só afeta este dispositivo/navegador — útil pra abrir sempre em Finance no celular, por exemplo.</div>
+              </div>
             </div>
             <!-- About -->
             <div style="background: #111118; border: 1px solid #151525; border-radius: 12px; padding: 20px; display: flex; flex-direction: column; gap: 12px;">
@@ -2060,6 +2120,7 @@ class Component extends DCLogic {
     transactions: [],
     categories: [],
     cfgCurrency: 'BRL',
+    cfgDefaultScreen: 'home',
     showTxnModal: false,
     editTxnId: null,
     txnType: 'expense',
@@ -2356,7 +2417,7 @@ class Component extends DCLogic {
       savingsGoal: Number(profile?.savings_goal || 0),
       cfgSavingsGoal: profile?.savings_goal ? String(profile.savings_goal) : '',
       cfgJarvisNotes: jarvisCtx?.personal_notes || '',
-      screen: 'dashboard', loading: false, loginError: '',
+      screen: this._load('defaultScreen') || 'home', cfgDefaultScreen: this._load('defaultScreen') || 'home', loading: false, loginError: '',
     }, () => { this._autoRecurring(); this._autoRecurringExpenses(); });
   }
 
@@ -3508,15 +3569,17 @@ class Component extends DCLogic {
 
     const isLogin = screen === 'login' && !s.loading;
     const isApp = screen !== 'login' && !s.loading;
+    const isHome = screen === 'home';
     const isDashboard = screen === 'dashboard';
     const isLancamentos = screen === 'lancamentos';
     const isPlanejamento = screen === 'planejamento';
     const isCategorias = screen === 'categorias';
+    const isFinanceSector = isDashboard || isLancamentos || isPlanejamento || isCategorias;
     const isTarefas = screen === 'tarefas';
     const isConfiguracoes = screen === 'configuracoes';
     const isJarvisScreen = screen === 'jarvis';
 
-    const titles = { dashboard: 'Dashboard', lancamentos: 'Lançamentos', planejamento: 'Planejamento', categorias: 'Categorias', tarefas: 'Tarefas', jarvis: 'Jarvis', configuracoes: 'Configurações' };
+    const titles = { home: 'Home', dashboard: 'Dashboard', lancamentos: 'Lançamentos', planejamento: 'Planejamento', categorias: 'Categorias', tarefas: 'Tarefas', jarvis: 'Jarvis', configuracoes: 'Configurações' };
 
     // Modelos do J.A.R.V.I.S. — as chaves ('haiku'/'sonnet'/'opus') são o que vai pro backend e o
     // que já está gravado em jarvis_messages.persona, por isso não mudam junto com o nome exibido.
@@ -3594,21 +3657,23 @@ class Component extends DCLogic {
       cursor: 'pointer', fontFamily: 'inherit', padding: 0, transition: 'color 0.15s', width: '100%',
     };
 
+    // Dashboard/Lançamentos/Planejamento/Categorias viraram um único setor "Finance" na navegação
+    // principal — as 4 telas em si (e seus booleans isDashboard etc.) continuam exatamente como
+    // eram, só ganham uma sub-nav própria (ver financeSubNavItems) pra trocar entre elas.
+    const FINANCE_SCREENS = ['dashboard', 'lancamentos', 'planejamento', 'categorias'];
     const navDefs = [
-      { id: 'dashboard',    label: 'Dashboard',     icon: 'squares-four' },
-      { id: 'lancamentos',  label: 'Lançamentos',   icon: 'list-bullets' },
-      { id: 'planejamento', label: 'Planejamento',  icon: 'calendar-check' },
-      { id: 'categorias',   label: 'Categorias',    icon: 'tag' },
-      { id: 'tarefas',      label: 'Tarefas',       icon: 'check-square' },
-      { id: 'jarvis',       label: 'Jarvis',         icon: 'robot' },
-      { id: 'configuracoes',label: 'Configurações', icon: 'gear' },
+      { id: 'home',          label: 'Home',           icon: 'house' },
+      { id: 'finance',       label: 'Finance',        icon: 'wallet' },
+      { id: 'tarefas',       label: 'Tarefas',        icon: 'check-square' },
+      { id: 'jarvis',        label: 'Jarvis',         icon: 'robot' },
+      { id: 'configuracoes', label: 'Configurações',  icon: 'gear' },
     ];
-    // No celular só cabem ~5 ícones na barra inferior sem espremer — mostra os mais usados e
-    // deixa o resto (Planejamento, Categorias, Configurações) atrás do botão "Mais", que abre a
-    // gaveta lateral já existente (mesma usada no desktop, só que deslizando por cima no mobile).
-    const mobilePrimaryIds = new Set(['dashboard', 'lancamentos', 'tarefas', 'jarvis']);
+    // No celular só cabem ~4 ícones na barra inferior sem espremer — mostra os mais usados e
+    // deixa Configurações atrás do botão "Mais", que abre a gaveta lateral já existente (mesma
+    // usada no desktop, só que deslizando por cima no mobile).
+    const mobilePrimaryIds = new Set(['home', 'finance', 'tarefas', 'jarvis']);
     const navItems = navDefs.map(n => {
-      const active = screen === n.id;
+      const active = n.id === 'finance' ? isFinanceSector : screen === n.id;
       return {
         ...n, iconClass: 'ph ph-' + n.icon, title: n.label,
         style: {
@@ -3628,11 +3693,15 @@ class Component extends DCLogic {
           fontFamily: 'inherit', fontSize: '10px', fontWeight: active ? '600' : '400',
           minHeight: '56px', transition: 'color 0.15s',
         },
-        onClick: () => { if (n.id === 'jarvis') this.goToJarvisScreen(); else this.setState({ screen: n.id, sidebarOpen: false }); },
+        onClick: () => {
+          if (n.id === 'jarvis') this.goToJarvisScreen();
+          else if (n.id === 'finance') this.setState({ screen: 'dashboard', sidebarOpen: false });
+          else this.setState({ screen: n.id, sidebarOpen: false });
+        },
       };
     });
     const mobilePrimaryNavItems = navItems.filter(n => mobilePrimaryIds.has(n.id));
-    const mobileMoreActive = !mobilePrimaryIds.has(screen);
+    const mobileMoreActive = !mobilePrimaryIds.has(screen) && !FINANCE_SCREENS.includes(screen);
     const mobileMoreStyle = {
       flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
       gap: '2px', padding: '10px 4px', border: 'none', background: 'none', cursor: 'pointer',
@@ -3640,6 +3709,27 @@ class Component extends DCLogic {
       fontFamily: 'inherit', fontSize: '10px', fontWeight: mobileMoreActive ? '600' : '400',
       minHeight: '56px', transition: 'color 0.15s',
     };
+
+    // Sub-nav dentro do setor Finance — troca entre as 4 telas sem passar pelo menu principal.
+    const financeSubDefs = [
+      { id: 'dashboard',    label: 'Dashboard' },
+      { id: 'lancamentos',  label: 'Lançamentos' },
+      { id: 'planejamento', label: 'Planejamento' },
+      { id: 'categorias',   label: 'Categorias' },
+    ];
+    const financeSubNavItems = financeSubDefs.map(f => {
+      const active = screen === f.id;
+      return {
+        ...f,
+        style: {
+          padding: '7px 14px', borderRadius: '8px', border: 'none', cursor: 'pointer',
+          fontFamily: 'inherit', fontSize: '13px', fontWeight: active ? '600' : '400',
+          background: active ? '#2563EB1A' : 'transparent',
+          color: active ? '#60A5FA' : '#64748B', whiteSpace: 'nowrap', flexShrink: 0,
+        },
+        onClick: () => this.setState({ screen: f.id }),
+      };
+    });
 
     // Month data
     // Compras no cartão de crédito não contam pro saldo/patrimônio (dinheiro que ainda não saiu da
@@ -4104,7 +4194,7 @@ class Component extends DCLogic {
     if (this._jarvisPipWindow) this._renderJarvisPip();
 
     return {
-      isLogin, isApp, isDashboard, isLancamentos, isPlanejamento, isCategorias, isTarefas, isConfiguracoes,
+      isLogin, isApp, isHome, isDashboard, isLancamentos, isPlanejamento, isCategorias, isFinanceSector, financeSubNavItems, isTarefas, isConfiguracoes,
       currentScreenTitle: titles[screen] || '',
       appShellHeight,
       isMobile, sidebarOpen, sidebarStyle, navItems, mobilePrimaryNavItems, mobileMoreStyle,
@@ -4185,6 +4275,8 @@ class Component extends DCLogic {
       barItems, barViewBox, barSvgWidth,
       recentTxns, noRecentTxns: recentTxns.length === 0, hasRecentTxns: recentTxns.length > 0,
       goToLancamentos: () => this.setState({ screen: 'lancamentos' }),
+      goToFinanceFromHome: () => this.setState({ screen: 'dashboard' }),
+      goToTarefasFromHome: () => this.setState({ screen: 'tarefas' }),
       showPieModal: s.showPieModal,
       openPieModal: () => this.setState({ showPieModal: true }),
       closePieModal: () => this.setState({ showPieModal: false }),
@@ -4520,6 +4612,13 @@ class Component extends DCLogic {
       txnCount: s.transactions.length,
       cfgCurrency: s.cfgCurrency,
       setCfgCurrency: e => this.setState({ cfgCurrency: e.target.value }),
+      cfgDefaultScreen: s.cfgDefaultScreen,
+      setCfgDefaultScreen: e => {
+        const val = e.target.value;
+        this._save('defaultScreen', val);
+        this.setState({ cfgDefaultScreen: val });
+        this._toast('Preferência salva neste dispositivo.');
+      },
       cfgSavingsGoal: s.cfgSavingsGoal || '',
       setCfgSavingsGoal: e => this.setState({ cfgSavingsGoal: e.target.value }),
       saveCfg: this.saveCfg,

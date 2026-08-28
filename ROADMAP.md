@@ -47,5 +47,11 @@ Ideias e próximos passos discutidos, ainda não implementados.
 - Chat de verdade dentro da janela flutuante (não é mockup): reaproveita o mesmo `sendJarvisMessage` da tela principal.
 - Limitação conhecida: não dá pra abrir a bolha do zero com um atalho de teclado global (isso precisaria de um processo nativo tipo o IronHand) — só fica flutuando depois de aberta uma vez a partir do TDV.
 
+## Novos setores (futuro)
+- **Agenda**: calendário próprio dentro do TDV. A ideia original era integrar com o Google Calendar via OAuth (copiar os eventos de lá) — ver menção em "TDV como sistema operacional". Ainda não desenhado.
+- **Anotações**: bloco de notas/diário pessoal dentro do TDV. Ainda não desenhado.
+- **Notícias**: Douglas quer discutir melhor o que essa aba faz antes de desenhar — não é só "ler notícias", tem algo mais específico em mente. Alinhar com ele antes de propor qualquer coisa.
+- **Mensagens**: Douglas também quer discutir como isso funcionaria antes de desenhar (o quê exatamente — mensageria interna? Integração com apps externos? Ainda em aberto).
+
 ---
 *Itens marcados "(feito)" já foram implementados. O resto ainda é intenção — nada além disso foi construído.*

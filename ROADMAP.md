@@ -27,13 +27,12 @@ Ideias e próximos passos discutidos, ainda não implementados.
 - Primeiro passo já deu: o prompt de senha ficou em inglês (ENTER PASSWORD) como um gostinho da direção.
 - Quando for pra valer, decidir se é o app inteiro de uma vez ou por partes, e se o Jarvis também passa a responder em inglês por padrão ou continua em português.
 
-## TDV como "sistema operacional da vida" — reestruturação grande
+## TDV como "sistema operacional da vida" — reestruturação grande (feito)
 - Visão: o TDV deixa de ser só finanças e vira o sistema pessoal do Douglas como um todo, pra sempre.
-- O que existe hoje (Dashboard financeiro, Lançamentos, Planejamento, Categorias) vira uma aba/setor específico: **Finance**.
-- Tarefas, Jarvis e Configurações saem de dentro do Finance e passam a ser setores próprios, no mesmo nível.
-- Nova aba **Home** — uma tela inicial do sistema como um todo (ainda não desenhada; provavelmente um resumo cross-setor: finanças + tarefas + o que mais entrar depois, tipo Calendário/Notas do plano já existente).
-- Configurações ganha uma opção pra escolher em qual setor o app deve abrir por padrão, por dispositivo — ex: no iPhone, sempre abrir direto em Finance (praticidade pra lançar gasto na hora), enquanto no desktop pode abrir em Home.
-- Isso é maior que os módulos já em andamento (Tarefas, Calendário, Notas) — é a estrutura de navegação inteira do app mudando. Vale desenhar/alinhar a arquitetura de rotas antes de sair implementando.
+- O que existia (Dashboard financeiro, Lançamentos, Planejamento, Categorias) virou o setor **Finance**; Tarefas, Agenda, Notas, Notícias, Jarvis e Configurações são setores próprios, no mesmo nível.
+- Configurações ganhou a opção de escolher em qual setor o app abre por padrão, por dispositivo.
+- **Home rica (feito)**: greeting, barra de ações rápidas (+ Lançamento/Tarefa/Evento/Nota), resumo de Finance, mini chat do Jarvis embutido (substitui a bolha flutuante só na Home), Ações (watchlist B3 com cotação quase-ao-vivo via Edge Function `stock-quotes` + brapi.dev), próximos vencimentos de Tarefas, Agenda de hoje/amanhã, e a última notícia de cada portal.
+  - **Pendente**: pra Ações funcionar de verdade, falta o Douglas criar uma conta grátis em brapi.dev, gerar um token, e configurar o secret `BRAPI_TOKEN` nas Edge Function secrets do Supabase (Dashboard → Edge Functions → Secrets) — sem isso a busca de cotação retorna erro.
 
 ## IronHand como setor do sistema
 - **Botão "Abrir IronHand" em Configurações (feito)**: dispara o IronHand local via protocolo customizado do Windows (`ironhand://`) — precisa de um `.reg` importado uma vez por computador (`IronHand/ironhand_protocol.reg`).
@@ -47,11 +46,12 @@ Ideias e próximos passos discutidos, ainda não implementados.
 - Chat de verdade dentro da janela flutuante (não é mockup): reaproveita o mesmo `sendJarvisMessage` da tela principal.
 - Limitação conhecida: não dá pra abrir a bolha do zero com um atalho de teclado global (isso precisaria de um processo nativo tipo o IronHand) — só fica flutuando depois de aberta uma vez a partir do TDV.
 
-## Novos setores (futuro)
-- **Agenda**: calendário próprio dentro do TDV. A ideia original era integrar com o Google Calendar via OAuth (copiar os eventos de lá) — ver menção em "TDV como sistema operacional". Ainda não desenhado.
-- **Anotações**: bloco de notas/diário pessoal dentro do TDV. Ainda não desenhado.
-- **Notícias**: Douglas quer discutir melhor o que essa aba faz antes de desenhar — não é só "ler notícias", tem algo mais específico em mente. Alinhar com ele antes de propor qualquer coisa.
-- **Mensagens**: Douglas também quer discutir como isso funcionaria antes de desenhar (o quê exatamente — mensageria interna? Integração com apps externos? Ainda em aberto).
+## Novos setores
+- **Agenda (feito)**: calendário em grade de mês, CRUD de eventos.
+- **Anotações (feito)**: bloco de notas estilo dontpad — formatação rica, autosave.
+- **Notícias (feito)**: resumo diário por IA dos 4 sites de interesse (Flow Games, Meu Timão, Reforma Tributária, Ei Nerd), gerado via Edge Function + cron diário ou botão "Atualizar agora".
+- **Ações (feito, ver "Home rica" acima)**: watchlist de tickers B3 com cotação quase-ao-vivo, dentro do widget da Home — não é um setor de nav própria, mora na Home.
+- **Mensagens**: Douglas ainda quer discutir como isso funcionaria antes de desenhar (o quê exatamente — mensageria interna? Integração com apps externos? Ainda em aberto).
 
 ---
 *Itens marcados "(feito)" já foram implementados. O resto ainda é intenção — nada além disso foi construído.*

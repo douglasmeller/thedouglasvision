@@ -16,7 +16,7 @@ const FEEDS = [
   { name: "Flow Games", url: "https://flowgames.gg/feed" },
   { name: "Meu Timão", url: "https://www.meutimao.com.br/feed" },
   { name: "Reforma Tributária", url: "https://www.reformatributaria.com/feed" },
-  { name: "E-nerd", url: "https://www.einerd.com/feed" },
+  { name: "Ei Nerd", url: "https://www.einerd.com/feed" },
 ];
 
 const CORS_HEADERS = {

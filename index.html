@@ -1862,6 +1862,9 @@
             </div>
             <div style="padding: 14px 20px; border-top: 1px solid #151525; display: flex; gap: 10px; flex-shrink: 0;">
               <input type="text" class="jarvis-font" value="{{ jarvisInput }}" onInput="{{ setJarvisInput }}" onKeyDown="{{ jarvisKeyDown }}" placeholder="" style="flex: 1; background: #0D0D1A; border: 1px solid #1E2A45; border-radius: 9px; padding: 11px 14px; color: #E2E8F0; font-size: 14px;">
+              <button onClick="{{ startJarvisLiveMode }}" title="Falar ao vivo com o Jarvis" style="width: 44px; height: 44px; border-radius: 9px; background: transparent; border: 1px solid #1E2A45; color: #64748B; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                <i class="ph ph-phone-call" style="font-size: 17px;"></i>
+              </button>
               <button onClick="{{ toggleJarvisListening }}" title="{{ jarvisMicTitle }}" class="{{ jarvisMicClass }}" style="{{ jarvisMicButtonStyle }}">
                 <i class="{{ jarvisMicIcon }}" style="font-size: 18px;"></i>
               </button>
@@ -2457,6 +2460,29 @@
       </div>
     </sc-if>
 
+    <!-- ── Jarvis — modo de voz ao vivo ── -->
+    <sc-if value="{{ showJarvisLiveModal }}" hint-placeholder-val="{{ false }}">
+      <div class="fade-in" style="position: fixed; inset: 0; background: #05050A; z-index: 300; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px; gap: 28px;">
+        <div class="jarvis-ring-wrap" style="width: 140px; height: 140px; color: {{ jarvisAccentColor }};">
+          <span class="jarvis-ring jarvis-ring-outer"></span>
+          <span class="jarvis-ring jarvis-ring-inner"></span>
+          <sc-if value="{{ jarvisLiveSpeaking }}" hint-placeholder-val="{{ false }}">
+            <span class="jarvis-ring jarvis-ring-pulse"></span>
+          </sc-if>
+          <div style="width: 100%; height: 100%; border-radius: 50%; overflow: hidden; background: {{ jarvisAvatarBg }}; box-shadow: 0 0 30px {{ jarvisGlowColor }}; padding: 3px; box-sizing: border-box;">
+            <img src="{{ jarvisLogoSrc }}" alt="" style="width: 100%; height: 100%; object-fit: contain; border-radius: 50%;">
+          </div>
+        </div>
+        <div class="jarvis-font-display" style="font-size: 16px; font-weight: 700; color: {{ jarvisAccentColor }}; letter-spacing: 1px; text-transform: uppercase;">{{ jarvisLiveStatusLabel }}</div>
+        <sc-if value="{{ hasLiveTranscript }}" hint-placeholder-val="{{ false }}">
+          <div class="jarvis-font" style="max-width: 480px; text-align: center; font-size: 15px; color: #94A3B8; line-height: 1.6; min-height: 24px;">{{ jarvisLiveTranscript }}</div>
+        </sc-if>
+        <button onClick="{{ stopJarvisLiveMode }}" style="margin-top: 20px; display: flex; align-items: center; gap: 8px; padding: 12px 28px; background: #EF444422; border: 1px solid #EF444455; border-radius: 30px; color: #EF4444; font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit;">
+          <i class="ph ph-phone-x" style="font-size: 16px;"></i> Encerrar
+        </button>
+      </div>
+    </sc-if>
+
     <!-- ── Contribution Modal ── -->
     <sc-if value="{{ showContribModal }}" hint-placeholder-val="{{ false }}">
       <div style="position: fixed; inset: 0; background: #00000099; z-index: 200; display: flex; align-items: center; justify-content: center; padding: 16px;">
@@ -2573,6 +2599,9 @@ class Component extends DCLogic {
     toastTs: 0,
     sidebarCollapsed: false,
     jarvisVoiceMuted: false,
+    jarvisLiveMode: false,
+    jarvisLiveTranscript: '',
+    jarvisLiveStatus: 'listening', // 'listening' | 'thinking' | 'speaking'
     jarvisMessages: [],
     jarvisInput: '',
     jarvisLoading: false,
@@ -3328,7 +3357,12 @@ class Component extends DCLogic {
       this.setState({ jarvisLoading: false });
       this.loadJarvisConversations();
       if (dataChangedFlag) this._refreshData();
-      if (!this.state.jarvisVoiceMuted && fullTarget.trim()) this.speakJarvisReply(fullTarget);
+      if (this.state.jarvisLiveMode) {
+        this.setState({ jarvisLiveStatus: 'speaking' });
+        this.speakJarvisReply(fullTarget, () => { if (this.state.jarvisLiveMode) this._liveListenOnce(); });
+      } else if (!this.state.jarvisVoiceMuted && fullTarget.trim()) {
+        this.speakJarvisReply(fullTarget);
+      }
     };
 
     const tick = () => {
@@ -3399,25 +3433,81 @@ class Component extends DCLogic {
     this.setState({ jarvisVoiceMuted: muted });
   }
 
-  speakJarvisReply = async (text) => {
-    if (!text || !text.trim()) return;
+  // onDone (opcional) dispara sempre que o áudio termina/falha/nunca chegou a tocar — é o gancho
+  // que o modo de voz ao vivo usa pra saber a hora certa de voltar a escutar.
+  speakJarvisReply = async (text, onDone) => {
+    const finish = () => { if (onDone) onDone(); };
+    if (!text || !text.trim()) { finish(); return; }
     try {
       const { data: { session } } = await window._sb.auth.getSession();
-      if (!session) return;
+      if (!session) { finish(); return; }
       const resp = await fetch('https://evkpskwjzbyzpvvodnwf.supabase.co/functions/v1/jarvis-speak', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.access_token },
         body: JSON.stringify({ text }),
       });
-      if (!resp.ok) return;
+      if (!resp.ok) { finish(); return; }
       const blob = await resp.blob();
       const url = URL.createObjectURL(blob);
       if (this._jarvisAudio) { this._jarvisAudio.pause(); URL.revokeObjectURL(this._jarvisAudio.src); }
-      this._jarvisAudio = new Audio(url);
-      this._jarvisAudio.play().catch(() => {});
+      const audio = new Audio(url);
+      this._jarvisAudio = audio;
+      audio.onended = finish;
+      audio.play().catch(finish);
     } catch (e) {
       // silencioso de propósito — voz é um extra, nunca deve virar um erro visível no chat.
+      finish();
     }
+  }
+
+  // ─── Modo de voz ao vivo ───────────────────────────────────────────────
+  // "Ligação" de verdade: escuta → envia sozinho quando você para de falar →
+  // Jarvis responde falando → volta a escutar sozinho, em loop, até apertar
+  // "Encerrar". Diferente do microfone normal (toggleJarvisListening), que só
+  // dita pro campo de texto e nunca envia sozinho — aqui isso é o ponto todo.
+  startJarvisLiveMode = () => {
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) { this._toast('Reconhecimento de voz não é suportado neste navegador.'); return; }
+    this.setState({ jarvisLiveMode: true, jarvisLiveTranscript: '', jarvisLiveStatus: 'listening' }, () => this._liveListenOnce());
+  }
+
+  stopJarvisLiveMode = () => {
+    if (this._jarvisLiveRecognition) { this._jarvisLiveRecognition.onend = null; this._jarvisLiveRecognition.onerror = null; this._jarvisLiveRecognition.stop(); this._jarvisLiveRecognition = null; }
+    if (this._jarvisAudio) { this._jarvisAudio.onended = null; this._jarvisAudio.pause(); }
+    this.setState({ jarvisLiveMode: false, jarvisLiveTranscript: '', jarvisLiveStatus: 'listening' });
+  }
+
+  _liveListenOnce = () => {
+    if (!this.state.jarvisLiveMode) return;
+    this.setState({ jarvisLiveStatus: 'listening' });
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const rec = new SR();
+    rec.lang = 'pt-BR';
+    rec.continuous = false;
+    rec.interimResults = true;
+    let finalTranscript = '';
+    rec.onresult = (e) => {
+      let transcript = '';
+      for (let i = 0; i < e.results.length; i++) {
+        transcript += e.results[i][0].transcript;
+        if (e.results[i].isFinal) finalTranscript = transcript;
+      }
+      this.setState({ jarvisLiveTranscript: transcript });
+    };
+    rec.onerror = (e) => {
+      if (!this.state.jarvisLiveMode) return;
+      if (e.error === 'no-speech' || e.error === 'aborted') setTimeout(() => this._liveListenOnce(), 300);
+      else { this._toast('Não consegui usar o microfone (' + e.error + ').'); this.stopJarvisLiveMode(); }
+    };
+    rec.onend = () => {
+      if (!this.state.jarvisLiveMode) return;
+      const text = (finalTranscript || this.state.jarvisLiveTranscript).trim();
+      this.setState({ jarvisLiveTranscript: '' });
+      if (text) this.setState({ jarvisInput: text, jarvisLiveStatus: 'thinking' }, () => this.sendJarvisMessage());
+      else setTimeout(() => this._liveListenOnce(), 300);
+    };
+    this._jarvisLiveRecognition = rec;
+    rec.start();
   }
 
   // Bolha do Jarvis flutuando por cima de qualquer app, via Document
@@ -5863,6 +5953,16 @@ class Component extends DCLogic {
       toggleJarvisVoiceMuted: this.toggleJarvisVoiceMuted,
       jarvisMuteIcon: s.jarvisVoiceMuted ? 'ph ph-speaker-slash' : 'ph ph-speaker-high',
       jarvisMuteTitle: s.jarvisVoiceMuted ? 'Voz desligada — clique pra ligar' : 'Voz ligada — clique pra silenciar',
+      // Modo de voz ao vivo
+      startJarvisLiveMode: this.startJarvisLiveMode,
+      stopJarvisLiveMode: this.stopJarvisLiveMode,
+      showJarvisLiveModal: s.jarvisLiveMode,
+      jarvisLiveStatusLabel: s.jarvisLiveStatus === 'thinking' ? 'Pensando…' : s.jarvisLiveStatus === 'speaking' ? 'Falando…' : 'Ouvindo…',
+      jarvisLiveListening: s.jarvisLiveStatus === 'listening',
+      jarvisLiveThinking: s.jarvisLiveStatus === 'thinking',
+      jarvisLiveSpeaking: s.jarvisLiveStatus === 'speaking',
+      hasLiveTranscript: !!s.jarvisLiveTranscript.trim(),
+      jarvisLiveTranscript: s.jarvisLiveTranscript,
       toggleJarvisListening: this.toggleJarvisListening,
       jarvisListening: s.jarvisListening,
       jarvisMicClass: s.jarvisListening ? 'jarvis-mic-pulse' : '',

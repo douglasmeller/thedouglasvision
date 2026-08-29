@@ -3379,10 +3379,10 @@ class Component extends DCLogic {
 
     try {
       const { data: { session } } = await window._sb.auth.getSession();
-      // No modo ao vivo, passa pelo roteador rápido (Groq resolve conversa comum na hora; só
-      // delega pro jarvis-chat de verdade quando o pedido precisa mexer nos dados financeiros).
-      const endpoint = s.jarvisLiveMode ? 'jarvis-live-chat' : 'jarvis-chat';
-      const resp = await fetch('https://evkpskwjzbyzpvvodnwf.supabase.co/functions/v1/' + endpoint, {
+      // O roteador rápido (Groq) ficou instável demais no modo ao vivo — de volta a ir direto no
+      // Claude sempre, igual o chat de texto normal. jarvis-live-chat continua existindo (deployada,
+      // sem uso) caso valha revisitar depois, só não é mais chamada daqui.
+      const resp = await fetch('https://evkpskwjzbyzpvvodnwf.supabase.co/functions/v1/jarvis-chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.access_token },
         body: JSON.stringify({ message: text, model: s.jarvisModel, conversation_id: s.jarvisConversationId }),

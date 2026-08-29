@@ -253,6 +253,13 @@
                 <div id="jarvis-msgs-home" style="flex: 1; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 8px;">
                   <sc-if value="{{ hasJarvisMessages }}" hint-placeholder-val="{{ false }}">
                     <sc-for list="{{ jarvisMessages }}" as="msg" hint-placeholder-count="3">
+                      <sc-if value="{{ msg.showDayDivider }}" hint-placeholder-val="{{ false }}">
+                        <div style="display: flex; align-items: center; gap: 8px; margin: 4px 0;">
+                          <div style="flex: 1; height: 1px; background: #151525;"></div>
+                          <div class="jarvis-font-display" style="font-size: 9px; color: #334155; letter-spacing: 0.5px; text-transform: uppercase; white-space: nowrap;">{{ msg.dayLabel }}</div>
+                          <div style="flex: 1; height: 1px; background: #151525;"></div>
+                        </div>
+                      </sc-if>
                       <div style="display: flex; justify-content: {{ msg.bubbleAlign }};">
                         <div class="jarvis-font" style="max-width: 88%; color: {{ msg.msgColor }}; text-shadow: {{ msg.msgGlow }}; font-size: 11.5px; line-height: 1.6;">
                           <sc-for list="{{ msg.lines }}" as="ln" hint-placeholder-count="2">
@@ -1780,12 +1787,6 @@
               <button onClick="{{ toggleJarvisVoiceMuted }}" title="{{ jarvisMuteTitle }}" style="width: 34px; height: 34px; border-radius: 8px; background: transparent; border: 1px solid #1E2A45; color: #64748B; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
                 <i class="{{ jarvisMuteIcon }}" style="font-size: 16px;"></i>
               </button>
-              <button onClick="{{ startNewJarvisChat }}" title="Nova conversa" style="width: 34px; height: 34px; border-radius: 8px; background: transparent; border: 1px solid #1E2A45; color: #64748B; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-                <i class="ph ph-plus" style="font-size: 16px;"></i>
-              </button>
-              <button onClick="{{ toggleJarvisConvList }}" title="Conversas" style="width: 34px; height: 34px; border-radius: 8px; background: transparent; border: 1px solid #1E2A45; color: #64748B; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-                <i class="ph ph-clock-counter-clockwise" style="font-size: 16px;"></i>
-              </button>
               <button onClick="{{ toggleJarvisModelMenu }}" title="Trocar versão" style="{{ jarvisModelTriggerStyle }}">
                 <span>{{ jarvisModelLabel }}</span>
                 <i class="{{ jarvisModelCaretIcon }}" style="font-size: 11px;"></i>
@@ -1810,26 +1811,16 @@
               </div>
             </sc-if>
 
-            <!-- Painel de conversas -->
-            <sc-if value="{{ jarvisShowConvList }}" hint-placeholder-val="{{ false }}">
-              <div class="modal-in" style="position: absolute; top: 68px; right: 20px; width: 280px; max-width: calc(100% - 40px); max-height: 60vh; overflow-y: auto; background: #111118; border: 1px solid #1E2A45; border-radius: 12px; box-shadow: 0 16px 40px #00000088; z-index: 40; padding: 8px;">
-                <sc-if value="{{ hasJarvisConversations }}" hint-placeholder-val="{{ false }}">
-                  <sc-for list="{{ jarvisConvItems }}" as="conv" hint-placeholder-count="3">
-                    <button onClick="{{ conv.onOpen }}" style="{{ conv.itemStyle }}">
-                      <i class="ph ph-chat-circle" style="font-size: 13px; flex-shrink: 0;"></i>
-                      <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ conv.title }}</span>
-                    </button>
-                  </sc-for>
-                </sc-if>
-                <sc-if value="{{ noJarvisConversations }}" hint-placeholder-val="{{ false }}">
-                  <div style="padding: 16px 10px; text-align: center; font-size: 12px; color: #334155;">Nenhuma conversa ainda.</div>
-                </sc-if>
-              </div>
-            </sc-if>
-
             <div id="jarvis-msgs-screen" style="flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 12px;">
               <sc-if value="{{ hasJarvisMessages }}" hint-placeholder-val="{{ false }}">
                 <sc-for list="{{ jarvisMessages }}" as="msg" hint-placeholder-count="4">
+                  <sc-if value="{{ msg.showDayDivider }}" hint-placeholder-val="{{ false }}">
+                    <div style="display: flex; align-items: center; gap: 10px; margin: 6px 0;">
+                      <div style="flex: 1; height: 1px; background: #151525;"></div>
+                      <div class="jarvis-font-display" style="font-size: 10px; color: #334155; letter-spacing: 0.5px; text-transform: uppercase; white-space: nowrap;">{{ msg.dayLabel }}</div>
+                      <div style="flex: 1; height: 1px; background: #151525;"></div>
+                    </div>
+                  </sc-if>
                   <div style="display: flex; justify-content: {{ msg.bubbleAlign }};">
                     <div class="jarvis-font" style="max-width: 82%; color: {{ msg.msgColor }}; text-shadow: {{ msg.msgGlow }}; font-size: 13px; line-height: 1.7;">
                       <sc-for list="{{ msg.lines }}" as="ln" hint-placeholder-count="2">
@@ -1901,12 +1892,6 @@
             <button onClick="{{ toggleJarvisVoiceMuted }}" title="{{ jarvisMuteTitle }}" style="width: 28px; height: 28px; border-radius: 7px; background: transparent; border: 1px solid #1E2A45; color: #64748B; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
               <i class="{{ jarvisMuteIcon }}" style="font-size: 14px;"></i>
             </button>
-            <button onClick="{{ startNewJarvisChatInline }}" title="Nova conversa" style="width: 28px; height: 28px; border-radius: 7px; background: transparent; border: 1px solid #1E2A45; color: #64748B; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-              <i class="ph ph-plus" style="font-size: 14px;"></i>
-            </button>
-            <button onClick="{{ toggleJarvisConvList }}" title="Conversas" style="width: 28px; height: 28px; border-radius: 7px; background: transparent; border: 1px solid #1E2A45; color: #64748B; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-              <i class="ph ph-clock-counter-clockwise" style="font-size: 14px;"></i>
-            </button>
             <button onClick="{{ goToJarvisScreen }}" title="Expandir" style="width: 28px; height: 28px; border-radius: 7px; background: transparent; border: 1px solid #1E2A45; color: #64748B; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
               <i class="ph ph-arrows-out-simple" style="font-size: 14px;"></i>
             </button>
@@ -1941,25 +1926,16 @@
             </div>
           </sc-if>
 
-          <sc-if value="{{ jarvisShowConvList }}" hint-placeholder-val="{{ false }}">
-            <div class="modal-in" style="position: absolute; top: 52px; right: 14px; width: 240px; max-width: calc(100% - 28px); max-height: 50%; overflow-y: auto; background: #151522; border: 1px solid #1E2A45; border-radius: 12px; box-shadow: 0 16px 40px #00000088; z-index: 10; padding: 8px;">
-              <sc-if value="{{ hasJarvisConversations }}" hint-placeholder-val="{{ false }}">
-                <sc-for list="{{ jarvisConvItems }}" as="conv" hint-placeholder-count="3">
-                  <button onClick="{{ conv.onOpen }}" style="{{ conv.itemStyle }}">
-                    <i class="ph ph-chat-circle" style="font-size: 13px; flex-shrink: 0;"></i>
-                    <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ conv.title }}</span>
-                  </button>
-                </sc-for>
-              </sc-if>
-              <sc-if value="{{ noJarvisConversations }}" hint-placeholder-val="{{ false }}">
-                <div style="padding: 16px 10px; text-align: center; font-size: 12px; color: #334155;">Nenhuma conversa ainda.</div>
-              </sc-if>
-            </div>
-          </sc-if>
-
           <div id="jarvis-msgs-bubble" style="flex: 1; overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 10px;">
             <sc-if value="{{ hasJarvisMessages }}" hint-placeholder-val="{{ false }}">
               <sc-for list="{{ jarvisMessages }}" as="msg" hint-placeholder-count="4">
+                <sc-if value="{{ msg.showDayDivider }}" hint-placeholder-val="{{ false }}">
+                  <div style="display: flex; align-items: center; gap: 8px; margin: 4px 0;">
+                    <div style="flex: 1; height: 1px; background: #151525;"></div>
+                    <div class="jarvis-font-display" style="font-size: 9px; color: #334155; letter-spacing: 0.5px; text-transform: uppercase; white-space: nowrap;">{{ msg.dayLabel }}</div>
+                    <div style="flex: 1; height: 1px; background: #151525;"></div>
+                  </div>
+                </sc-if>
                 <div style="display: flex; justify-content: {{ msg.bubbleAlign }};">
                   <div class="jarvis-font" style="max-width: 88%; color: {{ msg.msgColor }}; text-shadow: {{ msg.msgGlow }}; font-size: 12px; line-height: 1.6;">
                     <sc-for list="{{ msg.lines }}" as="ln" hint-placeholder-count="2">
@@ -2609,8 +2585,6 @@ class Component extends DCLogic {
     jarvisLoaded: false,
     jarvisModel: 'sonnet',
     jarvisConversationId: null,
-    jarvisConversations: [],
-    jarvisShowConvList: false,
     jarvisModelMenuOpen: false,
     jarvisGlitching: false,
     jarvisListening: false,
@@ -2995,7 +2969,7 @@ class Component extends DCLogic {
       cfgSavingsGoal: profile?.savings_goal ? String(profile.savings_goal) : '',
       cfgJarvisNotes: jarvisCtx?.personal_notes || '',
       screen: this._load('defaultScreen') || 'home', cfgDefaultScreen: this._load('defaultScreen') || 'home', loading: false, loginError: '',
-    }, () => { this._autoRecurring(); this._autoRecurringExpenses(); if (stockList.length > 0) this.fetchStockQuotes(); });
+    }, () => { this._autoRecurring(); this._autoRecurringExpenses(); if (stockList.length > 0) this.fetchStockQuotes(); this.loadJarvisHistory(); });
   }
 
   _txnRowIn = (t) => ({
@@ -3147,7 +3121,7 @@ class Component extends DCLogic {
 
   handleLogout = async () => {
     await window._sb.auth.signOut();
-    this.setState({ user: null, screen: 'login', loginEmail: '', loginPassword: '', sidebarOpen: false, transactions: [], categories: [], goals: [], recurringExpenses: [], tasks: [], agendaEvents: [], notes: [], editingNoteId: null, jarvisMessages: [], jarvisLoaded: false, jarvisConversationId: null, jarvisConversations: [] });
+    this.setState({ user: null, screen: 'login', loginEmail: '', loginPassword: '', sidebarOpen: false, transactions: [], categories: [], goals: [], recurringExpenses: [], tasks: [], agendaEvents: [], notes: [], editingNoteId: null, jarvisMessages: [], jarvisLoaded: false, jarvisConversationId: null });
   }
 
   // Abre o IronHand (processo local, python main.py) via um protocolo
@@ -3158,7 +3132,7 @@ class Component extends DCLogic {
     window.location.href = 'ironhand://start';
   }
 
-  _jarvisMsg = (role, content, persona) => {
+  _jarvisMsg = (role, content, persona, createdAt) => {
     const isUser = role === 'user';
     // Sem balão de chat — a fala é distinguida pela cor/brilho do texto: branco pro usuário, e a cor
     // da versão do J.A.R.V.I.S. que respondeu (guardada por mensagem, não pela seleção do momento).
@@ -3172,6 +3146,9 @@ class Component extends DCLogic {
       bubbleAlign: 'flex-start',
       msgColor,
       msgGlow: isUser ? 'none' : ('0 0 10px ' + msgColor + 'aa, 0 0 22px ' + msgColor + '55'),
+      // Usado só pro marcador de dia (Hoje/Ontem/data) — nunca pisa no created_at real gravado no
+      // banco pelo servidor, essa cópia no cliente é só pra saber em qual dia agrupar na tela.
+      createdAt: createdAt || new Date().toISOString(),
     };
   }
 
@@ -3207,42 +3184,22 @@ class Component extends DCLogic {
     }, 50);
   }
 
-  loadJarvisConversations = async () => {
-    const { data } = await window._sb.from('jarvis_conversations').select('*').order('updated_at', { ascending: false }).limit(50);
-    this.setState({ jarvisConversations: data || [] });
-    return data || [];
-  }
-
-  openConversation = async (id) => {
-    const { data } = await window._sb.from('jarvis_messages').select('role, content, persona').eq('conversation_id', id).order('created_at', { ascending: true });
-    const msgs = (data || []).map(m => this._jarvisMsg(m.role, m.content, m.persona));
-    this.setState({ jarvisConversationId: id, jarvisMessages: msgs, jarvisLoaded: true, jarvisShowConvList: false }, () => this._scrollJarvisToBottom());
-  }
-
+  // Uma relação contínua com o Jarvis, sem "conversas" separadas (como no filme — ele não
+  // esquece nada nem reinicia do zero) — só existe UMA conversation_id por usuário, criada uma
+  // vez, sempre reaproveitada. A tela mostra o histórico inteiro, com um marcador de dia toda
+  // vez que a data muda entre duas mensagens seguidas (igual apps de mensagem normais).
   loadJarvisHistory = async () => {
     if (this.state.jarvisLoaded) return;
-    const list = await this.loadJarvisConversations();
-    if (list.length > 0) await this.openConversation(list[0].id);
-    else this.setState({ jarvisLoaded: true });
-  }
-
-  startNewJarvisChat = () => {
-    this.setState({ jarvisConversationId: null, jarvisMessages: [], jarvisShowConvList: false, jarvisLoaded: true, screen: 'jarvis', jarvisOpen: false, sidebarOpen: false });
-  }
-
-  // Igual ao startNewJarvisChat, mas sem navegar pra tela dedicada — usado no chat inline da bolha.
-  startNewJarvisChatInline = () => {
-    this.setState({ jarvisConversationId: null, jarvisMessages: [], jarvisShowConvList: false, jarvisLoaded: true });
+    const { data: conv } = await window._sb.from('jarvis_conversations').select('id').order('created_at', { ascending: true }).limit(1).maybeSingle();
+    if (!conv) { this.setState({ jarvisLoaded: true }); return; }
+    const { data } = await window._sb.from('jarvis_messages').select('role, content, persona, created_at').eq('conversation_id', conv.id).order('created_at', { ascending: true });
+    const msgs = (data || []).map(m => this._jarvisMsg(m.role, m.content, m.persona, m.created_at));
+    this.setState({ jarvisConversationId: conv.id, jarvisMessages: msgs, jarvisLoaded: true }, () => this._scrollJarvisToBottom());
   }
 
   goToJarvisScreen = () => {
     this.setState({ screen: 'jarvis', jarvisOpen: false, sidebarOpen: false });
     if (!this.state.jarvisLoaded) this.loadJarvisHistory();
-  }
-
-  toggleJarvisConvList = () => {
-    this.setState(st => ({ jarvisShowConvList: !st.jarvisShowConvList }));
-    this.loadJarvisConversations();
   }
 
   // As três versões do J.A.R.V.I.S., na ordem em que aparecem no seletor. As chaves são as mesmas
@@ -3380,7 +3337,6 @@ class Component extends DCLogic {
 
     const finishUp = () => {
       this.setState({ jarvisLoading: false });
-      this.loadJarvisConversations();
       if (dataChangedFlag) this._refreshData();
       // No modo ao vivo a fala já foi disparada por frase, direto do stream (liveFlushSentences)
       // — aqui só cobre o modo passivo normal (auto-play de uma vez só, texto completo).
@@ -4657,25 +4613,18 @@ class Component extends DCLogic {
     const appShellHeight = '100' + vhUnit;
     const jarvisLauncherHeight = isMobile ? ('min(70' + vhUnit + ', 560px)') : '520px';
 
-    // Lista de conversas do Jarvis, formatada
-    const jarvisConvItems = (s.jarvisConversations || []).map(c => {
-      const active = c.id === s.jarvisConversationId;
-      return {
-        id: c.id, title: c.title || 'Conversa sem título',
-        active,
-        itemStyle: {
-          display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 12px',
-          borderRadius: '8px', cursor: 'pointer', fontFamily: 'inherit',
-          background: active ? '#2563EB18' : 'transparent',
-          color: active ? '#93C5FD' : '#94A3B8',
-          fontSize: '12.5px', fontWeight: active ? '600' : '400',
-          border: 'none', textAlign: 'left', width: '100%',
-        },
-        onOpen: () => this.openConversation(c.id),
-      };
-    });
-    const hasJarvisConversations = jarvisConvItems.length > 0;
-    const noJarvisConversations = jarvisConvItems.length === 0;
+    // Marcador de dia no chat do Jarvis — em vez de "conversas" separadas (removidas: é tudo uma
+    // relação contínua, sem começar/reiniciar do zero, como no filme), um divisor aparece toda vez
+    // que a data muda entre duas mensagens seguidas, igual apps de mensagem normais.
+    const jarvisTodayKey = new Date().toLocaleDateString('en-CA');
+    const jarvisYesterdayKey = new Date(Date.now() - 86400000).toLocaleDateString('en-CA');
+    const jarvisDayLabel = (dayKey) => {
+      if (dayKey === jarvisTodayKey) return 'Hoje';
+      if (dayKey === jarvisYesterdayKey) return 'Ontem';
+      const sameYear = dayKey.slice(0, 4) === jarvisTodayKey.slice(0, 4);
+      return new Date(dayKey + 'T12:00:00').toLocaleDateString('pt-BR', sameYear ? { day: 'numeric', month: 'long' } : { day: 'numeric', month: 'long', year: 'numeric' });
+    };
+    let jarvisLastDayKey = null;
 
     const sidebarCollapsed = !isMobile && s.sidebarCollapsed;
     const sidebarExpanded = !sidebarCollapsed;
@@ -5952,7 +5901,12 @@ class Component extends DCLogic {
       exportAllXlsx: () => this.exportXlsx(s.transactions),
       // Jarvis
       isJarvisScreen, showJarvisBubble: isApp && !isJarvisScreen && !isHome,
-      jarvisMessages: s.jarvisMessages.map(msg => ({
+      jarvisMessages: s.jarvisMessages.map(msg => {
+        const dayKey = new Date(msg.createdAt).toLocaleDateString('en-CA');
+        const showDayDivider = dayKey !== jarvisLastDayKey;
+        jarvisLastDayKey = dayKey;
+        return { ...msg, showDayDivider, dayLabel: jarvisDayLabel(dayKey) };
+      }).map(msg => ({
         ...msg,
         lines: this._parseJarvisContent(msg.content).map(ln => ({
           ...ln,
@@ -5983,10 +5937,6 @@ class Component extends DCLogic {
       jarvisDisplayName: 'J.A.R.V.I.S.',
       jarvisLogoSrc: 'public/jarvis.png',
       jarvisAvatarBg, jarvisGlowColor, jarvisAccentColor, jarvisBubbleIconPad, jarvisHeaderIconSize, jarvisGlitchClass,
-      jarvisConvItems, hasJarvisConversations, noJarvisConversations, jarvisShowConvList: s.jarvisShowConvList,
-      toggleJarvisConvList: this.toggleJarvisConvList,
-      startNewJarvisChat: this.startNewJarvisChat,
-      startNewJarvisChatInline: this.startNewJarvisChatInline,
       goToJarvisScreen: this.goToJarvisScreen,
       // Seletor de modelo estilo Claude/ChatGPT: mostra o atual, clica e abre a lista.
       jarvisModelMenuOpen: s.jarvisModelMenuOpen,

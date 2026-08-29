@@ -3266,6 +3266,7 @@ class Component extends DCLogic {
     rec.onresult = (e) => {
       let transcript = '';
       for (let i = 0; i < e.results.length; i++) transcript += e.results[i][0].transcript;
+      this._jarvisInputWasVoice = true; // marca essa mensagem como ditada — só isso libera a resposta falada (ver sendJarvisMessage)
       this.setState({ jarvisInput: transcript });
     };
     rec.onerror = () => this.setState({ jarvisListening: false });
@@ -3296,6 +3297,11 @@ class Component extends DCLogic {
     // isso e não fazem mais nada — sem essa trava, a resposta antiga e a nova se misturavam e o
     // "Ouvindo..." travava pra sempre. Fora do modo ao vivo, _liveGen nunca muda, então é inofensivo.
     const myLiveGen = this._liveGen || 0;
+    // Resposta falada só quando a MENSAGEM foi ditada (mic ou modo ao vivo) — mensagem digitada
+    // nunca deve vir com áudio, mesmo com a voz ligada. Zera aqui pra próxima mensagem, se
+    // digitada, não herdar isso de uma anterior ditada.
+    const wasVoiceInput = !!this._jarvisInputWasVoice;
+    this._jarvisInputWasVoice = false;
     const userMsg = this._jarvisMsg('user', text, null);
     this.setState({ jarvisMessages: [...s.jarvisMessages, userMsg], jarvisInput: '', jarvisLoading: true }, () => this._scrollJarvisToBottom());
 
@@ -3352,8 +3358,9 @@ class Component extends DCLogic {
       this.setState({ jarvisLoading: false });
       if (dataChangedFlag) this._refreshData();
       // No modo ao vivo a fala já foi disparada por frase, direto do stream (liveFlushSentences)
-      // — aqui só cobre o modo passivo normal (auto-play de uma vez só, texto completo).
-      if (!this.state.jarvisLiveMode && !this.state.jarvisVoiceMuted && fullTarget.trim()) {
+      // — aqui só cobre o modo passivo normal (auto-play de uma vez só, texto completo), e só
+      // quando a pergunta em si foi ditada. Mensagem digitada nunca deve receber resposta falada.
+      if (!this.state.jarvisLiveMode && wasVoiceInput && !this.state.jarvisVoiceMuted && fullTarget.trim()) {
         this.speakJarvisReply(fullTarget);
       }
     };
@@ -6063,7 +6070,7 @@ class Component extends DCLogic {
       })),
       hasJarvisMessages: s.jarvisMessages.length > 0, noJarvisMessages: s.jarvisMessages.length === 0,
       jarvisInput: s.jarvisInput,
-      setJarvisInput: e => this.setState({ jarvisInput: e.target.value }),
+      setJarvisInput: e => { this._jarvisInputWasVoice = false; this.setState({ jarvisInput: e.target.value }); },
       jarvisKeyDown: e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); this.sendJarvisMessage(); } },
       jarvisLoading: s.jarvisLoading,
       showJarvisTypingCursor: s.jarvisLoading && (s.jarvisMessages.length === 0 || s.jarvisMessages[s.jarvisMessages.length - 1].isUser),

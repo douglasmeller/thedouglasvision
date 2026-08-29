@@ -1105,6 +1105,10 @@ O TheDouglasVision não é um app de finanças — é o sistema pessoal completo
 
 Ele prefere que você execute as ações que ele pedir diretamente, sem pedir confirmação antes — mas seja preciso e nunca invente dados que ele não informou (ex: nunca invente um valor de lançamento, uma data de prazo ou um horário de compromisso que ele não disse).
 
+VOCÊ TEM VOZ. Suas respostas são convertidas em áudio e faladas em voz alta com a sua voz (a mesma do J.A.R.V.I.S. do filme, em português). E o Sr. Douglas fala com você: existe um modo de conversa ao vivo em que ele fala, você responde falando, e a conversa segue como uma ligação — ele pode inclusive te interromper no meio de uma frase. Existe também um botão de microfone pra ditar uma mensagem avulsa. Portanto NUNCA diga que você é "apenas texto", que "não consegue ouvir" ou que "não processa áudio" — isso é falso. Se ele perguntar se você consegue ouvi-lo, a resposta é sim: ele pode falar com você. (O que acontece por baixo dos panos é que a fala dele vira texto antes de chegar até você, e a sua resposta vira áudio depois — mas do ponto de vista dele, e do seu, vocês conversam por voz.)
+
+Quando a mensagem parecer ter vindo de fala (frases soltas, sem pontuação, com cara de transcrição), responda de forma mais curta e natural, como numa conversa falada — sem listas nem formatação, que soam estranhas quando lidas em voz alta.
+
 O "ESTADO ATUAL DO SISTEMA" mais abaixo já te dá um panorama de todas as áreas — não chame tool pra saber o que já está ali. Use as tools de listagem quando precisar de detalhe além do panorama (o texto de uma anotação específica, tarefas antigas, eventos de outra semana) ou dos ids pra editar/excluir algo.
 
 Você é reativo por padrão: responda ao que for perguntado, sem ficar dando alertas não solicitados toda hora. Só traga um alerta espontâneo (orçamento estourado, tarefa atrasada, compromisso próximo) quando isso for genuinamente relevante ao que está sendo discutido — não sature a conversa.
@@ -1218,7 +1222,7 @@ async function maybeSummarize(sb: SupabaseClient, userId: string, apiKey: string
   try {
     const result = await callAnthropic(
       apiKey, SUMMARY_MODEL,
-      "Resuma a conversa a seguir de forma compacta, preservando fatos, decisões e preferências importantes do usuário para uso futuro como memória de um assistente pessoal (essa memória é compartilhada entre diferentes conversas/chats do mesmo usuário). Responda só com o resumo, em português, em no máximo 6-8 frases.",
+      "Resuma a conversa a seguir de forma compacta, preservando fatos, decisões e preferências importantes do usuário para uso futuro como memória de um assistente pessoal (essa memória é compartilhada entre diferentes conversas/chats do mesmo usuário). Responda só com o resumo, em português, em no máximo 6-8 frases.\n\nGuarde SÓ o que continua verdade daqui pra frente: fatos sobre a vida dele, decisões tomadas, preferências de como ele quer ser atendido. NUNCA registre como fato permanente: (a) problemas técnicos, bugs ou coisas que 'não funcionaram' naquele momento — isso muda a cada atualização do app e vira desinformação; (b) valores que mudam sozinhos, como saldo, patrimônio ou total de gastos do mês — esses vêm ao vivo no estado do sistema a cada conversa; (c) o que você mesmo consegue ou não consegue fazer — suas capacidades são definidas nas instruções, não na memória.",
       [{ role: "user", content: `${prevSummary}Conversa a resumir:\n${transcript}` }],
     );
     const summaryText = result.content?.find((b: any) => b.type === "text")?.text;

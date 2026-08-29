@@ -94,6 +94,10 @@
     .jarvis-font-display { font-family: 'Orbitron', 'Inter', sans-serif; }
     @keyframes jarvisMicPulse { 0%, 100% { box-shadow: 0 0 0 0 #EF444466; } 50% { box-shadow: 0 0 0 7px #EF444400; } }
     .jarvis-mic-pulse { animation: jarvisMicPulse 1.2s ease-out infinite; }
+    /* Pontinho de "sistema vivo" ao lado dos rótulos de status (sidebar, header do Jarvis).
+       A cor vem inline de quem usa — o verde aqui é só o padrão de "tudo certo". */
+    @keyframes hudStatusPulse { 0%, 100% { opacity: 0.45; } 50% { opacity: 1; } }
+    .hud-status-dot { width: 5px; height: 5px; border-radius: 50%; background: #22C55E; box-shadow: 0 0 6px #22C55E; flex-shrink: 0; animation: hudStatusPulse 2.2s ease-in-out infinite; }
   </style>
 </helmet>
 
@@ -112,7 +116,7 @@
       <div style="text-align: center; margin-bottom: 32px;">
         <img src="uploads/logo.png" alt="TheDouglasVision" style="width: 72px; height: 72px; border-radius: 16px; margin-bottom: 14px; filter: invert(1) hue-rotate(180deg); box-shadow: 0 8px 32px #2563EB44; display: block; margin-left: auto; margin-right: auto;">
         <div style="font-size: 20px; font-weight: 700; background: linear-gradient(135deg, #60A5FA, #22D3EE); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; letter-spacing: -0.3px;">TheDouglasVision</div>
-        <div style="font-size: 10px; color: #2A3A55; letter-spacing: 2.5px; margin-top: 5px; font-weight: 500;">GESTÃO FINANCEIRA INTELIGENTE</div>
+        <div class="jarvis-font" style="font-size: 10px; color: #38BDF899; letter-spacing: 2.5px; margin-top: 6px; text-shadow: 0 0 8px #38BDF844;">{{ bootLine }}<span class="login-cursor-blink">_</span></div>
       </div>
       <div style="display: flex; flex-direction: column; gap: 14px;">
         <div>
@@ -152,7 +156,9 @@
           <sc-if value="{{ sidebarExpanded }}" hint-placeholder-val="{{ true }}">
             <div>
               <div style="font-size: 13px; font-weight: 700; background: linear-gradient(135deg, #60A5FA, #22D3EE); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; letter-spacing: -0.3px;">TheDouglasVision</div>
-              <div style="font-size: 9px; color: #1E2A3A; letter-spacing: 1.5px; margin-top: 2px; font-weight: 500;">GESTÃO FINANCEIRA</div>
+              <div class="jarvis-font" style="display: flex; align-items: center; gap: 5px; font-size: 9px; color: #1E2A3A; letter-spacing: 1.5px; margin-top: 2px; font-weight: 500;">
+                <span class="hud-status-dot"></span>SISTEMA ONLINE
+              </div>
             </div>
           </sc-if>
         </div>
@@ -292,6 +298,12 @@
                 </div>
                 <div style="padding: 10px 12px; border-top: 1px solid #151525; display: flex; gap: 6px; flex-shrink: 0;">
                   <input type="text" class="jarvis-font" value="{{ jarvisInput }}" onInput="{{ setJarvisInput }}" onKeyDown="{{ jarvisKeyDown }}" placeholder="" style="flex: 1; min-width: 0; background: #0D0D1A; border: 1px solid #1E2A45; border-radius: 8px; padding: 8px 10px; color: #E2E8F0; font-size: 12.5px;">
+                  <button onClick="{{ startJarvisLiveMode }}" title="Falar ao vivo com o Jarvis" style="width: 34px; height: 34px; border-radius: 8px; background: transparent; border: 1px solid #1E2A45; color: #64748B; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                    <i class="ph ph-phone-call" style="font-size: 14px;"></i>
+                  </button>
+                  <button onClick="{{ toggleJarvisListening }}" title="{{ jarvisMicTitle }}" class="{{ jarvisMicClass }}" style="width: 34px; height: 34px; border-radius: 8px; background: transparent; border: 1px solid #1E2A45; color: #64748B; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                    <i class="{{ jarvisMicIcon }}" style="font-size: 14px;"></i>
+                  </button>
                   <button onClick="{{ sendJarvisMessage }}" style="width: 34px; height: 34px; border-radius: 8px; background: transparent; border: 1px solid #1E2A45; color: {{ jarvisAccentColor }}; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
                     <span class="jarvis-font" style="font-size: 17px; font-weight: 700; line-height: 1;">&gt;</span>
                   </button>
@@ -1782,7 +1794,9 @@
               </div>
               <div style="flex: 1; min-width: 0;">
                 <div class="jarvis-font-display {{ jarvisGlitchClass }}" style="font-size: 15px; font-weight: 700; color: #E2E8F0; letter-spacing: 0.5px;">{{ jarvisDisplayName }}</div>
-                <div style="font-size: 10px; color: #334155; letter-spacing: 0.5px;">assistente financeiro</div>
+                <div class="jarvis-font" style="display: flex; align-items: center; gap: 5px; font-size: 10px; color: {{ jarvisStatusColor }}; letter-spacing: 0.5px;">
+                  <span class="hud-status-dot" style="background: {{ jarvisStatusColor }}; box-shadow: 0 0 6px {{ jarvisStatusColor }};"></span>{{ jarvisStatusLabel }}
+                </div>
               </div>
               <button onClick="{{ toggleJarvisVoiceMuted }}" title="{{ jarvisMuteTitle }}" style="width: 34px; height: 34px; border-radius: 8px; background: transparent; border: 1px solid #1E2A45; color: #64748B; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
                 <i class="{{ jarvisMuteIcon }}" style="font-size: 16px;"></i>
@@ -1968,6 +1982,9 @@
           </div>
           <div style="padding: 10px 14px; border-top: 1px solid #151525; display: flex; gap: 8px; flex-shrink: 0;">
             <input type="text" class="jarvis-font" value="{{ jarvisInput }}" onInput="{{ setJarvisInput }}" onKeyDown="{{ jarvisKeyDown }}" placeholder="" style="flex: 1; min-width: 0; background: #0D0D1A; border: 1px solid #1E2A45; border-radius: 8px; padding: 9px 11px; color: #E2E8F0; font-size: 13px;">
+            <button onClick="{{ startJarvisLiveMode }}" title="Falar ao vivo com o Jarvis" style="width: 38px; height: 38px; border-radius: 8px; background: transparent; border: 1px solid #1E2A45; color: #64748B; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+              <i class="ph ph-phone-call" style="font-size: 15px;"></i>
+            </button>
             <button onClick="{{ toggleJarvisListening }}" title="{{ jarvisMicTitle }}" class="{{ jarvisMicClass }}" style="{{ jarvisMicButtonStyleSm }}">
               <i class="{{ jarvisMicIcon }}" style="font-size: 15px;"></i>
             </button>
@@ -2570,6 +2587,7 @@ class Component extends DCLogic {
     loginEmail: '',
     loginPassword: '',
     loginError: '',
+    bootLine: 'INICIALIZANDO SISTEMA',
     authMode: 'login',
     loading: false,
     loadingMsg: '',
@@ -2720,6 +2738,25 @@ class Component extends DCLogic {
     savingsGoal: 0,
   };
 
+  // Linha de "boot" da tela de login — no lugar de um slogan fixo, o sistema se apresenta
+  // ligando. Para sozinho na última linha (não fica ciclando pra sempre distraindo) e o
+  // timer é limpo assim que sai do login, pra não rodar à toa dentro do app.
+  _BOOT_LINES = ['INICIALIZANDO SISTEMA', 'CARREGANDO MÓDULOS', 'CONEXÃO SEGURA ESTABELECIDA', 'AGUARDANDO AUTENTICAÇÃO']
+
+  _startBootLines = () => {
+    if (this._bootTimer) return;
+    let i = 0;
+    this._bootTimer = setInterval(() => {
+      i++;
+      if (i >= this._BOOT_LINES.length) { this._stopBootLines(); return; }
+      this.setState({ bootLine: this._BOOT_LINES[i] });
+    }, 900);
+  }
+
+  _stopBootLines = () => {
+    if (this._bootTimer) { clearInterval(this._bootTimer); this._bootTimer = null; }
+  }
+
   componentDidMount() {
     const today = new Date().toISOString().split('T')[0];
     this.setState({
@@ -2733,6 +2770,7 @@ class Component extends DCLogic {
       jarvisModel: this._load('jarvisModel') || 'sonnet',
       jarvisVoiceMuted: !!this._load('jarvisVoiceMuted'),
     });
+    this._startBootLines();
     window.addEventListener('resize', this._resize = () =>
       this.setState({ isMobile: window.innerWidth < 768 })
     );
@@ -2929,6 +2967,7 @@ class Component extends DCLogic {
   }
 
   _loadFromSupabase = async (authUser) => {
+    this._stopBootLines(); // saiu do login — a linha de boot não precisa mais rodar
     this.setState({ loading: true, loadingMsg: 'Carregando dados...' });
     const uid = authUser.id;
     const [{ data: cats }, { data: txns }, { data: goals }, { data: profile }, { data: jarvisCtx }, { data: expenses }, { data: card }, { data: tasksData }, { data: eventsData }, { data: notesData }, { data: newsRow }, { data: stockData }] = await Promise.all([
@@ -5515,6 +5554,16 @@ class Component extends DCLogic {
     if (this._jarvisPipWindow) this._renderJarvisPip();
     this._syncStockPolling(isHome);
 
+    // Status vivo do Jarvis — a ordem importa: o modo ao vivo é o mais específico e ganha
+    // dos outros, depois o que ele está fazendo agora, e "online" é o repouso.
+    const jarvisStatus = s.jarvisLiveMode
+      ? (s.jarvisLiveStatus === 'speaking' ? { label: 'falando…', color: '#38BDF8' }
+        : s.jarvisLiveStatus === 'thinking' ? { label: 'processando…', color: '#A78BFA' }
+        : { label: 'ouvindo…', color: '#22C55E' })
+      : s.jarvisLoading ? { label: 'processando…', color: '#A78BFA' }
+      : s.jarvisListening ? { label: 'ouvindo…', color: '#22C55E' }
+      : { label: 'online', color: '#334155' };
+
     return {
       isLogin, isApp, isHome, isDashboard, isLancamentos, isPlanejamento, isCategorias, isFinanceSector, financeSubNavItems, isTarefas, isAgenda, isNotas, isNoticias, isConfiguracoes,
       currentScreenTitle: titles[screen] || '',
@@ -5575,6 +5624,7 @@ class Component extends DCLogic {
       // login
       loginEmail: s.loginEmail, loginPassword: s.loginPassword, loginError: s.loginError,
       hasLoginError: !!s.loginError,
+      bootLine: s.bootLine,
       setEmail: e => this.setState({ loginEmail: e.target.value }),
       setPassword: e => this.setState({ loginPassword: e.target.value }),
       handleLogin: this.handleLogin,
@@ -6122,6 +6172,10 @@ class Component extends DCLogic {
       toggleJarvisVoiceMuted: this.toggleJarvisVoiceMuted,
       jarvisMuteIcon: s.jarvisVoiceMuted ? 'ph ph-speaker-slash' : 'ph ph-speaker-high',
       jarvisMuteTitle: s.jarvisVoiceMuted ? 'Voz desligada — clique pra ligar' : 'Voz ligada — clique pra silenciar',
+      // Status vivo no header (substitui o antigo subtítulo fixo "assistente financeiro") —
+      // tudo derivado de estado que já existia, sem campo novo no state.
+      jarvisStatusLabel: jarvisStatus.label,
+      jarvisStatusColor: jarvisStatus.color,
       // Modo de voz ao vivo
       startJarvisLiveMode: this.startJarvisLiveMode,
       stopJarvisLiveMode: this.stopJarvisLiveMode,

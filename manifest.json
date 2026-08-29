@@ -1,7 +1,7 @@
 {
   "name": "TheDouglasVision",
   "short_name": "TDV",
-  "description": "Gestão financeira pessoal inteligente",
+  "description": "Sistema operacional pessoal",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

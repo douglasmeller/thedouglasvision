@@ -3199,7 +3199,11 @@ class Component extends DCLogic {
 
   goToJarvisScreen = () => {
     this.setState({ screen: 'jarvis', jarvisOpen: false, sidebarOpen: false });
+    // Se o histórico já tinha carregado antes (ex: no login, pra Home ter o que mostrar), o
+    // container da tela dedicada nem existia no DOM até agora — precisa rolar pro fim de novo,
+    // não só na primeira vez que o histórico chega.
     if (!this.state.jarvisLoaded) this.loadJarvisHistory();
+    this._scrollJarvisToBottom();
   }
 
   // As três versões do J.A.R.V.I.S., na ordem em que aparecem no seletor. As chaves são as mesmas
@@ -3311,13 +3315,9 @@ class Component extends DCLogic {
         this._liveProcessSpeakQueue();
         return;
       }
-      const re = /[^.!?\n]*[.!?\n]+/g;
-      let m, lastEnd = 0;
-      while ((m = re.exec(unspoken)) !== null) {
-        if (m[0].trim()) this._liveQueueSpeak(m[0]);
-        lastEnd = re.lastIndex;
-      }
-      liveSpokenUpTo += lastEnd;
+      const { sentences, consumed } = this._splitLiveSentences(unspoken);
+      sentences.forEach(sent => { if (sent.trim()) this._liveQueueSpeak(sent); });
+      liveSpokenUpTo += consumed;
     };
 
     const applyReveal = () => {
@@ -3365,7 +3365,10 @@ class Component extends DCLogic {
 
     try {
       const { data: { session } } = await window._sb.auth.getSession();
-      const resp = await fetch('https://evkpskwjzbyzpvvodnwf.supabase.co/functions/v1/jarvis-chat', {
+      // No modo ao vivo, passa pelo roteador rápido (Groq resolve conversa comum na hora; só
+      // delega pro jarvis-chat de verdade quando o pedido precisa mexer nos dados financeiros).
+      const endpoint = s.jarvisLiveMode ? 'jarvis-live-chat' : 'jarvis-chat';
+      const resp = await fetch('https://evkpskwjzbyzpvvodnwf.supabase.co/functions/v1/' + endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.access_token },
         body: JSON.stringify({ message: text, model: s.jarvisModel, conversation_id: s.jarvisConversationId }),
@@ -3458,6 +3461,7 @@ class Component extends DCLogic {
   stopJarvisLiveMode = () => {
     clearTimeout(this._liveSilenceTimer);
     if (this._jarvisLiveRecognition) { this._jarvisLiveRecognition.onend = null; this._jarvisLiveRecognition.onerror = null; this._jarvisLiveRecognition.stop(); this._jarvisLiveRecognition = null; }
+    this._liveStopBargeIn();
     if (this._jarvisAudio) { this._jarvisAudio.onended = null; this._jarvisAudio.pause(); }
     this._liveSpeakQueue = []; this._liveSpeaking = false;
     this.setState({ jarvisLiveMode: false, jarvisLiveTranscript: '', jarvisLiveStatus: 'listening' });
@@ -3511,6 +3515,32 @@ class Component extends DCLogic {
     rec.start();
   }
 
+  // Separador de frases pro streaming de voz — um "." só conta como fim de frase se vier seguido
+  // de espaço/fim de texto. Sem isso, siglas com ponto entre cada letra (ex: "J.A.R.V.I.S.", que
+  // aparece em quase toda resposta) viravam 6 frases de 1 letra cada, e o Fish Audio soletrava
+  // "jota, á, erre..." em vez de falar "Jarvis" — foi o que o Sr. Douglas ouviu no primeiro teste.
+  // Também não corta abreviações comuns tipo "Sr."/"Dr." no meio de "Sr. Douglas".
+  _LIVE_SENTENCE_ABBR = new Set(['sr', 'sra', 'srta', 'dr', 'dra', 'prof', 'profa', 'sto', 'sta', 'jr', 'exmo', 'exma']);
+  _splitLiveSentences = (text) => {
+    const sentences = [];
+    let start = 0;
+    for (let i = 0; i < text.length; i++) {
+      const ch = text[i];
+      if (ch === '\n') { sentences.push(text.slice(start, i + 1)); start = i + 1; continue; }
+      if (ch === '.' || ch === '!' || ch === '?') {
+        const next = text[i + 1];
+        if (next !== undefined && !/\s/.test(next)) continue; // não é fim de frase de verdade (sigla)
+        if (ch === '.') {
+          const wordMatch = text.slice(start, i).match(/([A-Za-zÀ-ÿ]+)$/);
+          if (wordMatch && this._LIVE_SENTENCE_ABBR.has(wordMatch[1].toLowerCase())) continue; // "Sr.", "Dr." etc.
+        }
+        sentences.push(text.slice(start, i + 1));
+        start = i + 1;
+      }
+    }
+    return { sentences, consumed: start };
+  }
+
   // Fila de fala do modo ao vivo — processa uma frase de cada vez (a próxima só começa a tocar
   // quando a anterior termina, pra não sobrepor áudio); quando a fila esvazia E o stream de texto
   // já terminou, volta a escutar sozinho, fechando o loop da "ligação".
@@ -3530,10 +3560,55 @@ class Component extends DCLogic {
     const chunk = queue.shift();
     this._liveSpeaking = true;
     this.setState({ jarvisLiveStatus: 'speaking' });
+    this._liveStartBargeIn();
     this.speakJarvisReply(chunk, () => {
       this._liveSpeaking = false;
+      this._liveStopBargeIn();
       this._liveProcessSpeakQueue();
     });
+  }
+
+  // Escuta em paralelo enquanto o Jarvis está falando — se o Sr. Douglas começar a falar de
+  // verdade nesse meio-tempo, corta o áudio na hora e passa a escutar (interromper, não esperar
+  // ele terminar a fala inteira). Só reage a um resultado FINAL com conteúdo de verdade (não a
+  // qualquer resultado interino) pra reduzir o risco de o próprio áudio do Jarvis, vazando pela
+  // caixa de som até o microfone, se autointerromper — ainda assim, fone de ouvido é bem mais
+  // confiável aqui do que caixa de som (não tem como garantir cancelamento de eco pelo navegador).
+  _liveStartBargeIn = () => {
+    if (!this.state.jarvisLiveMode) return;
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) return;
+    const rec = new SR();
+    rec.lang = 'pt-BR';
+    rec.continuous = true;
+    rec.interimResults = false;
+    rec.onresult = (e) => {
+      const last = e.results[e.results.length - 1];
+      const heard = last && last[0] ? last[0].transcript.trim() : '';
+      if (last && last.isFinal && heard.length >= 3) this._liveInterrupt();
+    };
+    rec.onerror = () => {};
+    rec.onend = () => {};
+    this._jarvisBargeInRecognition = rec;
+    try { rec.start(); } catch (e) {}
+  }
+
+  _liveStopBargeIn = () => {
+    if (this._jarvisBargeInRecognition) {
+      this._jarvisBargeInRecognition.onresult = null;
+      this._jarvisBargeInRecognition.onend = null;
+      try { this._jarvisBargeInRecognition.stop(); } catch (e) {}
+      this._jarvisBargeInRecognition = null;
+    }
+  }
+
+  _liveInterrupt = () => {
+    if (!this.state.jarvisLiveMode) return;
+    this._liveStopBargeIn();
+    this._liveSpeakQueue = [];
+    this._liveSpeaking = false;
+    if (this._jarvisAudio) { this._jarvisAudio.onended = null; this._jarvisAudio.pause(); }
+    this._liveListenOnce();
   }
 
   // Bolha do Jarvis flutuando por cima de qualquer app, via Document

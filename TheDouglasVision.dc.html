@@ -124,7 +124,7 @@
             ENTER PASSWORD<span class="login-cursor-blink">_</span>
           </label>
           <div style="position: relative;">
-            <input type="{{ passwordInputType }}" value="{{ loginPassword }}" onInput="{{ setPassword }}" onKeyDown="{{ loginKeyDown }}" placeholder="••••••••" autofocus class="jarvis-font" style="width: 100%; box-sizing: border-box; background: #0D0D1A; border: 1px solid #38BDF877; border-radius: 8px; padding: 13px 40px 13px 14px; color: #E2E8F0; font-size: 15px; letter-spacing: 3px; box-shadow: 0 0 18px #38BDF833, inset 0 0 14px #38BDF811;">
+            <input type="{{ passwordInputType }}" inputmode="numeric" pattern="[0-9]*" value="{{ loginPassword }}" onInput="{{ setPassword }}" onKeyDown="{{ loginKeyDown }}" placeholder="••••••••" autofocus class="jarvis-font" style="width: 100%; box-sizing: border-box; background: #0D0D1A; border: 1px solid #38BDF877; border-radius: 8px; padding: 13px 40px 13px 14px; color: #E2E8F0; font-size: 15px; letter-spacing: 3px; box-shadow: 0 0 18px #38BDF833, inset 0 0 14px #38BDF811;">
             <button type="button" onClick="{{ togglePasswordVisibility }}" style="position: absolute; right: 4px; top: 50%; transform: translateY(-50%); background: none; border: none; color: #38BDF8; cursor: pointer; padding: 7px; display: flex; align-items: center; justify-content: center;">
               <i class="{{ passwordEyeIcon }}" style="font-size: 16px;"></i>
             </button>

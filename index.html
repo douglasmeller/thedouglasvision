@@ -80,9 +80,9 @@
     .jarvis-ring-outer { inset: -6px; border: 1.5px solid transparent; border-top-color: currentColor; border-right-color: currentColor; opacity: 0.7; animation: jarvisRingSpin 5s linear infinite; }
     .jarvis-ring-inner { inset: -2.5px; border: 1px dashed currentColor; opacity: 0.4; animation: jarvisRingSpinRev 9s linear infinite; }
     .jarvis-ring-pulse { inset: -6px; border: 1.5px solid currentColor; opacity: 0.5; animation: jarvisRingBreathe 2.4s ease-in-out infinite; }
-    @media (prefers-reduced-motion: reduce) {
-      .jarvis-ring-outer, .jarvis-ring-inner, .jarvis-ring-pulse { animation: none; }
-    }
+    /* Sem guarda de prefers-reduced-motion aqui de propósito — em celulares com
+       "reduzir movimento" ligado no sistema, esse giro sumia mesmo sendo bem sutil
+       (não é o tipo de animação brusca que esse ajuste existe pra evitar). */
     /* Indicador de "processando" — pulso tipo sonar em vez de três pontinhos. */
     @keyframes jarvisSonar { 0% { transform: scale(0.25); opacity: 0.9; } 100% { transform: scale(1); opacity: 0; } }
     .jarvis-sonar { position: relative; width: 20px; height: 20px; }
@@ -1347,9 +1347,12 @@
                   <option value="home">Home</option>
                   <option value="dashboard">Finance</option>
                   <option value="tarefas">Tarefas</option>
+                  <option value="agenda">Agenda</option>
+                  <option value="notas">Anotações</option>
+                  <option value="noticias">Notícias</option>
                   <option value="jarvis">Jarvis</option>
                 </select>
-                <div style="font-size: 11px; color: #1E2A3A; margin-top: 5px;">Só afeta este dispositivo/navegador — útil pra abrir sempre em Finance no celular, por exemplo.</div>
+                <div style="font-size: 11px; color: #1E2A3A; margin-top: 5px;">Só afeta este dispositivo/navegador — útil pra abrir sempre em Finance no celular, por exemplo, e diferente no computador.</div>
               </div>
             </div>
             <!-- About -->
@@ -3342,7 +3345,6 @@ class Component extends DCLogic {
       .jarvis-ring { position: absolute; inset: 0; border-radius: 50%; pointer-events: none; }
       .jarvis-ring-outer { inset: -6px; border: 1.5px solid transparent; border-top-color: currentColor; border-right-color: currentColor; opacity: 0.7; animation: jarvisRingSpin 5s linear infinite; }
       .jarvis-ring-inner { inset: -2.5px; border: 1px dashed currentColor; opacity: 0.4; animation: jarvisRingSpinRev 9s linear infinite; }
-      @media (prefers-reduced-motion: reduce) { .jarvis-ring-outer, .jarvis-ring-inner { animation: none; } }
       @keyframes jarvisSonar { 0% { transform: scale(0.25); opacity: 0.9; } 100% { transform: scale(1); opacity: 0; } }
       .jarvis-sonar { position: relative; width: 16px; height: 16px; }
       .jarvis-sonar span { position: absolute; inset: 0; border-radius: 50%; border: 1.5px solid currentColor; animation: jarvisSonar 1.4s ease-out infinite; }

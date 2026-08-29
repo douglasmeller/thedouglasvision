@@ -165,7 +165,12 @@
       <div style="flex: 1; padding: 10px 0; display: flex; flex-direction: column; gap: 1px; overflow-y: auto; overflow-x: hidden;">
         <sc-for list="{{ navItems }}" as="nav" hint-placeholder-count="5">
           <button onClick="{{ nav.onClick }}" title="{{ nav.title }}" style="{{ nav.style }}">
-            <i class="{{ nav.iconClass }}" style="font-size: 17px; flex-shrink: 0;"></i>
+            <sc-if value="{{ nav.isJarvisIcon }}" hint-placeholder-val="{{ false }}">
+              <img src="{{ jarvisLogoSrc }}" alt="" style="width: 17px; height: 17px; object-fit: contain; border-radius: 50%; flex-shrink: 0;">
+            </sc-if>
+            <sc-if value="{{ nav.notJarvisIcon }}" hint-placeholder-val="{{ true }}">
+              <i class="{{ nav.iconClass }}" style="font-size: 17px; flex-shrink: 0;"></i>
+            </sc-if>
             <sc-if value="{{ sidebarExpanded }}" hint-placeholder-val="{{ true }}">
               <span>{{ nav.label }}</span>
             </sc-if>
@@ -2067,7 +2072,12 @@
       <nav style="position: fixed; bottom: 0; left: 0; right: 0; z-index: 100; background: #0D0D1A; border-top: 1px solid #1E2A45; display: flex; padding-bottom: env(safe-area-inset-bottom, 0px);">
         <sc-for list="{{ mobilePrimaryNavItems }}" as="nav" hint-placeholder-count="4">
           <button onClick="{{ nav.onClick }}" style="{{ nav.bottomNavStyle }}">
-            <i class="{{ nav.iconClass }}" style="font-size: 21px;"></i>
+            <sc-if value="{{ nav.isJarvisIcon }}" hint-placeholder-val="{{ false }}">
+              <img src="{{ jarvisLogoSrc }}" alt="" style="width: 21px; height: 21px; object-fit: contain; border-radius: 50%;">
+            </sc-if>
+            <sc-if value="{{ nav.notJarvisIcon }}" hint-placeholder-val="{{ true }}">
+              <i class="{{ nav.iconClass }}" style="font-size: 21px;"></i>
+            </sc-if>
             <span style="font-size: 10px; line-height: 1; margin-top: 2px; font-weight: inherit;">{{ nav.label }}</span>
           </button>
         </sc-for>
@@ -4522,7 +4532,7 @@ class Component extends DCLogic {
     const navItems = navDefs.map(n => {
       const active = n.id === 'finance' ? isFinanceSector : screen === n.id;
       return {
-        ...n, iconClass: 'ph ph-' + n.icon, title: n.label,
+        ...n, iconClass: 'ph ph-' + n.icon, title: n.label, isJarvisIcon: n.id === 'jarvis', notJarvisIcon: n.id !== 'jarvis',
         style: {
           display: 'flex', alignItems: 'center', gap: '10px', padding: sidebarCollapsed ? '10px 0' : '10px 20px',
           justifyContent: sidebarCollapsed ? 'center' : 'flex-start',

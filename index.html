@@ -3594,12 +3594,14 @@ class Component extends DCLogic {
 
   // Escuta em paralelo enquanto o Jarvis está falando — se o Sr. Douglas começar a falar de
   // verdade nesse meio-tempo, corta o áudio na hora e passa a escutar (interromper, não esperar
-  // ele terminar a fala inteira). Só reage a um resultado FINAL com conteúdo de verdade (não a
-  // qualquer resultado interino) pra reduzir o risco de o próprio áudio do Jarvis, vazando pela
-  // caixa de som até o microfone, se autointerromper — ainda assim, fone de ouvido é bem mais
-  // confiável aqui do que caixa de som (não tem como garantir cancelamento de eco pelo navegador).
+  // ele terminar a fala inteira). Exige pelo menos 3 PALAVRAS num resultado FINAL — não só
+  // caracteres, que é o que fazia qualquer ruído/tosse/monossílabo cortar a fala à toa. A API do
+  // navegador não dá como configurar supressão de ruído aqui; fone de ouvido ajuda mais que
+  // qualquer ajuste de código (menos ruído ambiente e sem eco do próprio áudio do Jarvis voltando
+  // pro microfone).
   _liveStartBargeIn = () => {
     if (!this.state.jarvisLiveMode) return;
+    const BARGE_IN_MIN_WORDS = 3;
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SR) return;
     const rec = new SR();
@@ -3608,8 +3610,10 @@ class Component extends DCLogic {
     rec.interimResults = false;
     rec.onresult = (e) => {
       const last = e.results[e.results.length - 1];
-      const heard = last && last[0] ? last[0].transcript.trim() : '';
-      if (last && last.isFinal && heard.length >= 3) this._liveInterrupt();
+      if (!last || !last.isFinal) return;
+      const heard = (last[0]?.transcript || '').trim();
+      const wordCount = heard ? heard.split(/\s+/).length : 0;
+      if (wordCount >= BARGE_IN_MIN_WORDS) this._liveInterrupt();
     };
     rec.onerror = () => {};
     rec.onend = () => {};

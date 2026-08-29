@@ -3285,6 +3285,12 @@ class Component extends DCLogic {
     if (!text || s.jarvisLoading) return;
     if (s.jarvisListening && this._jarvisRecognition) this._jarvisRecognition.stop();
     if (s.jarvisLiveMode) { this._liveSpeakQueue = []; this._liveSpeaking = false; this._liveStreamDone = false; }
+    // "Trava" essa chamada na geração atual do modo ao vivo — se o Sr. Douglas interromper
+    // (_liveInterrupt incrementa _liveGen) enquanto essa resposta ainda tá chegando da rede, os
+    // callbacks abaixo (que continuam rodando em segundo plano, a promise não é cancelável) checam
+    // isso e não fazem mais nada — sem essa trava, a resposta antiga e a nova se misturavam e o
+    // "Ouvindo..." travava pra sempre. Fora do modo ao vivo, _liveGen nunca muda, então é inofensivo.
+    const myLiveGen = this._liveGen || 0;
     const userMsg = this._jarvisMsg('user', text, null);
     this.setState({ jarvisMessages: [...s.jarvisMessages, userMsg], jarvisInput: '', jarvisLoading: true }, () => this._scrollJarvisToBottom());
 
@@ -3306,7 +3312,7 @@ class Component extends DCLogic {
     // desacoplado do efeito de máquina de escrever (que só é visual e fica atrás do modal).
     let liveSpokenUpTo = 0;
     const liveFlushSentences = (final) => {
-      if (!this.state.jarvisLiveMode) return;
+      if (!this.state.jarvisLiveMode || myLiveGen !== this._liveGen) return;
       const unspoken = fullTarget.slice(liveSpokenUpTo);
       if (final) {
         if (unspoken.trim()) this._liveQueueSpeak(unspoken);
@@ -3321,6 +3327,7 @@ class Component extends DCLogic {
     };
 
     const applyReveal = () => {
+      if (myLiveGen !== this._liveGen) return;
       const shown = fullTarget.slice(0, revealedLen);
       this.setState(st => {
         const msgs = st.jarvisMessages.slice();
@@ -3336,6 +3343,7 @@ class Component extends DCLogic {
     };
 
     const finishUp = () => {
+      if (myLiveGen !== this._liveGen) return;
       this.setState({ jarvisLoading: false });
       if (dataChangedFlag) this._refreshData();
       // No modo ao vivo a fala já foi disparada por frase, direto do stream (liveFlushSentences)
@@ -3346,6 +3354,7 @@ class Component extends DCLogic {
     };
 
     const tick = () => {
+      if (myLiveGen !== this._liveGen) { clearInterval(tickTimer); tickTimer = null; return; }
       if (revealedLen >= fullTarget.length) {
         if (streamDone) { clearInterval(tickTimer); tickTimer = null; finishUp(); }
         return;
@@ -3455,11 +3464,14 @@ class Component extends DCLogic {
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SR) { this._toast('Reconhecimento de voz não é suportado neste navegador.'); return; }
     this._liveSpeakQueue = []; this._liveSpeaking = false; this._liveStreamDone = false;
+    this._liveGen = (this._liveGen || 0) + 1; // nova "ligação" — invalida qualquer resto de uma anterior
     this.setState({ jarvisLiveMode: true, jarvisLiveTranscript: '', jarvisLiveStatus: 'listening' }, () => this._liveListenOnce());
   }
 
   stopJarvisLiveMode = () => {
+    this._liveGen = (this._liveGen || 0) + 1; // invalida qualquer resposta/escuta ainda em andamento
     clearTimeout(this._liveSilenceTimer);
+    clearTimeout(this._liveMaxWaitTimer);
     if (this._jarvisLiveRecognition) { this._jarvisLiveRecognition.onend = null; this._jarvisLiveRecognition.onerror = null; this._jarvisLiveRecognition.stop(); this._jarvisLiveRecognition = null; }
     this._liveStopBargeIn();
     if (this._jarvisAudio) { this._jarvisAudio.onended = null; this._jarvisAudio.pause(); }
@@ -3471,27 +3483,37 @@ class Component extends DCLogic {
   // falar" — ficava respondendo no meio da frase. Aqui roda em modo contínuo (não para sozinho)
   // e um timer de silêncio PRÓPRIO (reiniciado a cada novo resultado, mesmo interino) decide
   // quando de fato considerar que a fala acabou — LIVE_SILENCE_MS controla essa folga.
+  // LIVE_MAX_WAIT_MS é uma rede de segurança à parte: se o navegador nunca disparar nem um
+  // resultado (mic mudo, silêncio total), sem isso o timer de silêncio nunca começa e ficava
+  // "Ouvindo..." pra sempre — isso garante que sempre desiste e tenta de novo depois de um tempo.
   _liveListenOnce = () => {
     if (!this.state.jarvisLiveMode) return;
     this.setState({ jarvisLiveStatus: 'listening' });
+    const myGen = this._liveGen;
     const LIVE_SILENCE_MS = 1600;
+    const LIVE_MAX_WAIT_MS = 12000;
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     const rec = new SR();
     rec.lang = 'pt-BR';
     rec.continuous = true;
     rec.interimResults = true;
     let finalTranscript = '';
+    let finished = false;
     const finish = () => {
+      if (finished) return;
+      finished = true;
       clearTimeout(this._liveSilenceTimer);
+      clearTimeout(this._liveMaxWaitTimer);
       rec.onend = null;
       try { rec.stop(); } catch (e) {}
-      if (!this.state.jarvisLiveMode) return;
+      if (myGen !== this._liveGen || !this.state.jarvisLiveMode) return;
       const text = (finalTranscript || this.state.jarvisLiveTranscript).trim();
       this.setState({ jarvisLiveTranscript: '' });
       if (text) this.setState({ jarvisInput: text, jarvisLiveStatus: 'thinking' }, () => this.sendJarvisMessage());
       else this._liveListenOnce();
     };
     rec.onresult = (e) => {
+      if (myGen !== this._liveGen) return;
       let transcript = '';
       for (let i = 0; i < e.results.length; i++) {
         transcript += e.results[i][0].transcript;
@@ -3502,15 +3524,17 @@ class Component extends DCLogic {
       this._liveSilenceTimer = setTimeout(finish, LIVE_SILENCE_MS);
     };
     rec.onerror = (e) => {
-      if (!this.state.jarvisLiveMode) return;
-      if (e.error === 'no-speech' || e.error === 'aborted') { /* nada dito ainda — segue escutando */ }
+      if (myGen !== this._liveGen || !this.state.jarvisLiveMode) return;
+      if (e.error === 'no-speech' || e.error === 'aborted') { /* nada dito ainda — o timer de máximo cobre isso */ }
       else { this._toast('Não consegui usar o microfone (' + e.error + ').'); this.stopJarvisLiveMode(); }
     };
     rec.onend = () => {
+      if (myGen !== this._liveGen || finished) return;
       // Alguns navegadores encerram sozinhos depois de um tempo mesmo em modo contínuo —
-      // se ainda não decidimos que a fala acabou (finish() já teria zerado onend), reinicia.
+      // se ainda não decidimos que a fala acabou, reinicia.
       if (this.state.jarvisLiveMode) this._liveListenOnce();
     };
+    this._liveMaxWaitTimer = setTimeout(finish, LIVE_MAX_WAIT_MS);
     this._jarvisLiveRecognition = rec;
     rec.start();
   }
@@ -3604,6 +3628,9 @@ class Component extends DCLogic {
 
   _liveInterrupt = () => {
     if (!this.state.jarvisLiveMode) return;
+    // Invalida a resposta em andamento (se a rede ainda estiver mandando texto/gerando fala,
+    // seus callbacks passam a checar isso e não fazem mais nada — ver sendJarvisMessage).
+    this._liveGen = (this._liveGen || 0) + 1;
     this._liveStopBargeIn();
     this._liveSpeakQueue = [];
     this._liveSpeaking = false;

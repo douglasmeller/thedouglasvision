@@ -23,8 +23,17 @@ function json(body: unknown, status = 200) {
 
 // O texto do Jarvis chega com o markdown-lite que o chat usa pra render (**destaque**,
 // "- item") — sem isso, a voz literalmente falaria "asterisco asterisco" e "traço".
+//
+// "J.A.R.V.I.S." (com ponto entre cada letra) é a grafia usada em quase toda resposta — mesmo
+// mandando pro TTS como uma frase só (sem cortar em pedacinhos), o Fish Audio lê ponto entre
+// letras maiúsculas como instrução de soletrar, então troca pela palavra normal antes de falar
+// (só afeta o áudio — o texto exibido no chat continua com a grafia "J.A.R.V.I.S.").
+function normalizeForSpeech(text: string): string {
+  return text.replace(/J\.\s*A\.\s*R\.\s*V\.\s*I\.\s*S\.?/gi, "Jarvis");
+}
+
 function stripMarkdown(text: string): string {
-  return text
+  return normalizeForSpeech(text)
     .replace(/\*\*(.+?)\*\*/g, "$1")
     .replace(/^\s*[-*]\s+/gm, "")
     .replace(/[#_`]/g, "")

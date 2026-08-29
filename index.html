@@ -243,6 +243,9 @@
                 <div style="padding: 12px 14px; border-bottom: 1px solid #151525; display: flex; align-items: center; gap: 8px; flex-shrink: 0;">
                   <img src="{{ jarvisLogoSrc }}" alt="" style="width: 17px; height: 17px; object-fit: contain; border-radius: 50%; flex-shrink: 0;">
                   <span style="font-size: 12px; font-weight: 700; color: #E2E8F0; flex: 1;">{{ jarvisDisplayName }}</span>
+                  <button onClick="{{ toggleJarvisVoiceMuted }}" title="{{ jarvisMuteTitle }}" style="background: none; border: none; color: #64748B; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 4px;">
+                    <i class="{{ jarvisMuteIcon }}" style="font-size: 14px;"></i>
+                  </button>
                   <button onClick="{{ goToJarvisScreen }}" title="Abrir conversa completa" style="background: none; border: none; color: #64748B; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 4px;">
                     <i class="ph ph-arrows-out-simple" style="font-size: 14px;"></i>
                   </button>
@@ -1774,6 +1777,9 @@
                 <div class="jarvis-font-display {{ jarvisGlitchClass }}" style="font-size: 15px; font-weight: 700; color: #E2E8F0; letter-spacing: 0.5px;">{{ jarvisDisplayName }}</div>
                 <div style="font-size: 10px; color: #334155; letter-spacing: 0.5px;">assistente financeiro</div>
               </div>
+              <button onClick="{{ toggleJarvisVoiceMuted }}" title="{{ jarvisMuteTitle }}" style="width: 34px; height: 34px; border-radius: 8px; background: transparent; border: 1px solid #1E2A45; color: #64748B; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                <i class="{{ jarvisMuteIcon }}" style="font-size: 16px;"></i>
+              </button>
               <button onClick="{{ startNewJarvisChat }}" title="Nova conversa" style="width: 34px; height: 34px; border-radius: 8px; background: transparent; border: 1px solid #1E2A45; color: #64748B; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
                 <i class="ph ph-plus" style="font-size: 16px;"></i>
               </button>
@@ -1889,6 +1895,9 @@
               </div>
             </div>
             <div class="jarvis-font-display {{ jarvisGlitchClass }}" style="flex: 1; min-width: 0; font-size: 13px; font-weight: 700; color: #E2E8F0; letter-spacing: 0.3px;">{{ jarvisDisplayName }}</div>
+            <button onClick="{{ toggleJarvisVoiceMuted }}" title="{{ jarvisMuteTitle }}" style="width: 28px; height: 28px; border-radius: 7px; background: transparent; border: 1px solid #1E2A45; color: #64748B; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+              <i class="{{ jarvisMuteIcon }}" style="font-size: 14px;"></i>
+            </button>
             <button onClick="{{ startNewJarvisChatInline }}" title="Nova conversa" style="width: 28px; height: 28px; border-radius: 7px; background: transparent; border: 1px solid #1E2A45; color: #64748B; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
               <i class="ph ph-plus" style="font-size: 14px;"></i>
             </button>
@@ -2563,6 +2572,7 @@ class Component extends DCLogic {
     toastMsg: '',
     toastTs: 0,
     sidebarCollapsed: false,
+    jarvisVoiceMuted: false,
     jarvisMessages: [],
     jarvisInput: '',
     jarvisLoading: false,
@@ -2714,6 +2724,7 @@ class Component extends DCLogic {
       onboardingDismissed: this._load('obDismissed') || false,
       sidebarCollapsed: this._load('sidebarCollapsed') || false,
       jarvisModel: this._load('jarvisModel') || 'sonnet',
+      jarvisVoiceMuted: !!this._load('jarvisVoiceMuted'),
     });
     window.addEventListener('resize', this._resize = () =>
       this.setState({ isMobile: window.innerWidth < 768 })
@@ -3317,6 +3328,7 @@ class Component extends DCLogic {
       this.setState({ jarvisLoading: false });
       this.loadJarvisConversations();
       if (dataChangedFlag) this._refreshData();
+      if (!this.state.jarvisVoiceMuted && fullTarget.trim()) this.speakJarvisReply(fullTarget);
     };
 
     const tick = () => {
@@ -3374,6 +3386,37 @@ class Component extends DCLogic {
     } catch (e) {
       appendToLastAssistant('\n\nNão consegui me conectar agora. Tente novamente em instantes.');
       streamDone = true;
+    }
+  }
+
+  // Voz do Jarvis (Fish Audio, voz "Jarvis (UCM)" em PT-BR) — toca sozinho depois de cada
+  // resposta (a não ser que esteja mudo) e também pode ser reaberto em qualquer mensagem antiga
+  // pelo botão de alto-falante. Falha da TTS nunca deve travar o chat — é sempre um extra.
+  toggleJarvisVoiceMuted = () => {
+    const muted = !this.state.jarvisVoiceMuted;
+    this._save('jarvisVoiceMuted', muted ? '1' : '');
+    if (muted && this._jarvisAudio) this._jarvisAudio.pause();
+    this.setState({ jarvisVoiceMuted: muted });
+  }
+
+  speakJarvisReply = async (text) => {
+    if (!text || !text.trim()) return;
+    try {
+      const { data: { session } } = await window._sb.auth.getSession();
+      if (!session) return;
+      const resp = await fetch('https://evkpskwjzbyzpvvodnwf.supabase.co/functions/v1/jarvis-speak', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.access_token },
+        body: JSON.stringify({ text }),
+      });
+      if (!resp.ok) return;
+      const blob = await resp.blob();
+      const url = URL.createObjectURL(blob);
+      if (this._jarvisAudio) { this._jarvisAudio.pause(); URL.revokeObjectURL(this._jarvisAudio.src); }
+      this._jarvisAudio = new Audio(url);
+      this._jarvisAudio.play().catch(() => {});
+    } catch (e) {
+      // silencioso de propósito — voz é um extra, nunca deve virar um erro visível no chat.
     }
   }
 
@@ -5817,6 +5860,9 @@ class Component extends DCLogic {
           onSelect: () => this.setJarvisModel(k),
         };
       }),
+      toggleJarvisVoiceMuted: this.toggleJarvisVoiceMuted,
+      jarvisMuteIcon: s.jarvisVoiceMuted ? 'ph ph-speaker-slash' : 'ph ph-speaker-high',
+      jarvisMuteTitle: s.jarvisVoiceMuted ? 'Voz desligada — clique pra ligar' : 'Voz ligada — clique pra silenciar',
       toggleJarvisListening: this.toggleJarvisListening,
       jarvisListening: s.jarvisListening,
       jarvisMicClass: s.jarvisListening ? 'jarvis-mic-pulse' : '',

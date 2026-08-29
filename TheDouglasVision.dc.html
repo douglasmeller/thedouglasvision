@@ -303,12 +303,12 @@
                   </sc-if>
                   <sc-for list="{{ stockItems }}" as="st" hint-placeholder-count="3">
                     <div style="display: flex; align-items: center; gap: 8px; padding: 8px 4px; border-bottom: 1px solid #151525;">
-                      <div style="flex: 1; min-width: 0;">
+                      <button onClick="{{ st.onOpenChart }}" style="flex: 1; min-width: 0; text-align: left; background: none; border: none; padding: 0; cursor: pointer; font-family: inherit;">
                         <div style="font-size: 12.5px; font-weight: 700; color: #E2E8F0;">{{ st.ticker }}</div>
                         <sc-if value="{{ st.hasQuote }}" hint-placeholder-val="{{ false }}">
                           <div style="font-size: 11px; color: #64748B;">{{ st.priceLabel }}</div>
                         </sc-if>
-                      </div>
+                      </button>
                       <sc-if value="{{ st.hasQuote }}" hint-placeholder-val="{{ false }}">
                         <div style="display: flex; align-items: center; gap: 3px; color: {{ st.changeColor }}; font-size: 11.5px; font-weight: 600;">
                           <i class="ph {{ st.changeIcon }}" style="font-size: 12px;"></i>{{ st.changeLabel }}
@@ -2390,6 +2390,54 @@
       </div>
     </sc-if>
 
+    <!-- ── Ações — gráfico de detalhe ── -->
+    <sc-if value="{{ showStockChartModal }}" hint-placeholder-val="{{ false }}">
+      <div style="position: fixed; inset: 0; background: #00000099; z-index: 200; display: flex; align-items: center; justify-content: center; padding: 16px;">
+        <div class="modal-in" style="background: #111118; border: 1px solid #1E2A45; border-radius: 16px; padding: 24px; width: 100%; max-width: 420px; max-height: 90vh; overflow-y: auto;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
+            <div style="font-size: 18px; font-weight: 700; color: #E2E8F0; letter-spacing: -0.5px;">{{ stockChartTicker }}</div>
+            <button onClick="{{ closeStockChartModal }}" style="background: none; border: none; color: #334155; cursor: pointer; font-size: 22px; line-height: 1; padding: 0; display: flex;">×</button>
+          </div>
+          <div style="display: flex; align-items: baseline; gap: 10px; margin-bottom: 18px;">
+            <div style="font-size: 22px; font-weight: 800; color: #E2E8F0; letter-spacing: -0.5px;">{{ stockChartPriceLabel }}</div>
+            <div style="font-size: 13px; font-weight: 600; color: {{ stockChartChangeColor }};">{{ stockChartChangeLabel }}</div>
+          </div>
+
+          <div style="display: flex; gap: 6px; background: #0D0D1A; border-radius: 9px; padding: 4px; margin-bottom: 16px;">
+            <sc-for list="{{ stockChartRangeTabs }}" as="rt" hint-placeholder-count="4">
+              <button onClick="{{ rt.onSelect }}" style="{{ rt.tabStyle }}">{{ rt.label }}</button>
+            </sc-for>
+          </div>
+
+          <div style="background: #0D0D1A; border-radius: 10px; padding: 14px 12px; min-height: 150px; display: flex; flex-direction: column; justify-content: center;">
+            <sc-if value="{{ stockChartLoading }}" hint-placeholder-val="{{ false }}">
+              <div style="display: flex; align-items: center; justify-content: center; padding: 40px 0;">
+                <span class="btn-spinner" style="border-color: #33415555; border-top-color: #64748B; width: 22px; height: 22px;"></span>
+              </div>
+            </sc-if>
+            <sc-if value="{{ hasStockChartError }}" hint-placeholder-val="{{ false }}">
+              <div style="text-align: center; font-size: 12.5px; color: #64748B; padding: 30px 10px;">{{ stockChartError }}</div>
+            </sc-if>
+            <sc-if value="{{ noStockChartData }}" hint-placeholder-val="{{ false }}">
+              <div style="text-align: center; font-size: 12.5px; color: #334155; padding: 30px 10px;">Sem dados pra esse período.</div>
+            </sc-if>
+            <sc-if value="{{ stockChartHasData }}" hint-placeholder-val="{{ false }}">
+              <div style="display: flex; justify-content: space-between; font-size: 10.5px; color: #475569; margin-bottom: 4px;">
+                <span>{{ stockChartMaxLabel }}</span>
+              </div>
+              <svg viewBox="{{ stockChartViewBox }}" style="width: 100%; display: block;">
+                <polyline points="{{ stockChartLinePoints }}" fill="none" stroke="#4ADE80" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+              </svg>
+              <div style="display: flex; justify-content: space-between; font-size: 10.5px; color: #475569; margin-top: 4px;">
+                <span>{{ stockChartMinLabel }}</span>
+                <span style="color: {{ stockChartPeriodColor }}; font-weight: 600;">{{ stockChartPeriodLabel }}</span>
+              </div>
+            </sc-if>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
     <!-- ── Contribution Modal ── -->
     <sc-if value="{{ showContribModal }}" hint-placeholder-val="{{ false }}">
       <div style="position: fixed; inset: 0; background: #00000099; z-index: 200; display: flex; align-items: center; justify-content: center; padding: 16px;">
@@ -2551,6 +2599,14 @@ class Component extends DCLogic {
     stockQuotes: [],
     newStockTicker: '',
     stockError: '',
+    showStockChartModal: false,
+    stockChartTicker: '',
+    stockChartRange: 'dia', // 'dia' | 'semana' | 'mes' | 'ano'
+    stockChartLoading: false,
+    stockChartPoints: [],
+    stockChartPrice: null,
+    stockChartChangePercent: null,
+    stockChartError: '',
 
     // Anotações — inspirado no dontpad: digitar já salva sozinho, sem botão.
     notes: [],
@@ -4105,6 +4161,48 @@ class Component extends DCLogic {
     }
   }
 
+  // Gráfico de uma ação — histórico com filtro de período (dia/semana/mês/ano),
+  // aberto ao clicar num ticker da watchlist. Cada filtro vira um range+interval
+  // diferente pra brapi.dev (validados/normalizados na própria Edge Function).
+  _STOCK_RANGE_MAP = {
+    dia: { range: '1d', interval: '15m' },
+    semana: { range: '5d', interval: '60m' },
+    mes: { range: '1mo', interval: '1d' },
+    ano: { range: '1y', interval: '1wk' },
+  }
+
+  openStockChart = (ticker) => {
+    this.setState({ showStockChartModal: true, stockChartTicker: ticker, stockChartRange: 'dia', stockChartPoints: [], stockChartError: '' }, () => this.fetchStockChartData());
+  }
+
+  closeStockChartModal = () => this.setState({ showStockChartModal: false, stockChartTicker: '', stockChartPoints: [] })
+
+  setStockChartRange = (range) => this.setState({ stockChartRange: range }, () => this.fetchStockChartData())
+
+  fetchStockChartData = async () => {
+    const { stockChartTicker, stockChartRange } = this.state;
+    if (!stockChartTicker) return;
+    const { range, interval } = this._STOCK_RANGE_MAP[stockChartRange] || this._STOCK_RANGE_MAP.mes;
+    this.setState({ stockChartLoading: true, stockChartError: '' });
+    try {
+      const { data: { session } } = await window._sb.auth.getSession();
+      if (!session) return;
+      const resp = await fetch('https://evkpskwjzbyzpvvodnwf.supabase.co/functions/v1/stock-quotes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.access_token },
+        body: JSON.stringify({ ticker: stockChartTicker, range, interval }),
+      });
+      const data = await resp.json();
+      if (!resp.ok || data.error) { this.setState({ stockChartError: data.error || 'Não foi possível buscar o histórico.', stockChartLoading: false }); return; }
+      this.setState({
+        stockChartPoints: data.points || [], stockChartPrice: data.price, stockChartChangePercent: data.changePercent,
+        stockChartLoading: false,
+      });
+    } catch (e) {
+      this.setState({ stockChartError: 'Não foi possível buscar o histórico.', stockChartLoading: false });
+    }
+  }
+
   // Não existe hook de "entrou/saiu da tela X" nesse framework (um componente só,
   // guiado por state) — então o jeito robusto de ligar/desligar o poll é como um
   // efeito colateral idempotente chamado no fim de renderVals() (que já roda em
@@ -5060,6 +5158,46 @@ class Component extends DCLogic {
         changeColor: q ? (up ? '#4ADE80' : '#F87171') : '#475569',
         changeIcon: q ? (up ? 'ph-trend-up' : 'ph-trend-down') : 'ph-question',
         onRemove: () => this.removeStockTicker(w.id),
+        onOpenChart: () => this.openStockChart(w.ticker),
+      };
+    });
+
+    // Gráfico da ação (modal) — série de preço min-max escalada (não centrada em
+    // zero como o gráfico de saldo), mesma estrutura de SVG (viewBox/polyline/dots).
+    const SC_W = 300, SC_H = 90, SC_PAD_X = 8, SC_PAD_Y = 10;
+    const scPoints = s.stockChartPoints || [];
+    let stockChartViewBox = `0 0 ${SC_W} ${SC_H}`, stockChartLinePoints = '', stockChartDotsList = [];
+    let stockChartMinLabel = '', stockChartMaxLabel = '', stockChartHasData = scPoints.length > 1;
+    if (stockChartHasData) {
+      const closes = scPoints.map(p => p.close);
+      const scMin = Math.min(...closes), scMax = Math.max(...closes);
+      const scRange = (scMax - scMin) || 1;
+      const scStepX = (SC_W - SC_PAD_X * 2) / (scPoints.length - 1);
+      const scScaleY = v => SC_PAD_Y + (1 - (v - scMin) / scRange) * (SC_H - SC_PAD_Y * 2);
+      stockChartDotsList = scPoints.map((p, i) => ({
+        x: Math.round((SC_PAD_X + i * scStepX) * 10) / 10,
+        y: Math.round(scScaleY(p.close) * 10) / 10,
+      }));
+      stockChartLinePoints = stockChartDotsList.map(d => `${d.x},${d.y}`).join(' ');
+      stockChartViewBox = `0 0 ${SC_W} ${SC_H}`;
+      stockChartMinLabel = this.fmt(scMin);
+      stockChartMaxLabel = this.fmt(scMax);
+    }
+    const stockChartPeriodPct = stockChartHasData && scPoints[0].close
+      ? ((scPoints[scPoints.length - 1].close - scPoints[0].close) / scPoints[0].close) * 100 : 0;
+    const stockChartRangeDefs = [
+      { key: 'dia', label: 'Dia' }, { key: 'semana', label: 'Semana' },
+      { key: 'mes', label: 'Mês' }, { key: 'ano', label: 'Ano' },
+    ];
+    const stockChartRangeTabs = stockChartRangeDefs.map(r => {
+      const active = s.stockChartRange === r.key;
+      return {
+        key: r.key, label: r.label, onSelect: () => this.setStockChartRange(r.key),
+        tabStyle: {
+          flex: 1, padding: '7px', border: 'none', borderRadius: '7px', fontSize: '12px', fontWeight: '600',
+          fontFamily: 'inherit', cursor: 'pointer', transition: 'all 0.15s',
+          background: active ? '#1E2A45' : 'transparent', color: active ? '#60A5FA' : '#475569',
+        },
       };
     });
 
@@ -5482,6 +5620,23 @@ class Component extends DCLogic {
       stockItems: stockItemsList,
       hasStockItems: stockItemsList.length > 0,
       noStockItems: stockItemsList.length === 0,
+      // Ações — gráfico de detalhe (modal)
+      showStockChartModal: s.showStockChartModal,
+      closeStockChartModal: this.closeStockChartModal,
+      stockChartTicker: s.stockChartTicker,
+      stockChartRangeTabs,
+      stockChartLoading: s.stockChartLoading,
+      hasStockChartError: !!s.stockChartError,
+      stockChartError: s.stockChartError,
+      stockChartHasData,
+      noStockChartData: !stockChartHasData && !s.stockChartLoading && !s.stockChartError,
+      stockChartViewBox, stockChartLinePoints,
+      stockChartMinLabel, stockChartMaxLabel,
+      stockChartPriceLabel: s.stockChartPrice != null ? this.fmt(s.stockChartPrice) : '',
+      stockChartChangeColor: (s.stockChartChangePercent || 0) >= 0 ? '#4ADE80' : '#F87171',
+      stockChartChangeLabel: s.stockChartChangePercent != null ? ((s.stockChartChangePercent >= 0 ? '+' : '') + s.stockChartChangePercent.toFixed(2) + '%') : '',
+      stockChartPeriodColor: stockChartPeriodPct >= 0 ? '#4ADE80' : '#F87171',
+      stockChartPeriodLabel: stockChartHasData ? ((stockChartPeriodPct >= 0 ? '+' : '') + stockChartPeriodPct.toFixed(2) + '% no período') : '',
       newStockTicker: s.newStockTicker,
       setNewStockTicker: this.setNewStockTicker,
       addStockTicker: this.addStockTicker,

@@ -3204,6 +3204,7 @@ class Component extends DCLogic {
     // não só na primeira vez que o histórico chega.
     if (!this.state.jarvisLoaded) this.loadJarvisHistory();
     this._scrollJarvisToBottom();
+    this._unlockJarvisAudio(); // toque de verdade — destrava o áudio pro resto da sessão (ver speakJarvisReply)
   }
 
   // As três versões do J.A.R.V.I.S., na ordem em que aparecem no seletor. As chaves são as mesmas
@@ -3428,6 +3429,28 @@ class Component extends DCLogic {
     this.setState({ jarvisVoiceMuted: muted });
   }
 
+  // Um WAV de 1 amostra em silêncio, só pra "destravar" o elemento de áudio — celular (Safari/Chrome
+  // mobile) só deixa audio.play() funcionar de verdade se o PRIMEIRO play() de um elemento acontecer
+  // dentro de um gesto direto do usuário (um toque de verdade). Depois de destravado uma vez, esse
+  // MESMO elemento aceita play() assíncrono (disparado depois de uma resposta de rede) normalmente.
+  _JARVIS_SILENT_WAV = 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=';
+
+  // Sempre o MESMO <audio> reaproveitado (nunca um `new Audio()` novo por fala) — é o que faz o
+  // destravamento valer pra sessão inteira, não só pro primeiro play().
+  _getJarvisAudioEl = () => {
+    if (!this._jarvisAudio) this._jarvisAudio = new Audio();
+    return this._jarvisAudio;
+  }
+
+  // Chamado de dentro de um clique de verdade (abrir o Jarvis, ligar o modo ao vivo) — nunca de
+  // dentro de uma resposta assíncrona, senão não destrava nada.
+  _unlockJarvisAudio = () => {
+    const audio = this._getJarvisAudioEl();
+    audio.src = this._JARVIS_SILENT_WAV;
+    const p = audio.play();
+    if (p && p.catch) p.catch(() => {});
+  }
+
   // onDone (opcional) dispara sempre que o áudio termina/falha/nunca chegou a tocar — é o gancho
   // que o modo de voz ao vivo usa pra saber a hora certa de voltar a escutar.
   speakJarvisReply = async (text, onDone) => {
@@ -3444,11 +3467,14 @@ class Component extends DCLogic {
       if (!resp.ok) { finish(); return; }
       const blob = await resp.blob();
       const url = URL.createObjectURL(blob);
-      if (this._jarvisAudio) { this._jarvisAudio.pause(); URL.revokeObjectURL(this._jarvisAudio.src); }
-      const audio = new Audio(url);
-      this._jarvisAudio = audio;
+      const audio = this._getJarvisAudioEl();
+      const prevUrl = audio.src;
+      audio.pause();
       audio.onended = finish;
-      audio.play().catch(finish);
+      audio.src = url;
+      const playPromise = audio.play();
+      if (playPromise && playPromise.catch) playPromise.catch((err) => { console.warn('Jarvis audio play falhou:', err); finish(); });
+      if (prevUrl && prevUrl.startsWith('blob:')) URL.revokeObjectURL(prevUrl);
     } catch (e) {
       // silencioso de propósito — voz é um extra, nunca deve virar um erro visível no chat.
       finish();
@@ -3463,6 +3489,7 @@ class Component extends DCLogic {
   startJarvisLiveMode = () => {
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SR) { this._toast('Reconhecimento de voz não é suportado neste navegador.'); return; }
+    this._unlockJarvisAudio(); // toque de verdade — destrava o áudio pro resto da "ligação" (essencial no celular)
     this._liveSpeakQueue = []; this._liveSpeaking = false; this._liveStreamDone = false;
     this._liveGen = (this._liveGen || 0) + 1; // nova "ligação" — invalida qualquer resto de uma anterior
     this.setState({ jarvisLiveMode: true, jarvisLiveTranscript: '', jarvisLiveStatus: 'listening' }, () => this._liveListenOnce());

@@ -3323,6 +3323,7 @@ class Component extends DCLogic {
     const text = s.jarvisInput.trim();
     if (!text || s.jarvisLoading) return;
     if (s.jarvisListening && this._jarvisRecognition) this._jarvisRecognition.stop();
+    if (s.jarvisLiveMode) { this._liveSpeakQueue = []; this._liveSpeaking = false; this._liveStreamDone = false; }
     const userMsg = this._jarvisMsg('user', text, null);
     this.setState({ jarvisMessages: [...s.jarvisMessages, userMsg], jarvisInput: '', jarvisLoading: true }, () => this._scrollJarvisToBottom());
 
@@ -3337,6 +3338,30 @@ class Component extends DCLogic {
     let tickTimer = null;
     let streamDone = false;
     let dataChangedFlag = false;
+
+    // Modo de voz ao vivo: manda cada FRASE pra TTS assim que ela fecha (. ! ? ou quebra de
+    // linha), em vez de esperar a resposta inteira terminar de gerar — a primeira fala começa a
+    // tocar bem mais rápido, enquanto o resto da resposta ainda está sendo escrito. Totalmente
+    // desacoplado do efeito de máquina de escrever (que só é visual e fica atrás do modal).
+    let liveSpokenUpTo = 0;
+    const liveFlushSentences = (final) => {
+      if (!this.state.jarvisLiveMode) return;
+      const unspoken = fullTarget.slice(liveSpokenUpTo);
+      if (final) {
+        if (unspoken.trim()) this._liveQueueSpeak(unspoken);
+        liveSpokenUpTo = fullTarget.length;
+        this._liveStreamDone = true;
+        this._liveProcessSpeakQueue();
+        return;
+      }
+      const re = /[^.!?\n]*[.!?\n]+/g;
+      let m, lastEnd = 0;
+      while ((m = re.exec(unspoken)) !== null) {
+        if (m[0].trim()) this._liveQueueSpeak(m[0]);
+        lastEnd = re.lastIndex;
+      }
+      liveSpokenUpTo += lastEnd;
+    };
 
     const applyReveal = () => {
       const shown = fullTarget.slice(0, revealedLen);
@@ -3357,10 +3382,9 @@ class Component extends DCLogic {
       this.setState({ jarvisLoading: false });
       this.loadJarvisConversations();
       if (dataChangedFlag) this._refreshData();
-      if (this.state.jarvisLiveMode) {
-        this.setState({ jarvisLiveStatus: 'speaking' });
-        this.speakJarvisReply(fullTarget, () => { if (this.state.jarvisLiveMode) this._liveListenOnce(); });
-      } else if (!this.state.jarvisVoiceMuted && fullTarget.trim()) {
+      // No modo ao vivo a fala já foi disparada por frase, direto do stream (liveFlushSentences)
+      // — aqui só cobre o modo passivo normal (auto-play de uma vez só, texto completo).
+      if (!this.state.jarvisLiveMode && !this.state.jarvisVoiceMuted && fullTarget.trim()) {
         this.speakJarvisReply(fullTarget);
       }
     };
@@ -3380,6 +3404,7 @@ class Component extends DCLogic {
     const appendToLastAssistant = (chunk) => {
       fullTarget += chunk;
       if (tickTimer === null) tickTimer = setInterval(tick, 18);
+      liveFlushSentences(false);
     };
 
     try {
@@ -3415,11 +3440,13 @@ class Component extends DCLogic {
         }
       }
       streamDone = true;
+      liveFlushSentences(true);
       if (fullTarget.length === 0) finishUp();
       else if (tickTimer === null) tickTimer = setInterval(tick, 18);
     } catch (e) {
       appendToLastAssistant('\n\nNão consegui me conectar agora. Tente novamente em instantes.');
       streamDone = true;
+      liveFlushSentences(true);
     }
   }
 
@@ -3468,24 +3495,42 @@ class Component extends DCLogic {
   startJarvisLiveMode = () => {
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SR) { this._toast('Reconhecimento de voz não é suportado neste navegador.'); return; }
+    this._liveSpeakQueue = []; this._liveSpeaking = false; this._liveStreamDone = false;
     this.setState({ jarvisLiveMode: true, jarvisLiveTranscript: '', jarvisLiveStatus: 'listening' }, () => this._liveListenOnce());
   }
 
   stopJarvisLiveMode = () => {
+    clearTimeout(this._liveSilenceTimer);
     if (this._jarvisLiveRecognition) { this._jarvisLiveRecognition.onend = null; this._jarvisLiveRecognition.onerror = null; this._jarvisLiveRecognition.stop(); this._jarvisLiveRecognition = null; }
     if (this._jarvisAudio) { this._jarvisAudio.onended = null; this._jarvisAudio.pause(); }
+    this._liveSpeakQueue = []; this._liveSpeaking = false;
     this.setState({ jarvisLiveMode: false, jarvisLiveTranscript: '', jarvisLiveStatus: 'listening' });
   }
 
+  // O reconhecimento por si só considerava qualquer pausa (até uma vírgula) como "parou de
+  // falar" — ficava respondendo no meio da frase. Aqui roda em modo contínuo (não para sozinho)
+  // e um timer de silêncio PRÓPRIO (reiniciado a cada novo resultado, mesmo interino) decide
+  // quando de fato considerar que a fala acabou — LIVE_SILENCE_MS controla essa folga.
   _liveListenOnce = () => {
     if (!this.state.jarvisLiveMode) return;
     this.setState({ jarvisLiveStatus: 'listening' });
+    const LIVE_SILENCE_MS = 1600;
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     const rec = new SR();
     rec.lang = 'pt-BR';
-    rec.continuous = false;
+    rec.continuous = true;
     rec.interimResults = true;
     let finalTranscript = '';
+    const finish = () => {
+      clearTimeout(this._liveSilenceTimer);
+      rec.onend = null;
+      try { rec.stop(); } catch (e) {}
+      if (!this.state.jarvisLiveMode) return;
+      const text = (finalTranscript || this.state.jarvisLiveTranscript).trim();
+      this.setState({ jarvisLiveTranscript: '' });
+      if (text) this.setState({ jarvisInput: text, jarvisLiveStatus: 'thinking' }, () => this.sendJarvisMessage());
+      else this._liveListenOnce();
+    };
     rec.onresult = (e) => {
       let transcript = '';
       for (let i = 0; i < e.results.length; i++) {
@@ -3493,21 +3538,46 @@ class Component extends DCLogic {
         if (e.results[i].isFinal) finalTranscript = transcript;
       }
       this.setState({ jarvisLiveTranscript: transcript });
+      clearTimeout(this._liveSilenceTimer);
+      this._liveSilenceTimer = setTimeout(finish, LIVE_SILENCE_MS);
     };
     rec.onerror = (e) => {
       if (!this.state.jarvisLiveMode) return;
-      if (e.error === 'no-speech' || e.error === 'aborted') setTimeout(() => this._liveListenOnce(), 300);
+      if (e.error === 'no-speech' || e.error === 'aborted') { /* nada dito ainda — segue escutando */ }
       else { this._toast('Não consegui usar o microfone (' + e.error + ').'); this.stopJarvisLiveMode(); }
     };
     rec.onend = () => {
-      if (!this.state.jarvisLiveMode) return;
-      const text = (finalTranscript || this.state.jarvisLiveTranscript).trim();
-      this.setState({ jarvisLiveTranscript: '' });
-      if (text) this.setState({ jarvisInput: text, jarvisLiveStatus: 'thinking' }, () => this.sendJarvisMessage());
-      else setTimeout(() => this._liveListenOnce(), 300);
+      // Alguns navegadores encerram sozinhos depois de um tempo mesmo em modo contínuo —
+      // se ainda não decidimos que a fala acabou (finish() já teria zerado onend), reinicia.
+      if (this.state.jarvisLiveMode) this._liveListenOnce();
     };
     this._jarvisLiveRecognition = rec;
     rec.start();
+  }
+
+  // Fila de fala do modo ao vivo — processa uma frase de cada vez (a próxima só começa a tocar
+  // quando a anterior termina, pra não sobrepor áudio); quando a fila esvazia E o stream de texto
+  // já terminou, volta a escutar sozinho, fechando o loop da "ligação".
+  _liveQueueSpeak = (chunk) => {
+    this._liveSpeakQueue = this._liveSpeakQueue || [];
+    this._liveSpeakQueue.push(chunk);
+    this._liveProcessSpeakQueue();
+  }
+
+  _liveProcessSpeakQueue = () => {
+    if (this._liveSpeaking) return;
+    const queue = this._liveSpeakQueue || [];
+    if (queue.length === 0) {
+      if (this._liveStreamDone && this.state.jarvisLiveMode) this._liveListenOnce();
+      return;
+    }
+    const chunk = queue.shift();
+    this._liveSpeaking = true;
+    this.setState({ jarvisLiveStatus: 'speaking' });
+    this.speakJarvisReply(chunk, () => {
+      this._liveSpeaking = false;
+      this._liveProcessSpeakQueue();
+    });
   }
 
   // Bolha do Jarvis flutuando por cima de qualquer app, via Document

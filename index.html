@@ -3329,7 +3329,7 @@ class Component extends DCLogic {
     const text = s.jarvisInput.trim();
     if (!text || s.jarvisLoading) return;
     if (s.jarvisListening && this._jarvisRecognition) this._jarvisRecognition.stop();
-    if (s.jarvisLiveMode) { this._liveSpeakQueue = []; this._liveSpeaking = false; this._liveStreamDone = false; }
+    if (s.jarvisLiveMode) { this._liveClearSpeakQueue(); this._liveSpeaking = false; this._liveStreamDone = false; }
     // "Trava" essa chamada na geração atual do modo ao vivo — se o Sr. Douglas interromper
     // (_liveInterrupt incrementa _liveGen) enquanto essa resposta ainda tá chegando da rede, os
     // callbacks abaixo (que continuam rodando em segundo plano, a promise não é cancelável) checam
@@ -3356,23 +3356,39 @@ class Component extends DCLogic {
     let streamDone = false;
     let dataChangedFlag = false;
 
-    // Modo de voz ao vivo: manda cada FRASE pra TTS assim que ela fecha (. ! ? ou quebra de
-    // linha), em vez de esperar a resposta inteira terminar de gerar — a primeira fala começa a
-    // tocar bem mais rápido, enquanto o resto da resposta ainda está sendo escrito. Totalmente
-    // desacoplado do efeito de máquina de escrever (que só é visual e fica atrás do modal).
+    // Modo de voz ao vivo: manda pedaços pra TTS conforme o texto chega, em vez de esperar a
+    // resposta inteira terminar de gerar — assim a primeira fala começa bem mais rápido.
+    //
+    // A PRIMEIRA frase vai sozinha (é ela que define quanto tempo ele demora pra abrir a boca);
+    // da segunda em diante, agrupa até LIVE_MIN_CHUNK caracteres antes de mandar. Cada pedaço é
+    // sintetizado separadamente pelo Fish Audio, então pedaço curto demais = mais requisições e
+    // mais bordas de silêncio emendadas, que era parte do que soava "picotado".
+    const LIVE_MIN_CHUNK = 180;
     let liveSpokenUpTo = 0;
+    let livePending = '';
+    let liveFirstChunkSent = false;
+    const liveFlushPending = () => {
+      if (!livePending.trim()) { livePending = ''; return; }
+      this._liveQueueSpeak(livePending);
+      livePending = '';
+      liveFirstChunkSent = true;
+    };
     const liveFlushSentences = (final) => {
       if (!this.state.jarvisLiveMode || myLiveGen !== this._liveGen) return;
       const unspoken = fullTarget.slice(liveSpokenUpTo);
       if (final) {
-        if (unspoken.trim()) this._liveQueueSpeak(unspoken);
+        livePending += unspoken;
         liveSpokenUpTo = fullTarget.length;
+        liveFlushPending();
         this._liveStreamDone = true;
         this._liveProcessSpeakQueue();
         return;
       }
       const { sentences, consumed } = this._splitLiveSentences(unspoken);
-      sentences.forEach(sent => { if (sent.trim()) this._liveQueueSpeak(sent); });
+      sentences.forEach(sent => {
+        livePending += sent;
+        if (!liveFirstChunkSent || livePending.length >= LIVE_MIN_CHUNK) liveFlushPending();
+      });
       liveSpokenUpTo += consumed;
     };
 
@@ -3501,34 +3517,46 @@ class Component extends DCLogic {
     if (p && p.catch) p.catch(() => {});
   }
 
-  // onDone (opcional) dispara sempre que o áudio termina/falha/nunca chegou a tocar — é o gancho
-  // que o modo de voz ao vivo usa pra saber a hora certa de voltar a escutar.
-  speakJarvisReply = async (text, onDone) => {
-    const finish = () => { if (onDone) onDone(); };
-    if (!text || !text.trim()) { finish(); return; }
+  // Só a parte de REDE da fala: pede o áudio e devolve uma URL de blob (ou null se falhar).
+  // Separado de tocar de propósito — é isso que deixa o modo ao vivo já ir buscando as próximas
+  // frases enquanto a atual ainda está tocando (ver _liveQueueSpeak).
+  _fetchJarvisSpeech = async (text) => {
+    if (!text || !text.trim()) return null;
     try {
       const { data: { session } } = await window._sb.auth.getSession();
-      if (!session) { finish(); return; }
+      if (!session) return null;
       const resp = await fetch('https://evkpskwjzbyzpvvodnwf.supabase.co/functions/v1/jarvis-speak', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.access_token },
         body: JSON.stringify({ text }),
       });
-      if (!resp.ok) { finish(); return; }
-      const blob = await resp.blob();
-      const url = URL.createObjectURL(blob);
-      const audio = this._getJarvisAudioEl();
-      const prevUrl = audio.src;
-      audio.pause();
-      audio.onended = finish;
-      audio.src = url;
-      const playPromise = audio.play();
-      if (playPromise && playPromise.catch) playPromise.catch((err) => { console.warn('Jarvis audio play falhou:', err); finish(); });
-      if (prevUrl && prevUrl.startsWith('blob:')) URL.revokeObjectURL(prevUrl);
+      if (!resp.ok) return null;
+      return URL.createObjectURL(await resp.blob());
     } catch (e) {
       // silencioso de propósito — voz é um extra, nunca deve virar um erro visível no chat.
-      finish();
+      return null;
     }
+  }
+
+  // Toca uma URL de áudio já baixada. onDone dispara quando termina, falha, ou nem chegou a tocar.
+  _playJarvisSpeech = (url, onDone) => {
+    const finish = () => { if (onDone) onDone(); };
+    if (!url) { finish(); return; }
+    const audio = this._getJarvisAudioEl();
+    const prevUrl = audio.src;
+    audio.pause();
+    audio.onended = finish;
+    audio.src = url;
+    const playPromise = audio.play();
+    if (playPromise && playPromise.catch) playPromise.catch((err) => { console.warn('Jarvis audio play falhou:', err); finish(); });
+    if (prevUrl && prevUrl.startsWith('blob:')) URL.revokeObjectURL(prevUrl);
+  }
+
+  // onDone (opcional) dispara sempre que o áudio termina/falha/nunca chegou a tocar — é o gancho
+  // que o modo de voz ao vivo usa pra saber a hora certa de voltar a escutar.
+  speakJarvisReply = async (text, onDone) => {
+    const url = await this._fetchJarvisSpeech(text);
+    this._playJarvisSpeech(url, onDone);
   }
 
   // ─── Modo de voz ao vivo ───────────────────────────────────────────────
@@ -3540,7 +3568,7 @@ class Component extends DCLogic {
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SR) { this._toast('Reconhecimento de voz não é suportado neste navegador.'); return; }
     this._unlockJarvisAudio(); // toque de verdade — destrava o áudio pro resto da "ligação" (essencial no celular)
-    this._liveSpeakQueue = []; this._liveSpeaking = false; this._liveStreamDone = false;
+    this._liveClearSpeakQueue(); this._liveSpeaking = false; this._liveStreamDone = false;
     this._liveGen = (this._liveGen || 0) + 1; // nova "ligação" — invalida qualquer resto de uma anterior
     this.setState({ jarvisLiveMode: true, jarvisLiveTranscript: '', jarvisLiveStatus: 'listening' }, () => this._liveListenOnce());
   }
@@ -3550,7 +3578,7 @@ class Component extends DCLogic {
     if (this._jarvisLiveRecognition) { this._jarvisLiveRecognition.onend = null; this._jarvisLiveRecognition.onerror = null; this._jarvisLiveRecognition.stop(); this._jarvisLiveRecognition = null; }
     this._liveStopBargeIn();
     if (this._jarvisAudio) { this._jarvisAudio.onended = null; this._jarvisAudio.pause(); }
-    this._liveSpeakQueue = []; this._liveSpeaking = false;
+    this._liveClearSpeakQueue(); this._liveSpeaking = false;
     this.setState({ jarvisLiveMode: false, jarvisLiveTranscript: '', jarvisLiveStatus: 'listening' });
   }
 
@@ -3647,27 +3675,35 @@ class Component extends DCLogic {
     return { sentences, consumed: start };
   }
 
-  // Fila de fala do modo ao vivo — processa uma frase de cada vez (a próxima só começa a tocar
-  // quando a anterior termina, pra não sobrepor áudio); quando a fila esvazia E o stream de texto
-  // já terminou, volta a escutar sozinho, fechando o loop da "ligação".
+  // Fila de fala do modo ao vivo. O áudio de cada frase começa a ser BUSCADO no instante em que
+  // ela entra na fila — não quando chega a vez dela de tocar. Era essa a causa da fala "engasgada":
+  // antes, o fetch da frase seguinte só disparava depois que a anterior terminava, então entre
+  // cada frase havia o tempo cheio de rede + geração do TTS (1-3s) em silêncio. Agora, enquanto a
+  // frase 1 toca, as 2/3/4 já estão sendo geradas em paralelo e normalmente já estão prontas na
+  // hora de tocar. A ordem de reprodução continua sendo estritamente a da fila.
   _liveQueueSpeak = (chunk) => {
     this._liveSpeakQueue = this._liveSpeakQueue || [];
-    this._liveSpeakQueue.push(chunk);
+    this._liveSpeakQueue.push({ text: chunk, audio: this._fetchJarvisSpeech(chunk) });
     this._liveProcessSpeakQueue();
   }
 
-  _liveProcessSpeakQueue = () => {
+  _liveProcessSpeakQueue = async () => {
     if (this._liveSpeaking) return;
     const queue = this._liveSpeakQueue || [];
     if (queue.length === 0) {
       if (this._liveStreamDone && this.state.jarvisLiveMode) this._liveListenOnce();
       return;
     }
-    const chunk = queue.shift();
+    const item = queue.shift();
     this._liveSpeaking = true;
+    const myGen = this._liveGen;
     this.setState({ jarvisLiveStatus: 'speaking' });
+    const url = await item.audio;
+    // Interrompido enquanto esse áudio ainda estava sendo gerado — descarta em vez de tocar
+    // por cima do que já voltou a acontecer.
+    if (myGen !== this._liveGen) { if (url) URL.revokeObjectURL(url); this._liveSpeaking = false; return; }
     this._liveStartBargeIn();
-    this.speakJarvisReply(chunk, () => {
+    this._playJarvisSpeech(url, () => {
       this._liveSpeaking = false;
       this._liveStopBargeIn();
       this._liveProcessSpeakQueue();
@@ -3712,13 +3748,23 @@ class Component extends DCLogic {
     }
   }
 
+  // Esvazia a fila de fala liberando os áudios que já estavam sendo baixados — como o fetch agora
+  // dispara adiantado, jogar a fila fora sem isso deixaria blob URLs órfãos na memória.
+  _liveClearSpeakQueue = () => {
+    const queue = this._liveSpeakQueue || [];
+    queue.forEach(item => {
+      if (item && item.audio && item.audio.then) item.audio.then(url => { if (url) URL.revokeObjectURL(url); }).catch(() => {});
+    });
+    this._liveSpeakQueue = [];
+  }
+
   _liveInterrupt = () => {
     if (!this.state.jarvisLiveMode) return;
     // Invalida a resposta em andamento (se a rede ainda estiver mandando texto/gerando fala,
     // seus callbacks passam a checar isso e não fazem mais nada — ver sendJarvisMessage).
     this._liveGen = (this._liveGen || 0) + 1;
     this._liveStopBargeIn();
-    this._liveSpeakQueue = [];
+    this._liveClearSpeakQueue();
     this._liveSpeaking = false;
     if (this._jarvisAudio) { this._jarvisAudio.onended = null; this._jarvisAudio.pause(); }
     this._liveListenOnce();

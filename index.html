@@ -30,7 +30,18 @@
   <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    html, body { background: #0A0A0F; color: #E2E8F0; font-family: 'Inter', sans-serif; height: 100%; overflow: hidden; touch-action: manipulation; }
+    html, body { background: #0A0A0F; color: #E2E8F0; font-family: 'Share Tech Mono', 'Inter', monospace; height: 100%; overflow: hidden; touch-action: manipulation; }
+    /* Textão corrido (resumo de notícia, corpo de anotação) fica ilegível em monoespaçada por muita linha —
+       essa classe devolve uma fonte de leitura só onde o texto é longo. O resto do app usa a mono herdada. */
+    .reading-font { font-family: 'Inter', sans-serif; }
+    /* Fundo com grade sutil de HUD — quase imperceptível, só dá profundidade por trás dos painéis. */
+    body {
+      background-image:
+        linear-gradient(#38BDF80A 1px, transparent 1px),
+        linear-gradient(90deg, #38BDF80A 1px, transparent 1px);
+      background-size: 34px 34px;
+      background-position: center;
+    }
     a { color: #60A5FA; } a:hover { color: #93C5FD; }
     ::-webkit-scrollbar { width: 4px; height: 4px; }
     ::-webkit-scrollbar-track { background: transparent; }
@@ -40,8 +51,6 @@
     .fade-in { animation: fadeIn 0.3s ease both; }
     .modal-in { animation: modalIn 0.2s ease both; }
     input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.5) sepia(1) saturate(2) hue-rotate(190deg); cursor: pointer; }
-    input:focus, select:focus { outline: 2px solid #2563EB88; outline-offset: -1px; }
-    button:focus-visible { outline: 2px solid #2563EB; outline-offset: 2px; }
     input[type="number"]::-webkit-inner-spin-button { opacity: 0.4; }
     @keyframes spin { to { transform: rotate(360deg); } }
     button { transition: transform 0.1s ease, opacity 0.15s ease, filter 0.15s ease; }
@@ -98,6 +107,40 @@
        A cor vem inline de quem usa — o verde aqui é só o padrão de "tudo certo". */
     @keyframes hudStatusPulse { 0%, 100% { opacity: 0.45; } 50% { opacity: 1; } }
     .hud-status-dot { width: 5px; height: 5px; border-radius: 50%; background: #22C55E; box-shadow: 0 0 6px #22C55E; flex-shrink: 0; animation: hudStatusPulse 2.2s ease-in-out infinite; }
+
+    /* ═══ Camada HUD (Fase 4) ═══
+       Reaproveita o padrão de cor que já existe em quase todo painel do app
+       (fundo #111118 com borda #151525 ou #1E2A45) pra acrescentar cantos
+       marcados de terminal, sem precisar editar cada um dos ~80 pontos onde
+       esse padrão aparece no markup. :not(border-radius:20px) exclui as
+       pílulas de atalho da Home, que são redondas e não combinam com canto reto. */
+    [style*="background: #111118; border: 1px solid #151525"]:not([style*="border-radius: 20px"]),
+    [style*="background: #111118; border: 1px solid #1E2A45"]:not([style*="border-radius: 20px"]) {
+      position: relative;
+    }
+    [style*="background: #111118; border: 1px solid #151525"]:not([style*="border-radius: 20px"])::before,
+    [style*="background: #111118; border: 1px solid #1E2A45"]:not([style*="border-radius: 20px"])::before {
+      content: ''; position: absolute; top: 0; left: 0; width: 9px; height: 9px;
+      border-top: 1.5px solid #38BDF880; border-left: 1.5px solid #38BDF880;
+      pointer-events: none; opacity: 0.8;
+    }
+    [style*="background: #111118; border: 1px solid #151525"]:not([style*="border-radius: 20px"])::after,
+    [style*="background: #111118; border: 1px solid #1E2A45"]:not([style*="border-radius: 20px"])::after {
+      content: ''; position: absolute; bottom: 0; right: 0; width: 9px; height: 9px;
+      border-bottom: 1.5px solid #38BDF880; border-right: 1.5px solid #38BDF880;
+      pointer-events: none; opacity: 0.8;
+    }
+    /* Classes reutilizáveis pra painéis/cabeçalhos/labels feitos daqui pra frente. */
+    .hud-panel { position: relative; }
+    .hud-panel::before { content: ''; position: absolute; top: 0; left: 0; width: 9px; height: 9px; border-top: 1.5px solid #38BDF880; border-left: 1.5px solid #38BDF880; pointer-events: none; opacity: 0.8; }
+    .hud-panel::after { content: ''; position: absolute; bottom: 0; right: 0; width: 9px; height: 9px; border-bottom: 1.5px solid #38BDF880; border-right: 1.5px solid #38BDF880; pointer-events: none; opacity: 0.8; }
+    .hud-header { display: flex; align-items: center; gap: 8px; padding-bottom: 8px; margin-bottom: 10px; border-bottom: 1px solid #1E2A45; }
+    .hud-label { font-size: 10px; font-weight: 600; color: #334155; text-transform: uppercase; letter-spacing: 1.5px; }
+
+    /* Campos e botões ganham brilho ciano no foco, no lugar do azul genérico
+       do outline padrão — reforça a sensação de console em qualquer input. */
+    input:focus, select:focus, textarea:focus { outline: 2px solid #38BDF888; outline-offset: -1px; }
+    button:not(:disabled):focus-visible { outline: 2px solid #38BDF8; outline-offset: 2px; }
   </style>
 </helmet>
 
@@ -1450,7 +1493,7 @@
                 <div style="font-size: 10px; font-weight: 600; color: #334155; text-transform: uppercase; letter-spacing: 1px;">Contexto do Jarvis</div>
               </div>
               <div style="font-size: 13px; color: #334155; line-height: 1.6;">O que o Jarvis deve saber sobre você — renda, dívidas, objetivos, preferências. Ele usa isso pra te dar conselhos melhores.</div>
-              <textarea value="{{ cfgJarvisNotes }}" onInput="{{ setCfgJarvisNotes }}" rows="8" placeholder="Ex: minha renda principal é..." style="width: 100%; box-sizing: border-box; background: #0D0D1A; border: 1px solid #1E2A45; border-radius: 8px; padding: 12px 14px; color: #E2E8F0; font-size: 13px; font-family: inherit; line-height: 1.6; resize: vertical;"></textarea>
+              <textarea class="reading-font" value="{{ cfgJarvisNotes }}" onInput="{{ setCfgJarvisNotes }}" rows="8" placeholder="Ex: minha renda principal é..." style="width: 100%; box-sizing: border-box; background: #0D0D1A; border: 1px solid #1E2A45; border-radius: 8px; padding: 12px 14px; color: #E2E8F0; font-size: 13px; font-family: inherit; line-height: 1.6; resize: vertical;"></textarea>
               <button onClick="{{ saveJarvisNotes }}" style="align-self: flex-start; padding: 9px 20px; background: linear-gradient(135deg, #8B5CF6, #06B6D4); border: none; border-radius: 8px; color: white; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit;">Salvar Contexto</button>
             </div>
             <!-- IronHand (básico por enquanto — vira setor próprio quando o TDV for reestruturado) -->
@@ -1576,7 +1619,7 @@
                 </div>
                 <div>
                   <label style="display: block; font-size: 11px; color: #475569; margin-bottom: 6px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Notas <span style="color: #334155; font-weight: 400; text-transform: none;">(opcional)</span></label>
-                  <textarea value="{{ taskNotes }}" onInput="{{ setTaskNotes }}" rows="3" placeholder="Detalhes, links, contexto…" style="width: 100%; box-sizing: border-box; background: #0D0D1A; border: 1px solid #1E2A45; border-radius: 8px; padding: 11px 14px; color: #E2E8F0; font-size: 13px; font-family: inherit; line-height: 1.5; resize: vertical;"></textarea>
+                  <textarea class="reading-font" value="{{ taskNotes }}" onInput="{{ setTaskNotes }}" rows="3" placeholder="Detalhes, links, contexto…" style="width: 100%; box-sizing: border-box; background: #0D0D1A; border: 1px solid #1E2A45; border-radius: 8px; padding: 11px 14px; color: #E2E8F0; font-size: 13px; font-family: inherit; line-height: 1.5; resize: vertical;"></textarea>
                 </div>
               </div>
               <button onClick="{{ saveTask }}" style="{{ saveTaskBtnStyle }}">
@@ -1668,7 +1711,7 @@
                 </div>
                 <div>
                   <label style="display: block; font-size: 11px; color: #475569; margin-bottom: 6px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Notas <span style="color: #334155; font-weight: 400; text-transform: none;">(opcional)</span></label>
-                  <textarea value="{{ eventNotes }}" onInput="{{ setEventNotes }}" rows="2" placeholder="Detalhes, local, contexto…" style="width: 100%; box-sizing: border-box; background: #0D0D1A; border: 1px solid #1E2A45; border-radius: 8px; padding: 11px 14px; color: #E2E8F0; font-size: 13px; font-family: inherit; line-height: 1.5; resize: vertical;"></textarea>
+                  <textarea class="reading-font" value="{{ eventNotes }}" onInput="{{ setEventNotes }}" rows="2" placeholder="Detalhes, local, contexto…" style="width: 100%; box-sizing: border-box; background: #0D0D1A; border: 1px solid #1E2A45; border-radius: 8px; padding: 11px 14px; color: #E2E8F0; font-size: 13px; font-family: inherit; line-height: 1.5; resize: vertical;"></textarea>
                 </div>
               </div>
               <button onClick="{{ saveEvent }}" style="{{ saveEventBtnStyle }}">
@@ -1755,7 +1798,7 @@
                   <button onMouseDown="{{ preventFocusLoss }}" onClick="{{ ho.onClick }}" title="Marca-texto" style="{{ ho.swatchStyle }}"></button>
                 </sc-for>
               </div>
-              <div id="note-editor-el" contenteditable="true" onInput="{{ handleNoteInput }}" style="flex: 1; min-height: 320px; background: #111118; border: 1px solid #151525; border-radius: 10px; padding: 18px; color: #E2E8F0; font-size: 14px; line-height: 1.7; outline: none; overflow-wrap: break-word;"></div>
+              <div id="note-editor-el" class="reading-font" contenteditable="true" onInput="{{ handleNoteInput }}" style="flex: 1; min-height: 320px; background: #111118; border: 1px solid #151525; border-radius: 10px; padding: 18px; color: #E2E8F0; font-size: 14px; line-height: 1.7; outline: none; overflow-wrap: break-word;"></div>
             </div>
           </sc-if>
         </sc-if>
@@ -1786,7 +1829,7 @@
               <div style="font-size: 11px; color: #334155;">{{ newsUpdatedLabel }}</div>
               <div style="background: #111118; border: 1px solid #151525; border-radius: 12px; padding: 18px 20px; display: flex; flex-direction: column; gap: 10px;">
                 <sc-for list="{{ newsSummaryParagraphs }}" as="p" hint-placeholder-count="4">
-                  <div style="font-size: 13px; color: #CBD5E1; line-height: 1.7;">{{ p.text }}</div>
+                  <div class="reading-font" style="font-size: 13px; color: #CBD5E1; line-height: 1.7;">{{ p.text }}</div>
                 </sc-for>
               </div>
               <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 14px;">

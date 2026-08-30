@@ -1827,39 +1827,49 @@
 
             <sc-if value="{{ hasNewsDigest }}" hint-placeholder-val="{{ false }}">
               <div style="font-size: 11px; color: #334155;">{{ newsUpdatedLabel }}</div>
-              <div style="background: #111118; border: 1px solid #151525; border-radius: 12px; padding: 18px 20px; display: flex; flex-direction: column; gap: 10px;">
-                <sc-for list="{{ newsSummaryParagraphs }}" as="p" hint-placeholder-count="4">
-                  <div class="reading-font" style="font-size: 13px; color: #CBD5E1; line-height: 1.7;">{{ p.text }}</div>
-                </sc-for>
-              </div>
-              <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 14px;">
-                <sc-for list="{{ newsItems }}" as="nw" hint-placeholder-count="6">
-                  <div class="news-card" onClick="{{ nw.onOpen }}" style="background: #111118; border: 1px solid #151525; border-radius: 14px; overflow: hidden; cursor: pointer; display: flex; flex-direction: column;">
-                    <div style="position: relative;">
-                      <sc-if value="{{ nw.hasImage }}" hint-placeholder-val="{{ false }}">
-                        <img class="news-card-img" src="{{ nw.imageUrl }}" alt="" style="width: 100%; aspect-ratio: 16/9; object-fit: cover; display: block; background: #0D0D1A;">
-                      </sc-if>
-                      <sc-if value="{{ nw.noImage }}" hint-placeholder-val="{{ false }}">
-                        <div style="{{ nw.placeholderStyle }}">
-                          <i class="ph ph-newspaper" style="{{ nw.placeholderIconStyle }}"></i>
+              <sc-for list="{{ newsGroups }}" as="grp" hint-placeholder-count="4">
+                <div style="display: flex; flex-direction: column; gap: 10px;">
+                  <sc-if value="{{ grp.hasSource }}" hint-placeholder-val="{{ false }}">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                      <span style="width: 7px; height: 7px; border-radius: 50%; background: {{ grp.accent }}; box-shadow: 0 0 6px {{ grp.accent }}aa; flex-shrink: 0;"></span>
+                      <span class="jarvis-font-display" style="font-size: 12px; font-weight: 700; color: #E2E8F0; text-transform: uppercase; letter-spacing: 1px;">{{ grp.source }}</span>
+                    </div>
+                  </sc-if>
+                  <div style="background: #111118; border: 1px solid #151525; border-radius: 12px; padding: 16px 18px; display: flex; flex-direction: column; gap: 10px;">
+                    <sc-for list="{{ grp.summaryParagraphs }}" as="p" hint-placeholder-count="2">
+                      <div class="reading-font" style="font-size: 13px; color: #CBD5E1; line-height: 1.7;">{{ p.text }}</div>
+                    </sc-for>
+                  </div>
+                  <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 14px;">
+                    <sc-for list="{{ grp.items }}" as="nw" hint-placeholder-count="3">
+                      <div class="news-card" onClick="{{ nw.onOpen }}" style="background: #111118; border: 1px solid #151525; border-radius: 14px; overflow: hidden; cursor: pointer; display: flex; flex-direction: column;">
+                        <div style="position: relative;">
+                          <sc-if value="{{ nw.hasImage }}" hint-placeholder-val="{{ false }}">
+                            <img class="news-card-img" src="{{ nw.imageUrl }}" alt="" style="width: 100%; aspect-ratio: 16/9; object-fit: cover; display: block; background: #0D0D1A;">
+                          </sc-if>
+                          <sc-if value="{{ nw.noImage }}" hint-placeholder-val="{{ false }}">
+                            <div style="{{ nw.placeholderStyle }}">
+                              <i class="ph ph-newspaper" style="{{ nw.placeholderIconStyle }}"></i>
+                            </div>
+                          </sc-if>
+                          <div style="position: absolute; left: 8px; bottom: 8px;">
+                            <div style="{{ nw.sourceBadgeStyle }}">
+                              <span style="{{ nw.sourceDotStyle }}"></span>
+                              <span style="{{ nw.sourceLabelStyle }}">{{ nw.source }}</span>
+                            </div>
+                          </div>
                         </div>
-                      </sc-if>
-                      <div style="position: absolute; left: 8px; bottom: 8px;">
-                        <div style="{{ nw.sourceBadgeStyle }}">
-                          <span style="{{ nw.sourceDotStyle }}"></span>
-                          <span style="{{ nw.sourceLabelStyle }}">{{ nw.source }}</span>
+                        <div style="padding: 12px 14px 14px; display: flex; flex-direction: column; gap: 7px; flex: 1;">
+                          <div class="news-card-title" style="font-size: 13.5px; font-weight: 600; color: #E2E8F0; line-height: 1.45; overflow-wrap: break-word;">{{ nw.title }}</div>
+                          <sc-if value="{{ nw.hasPublishedLabel }}" hint-placeholder-val="{{ false }}">
+                            <div style="font-size: 10.5px; color: #475569; margin-top: auto;">{{ nw.publishedLabel }}</div>
+                          </sc-if>
                         </div>
                       </div>
-                    </div>
-                    <div style="padding: 12px 14px 14px; display: flex; flex-direction: column; gap: 7px; flex: 1;">
-                      <div class="news-card-title" style="font-size: 13.5px; font-weight: 600; color: #E2E8F0; line-height: 1.45; overflow-wrap: break-word;">{{ nw.title }}</div>
-                      <sc-if value="{{ nw.hasPublishedLabel }}" hint-placeholder-val="{{ false }}">
-                        <div style="font-size: 10.5px; color: #475569; margin-top: auto;">{{ nw.publishedLabel }}</div>
-                      </sc-if>
-                    </div>
+                    </sc-for>
                   </div>
-                </sc-for>
-              </div>
+                </div>
+              </sc-for>
             </sc-if>
           </div>
         </sc-if>
@@ -5662,6 +5672,32 @@ class Component extends DCLogic {
       homeNewsBySourceList.push(it);
     });
 
+    // Tela de Notícias — desde a Fase de resumo por fonte, news_digests.summary
+    // vem como JSON [{source, summary}] (um parágrafo curto por site), não mais
+    // um texto único misturando tudo. Cada grupo carrega só os próprios itens.
+    let newsGroupsList = [];
+    if (s.newsDigest) {
+      let bySource = null;
+      try {
+        const parsed = JSON.parse(s.newsDigest.summary);
+        if (Array.isArray(parsed)) bySource = parsed;
+      } catch (_e) { /* resumo salvo antes dessa mudança — cai no fallback abaixo */ }
+      if (bySource) {
+        newsGroupsList = bySource.map((g, gi) => ({
+          id: gi, source: g.source, accent: this._newsSourceAccent(g.source),
+          summaryParagraphs: (g.summary || '').split(/\n+/).filter(p => p.trim()).map((p, i) => ({ id: i, text: p.trim() })),
+          items: newsItemsList.filter(it => it.source === g.source),
+        })).filter(g => g.items.length > 0);
+      } else {
+        newsGroupsList = [{
+          id: 0, source: null, hasSource: false, accent: '#64748B',
+          summaryParagraphs: (s.newsDigest.summary || '').split(/\n+/).filter(p => p.trim()).map((p, i) => ({ id: i, text: p.trim() })),
+          items: newsItemsList,
+        }];
+      }
+    }
+    newsGroupsList.forEach(g => { g.hasSource = !!g.source; });
+
     // Home — tarefas com vencimento mais próximo (independe da aba/filtro ativo em Tarefas).
     const homeTodayStr = new Date().toISOString().split('T')[0];
     const homeTomorrowStr = new Date(Date.now() + 86400000).toISOString().split('T')[0];
@@ -6269,10 +6305,8 @@ class Component extends DCLogic {
       // notícias
       hasNewsDigest: !!s.newsDigest,
       noNewsDigest: !s.newsDigest,
-      newsSummaryParagraphs: s.newsDigest ? s.newsDigest.summary.split(/\n+/).filter(p => p.trim()).map((p, i) => ({ id: i, text: p.trim() })) : [],
+      newsGroups: newsGroupsList,
       newsUpdatedLabel: s.newsDigest ? ('Atualizado em ' + this.fmtDate(s.newsDigest.created_at.split('T')[0]) + ' às ' + new Date(s.newsDigest.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })) : '',
-      newsItems: newsItemsList,
-      newsPreview: s.newsDigest ? (s.newsDigest.summary || '').slice(0, 140) : '',
       refreshNews: this.refreshNews,
       refreshingNews: s.refreshingNews,
       refreshNewsLabel: s.refreshingNews ? 'Atualizando…' : 'Atualizar agora',

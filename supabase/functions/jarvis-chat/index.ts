@@ -931,7 +931,13 @@ async function executeTool(sb: SupabaseClient, userId: string, name: string, inp
       if (error) return { error: error.message };
       if (!data) return { error: "Nenhum resumo de notícias foi gerado ainda." };
       const items = (data.items || []).map((it: any) => ({ titulo: it.title, fonte: it.source, url: it.url }));
-      return { gerado_em: data.created_at, resumo: data.summary, manchetes: items };
+      // summary é um JSON [{source, summary}] desde a Fase 4 (resumo por fonte) — texto puro é resquício de resumo antigo.
+      let resumo = data.summary;
+      try {
+        const bySource = JSON.parse(data.summary);
+        if (Array.isArray(bySource)) resumo = bySource.map((s: any) => `${s.source}: ${s.summary}`).join("\n\n");
+      } catch (_e) { /* formato antigo, mantém como texto puro */ }
+      return { gerado_em: data.created_at, resumo, manchetes: items };
     }
 
     default:

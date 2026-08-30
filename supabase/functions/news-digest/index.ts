@@ -104,20 +104,34 @@ async function fetchFeedItems(feed: { name: string; url: string }) {
   }
 }
 
-async function summarize(apiKey: string, items: { title: string; source: string }[]): Promise<string> {
-  const list = items.map((it) => `- [${it.source}] ${it.title}`).join("\n");
-  const system = "Você resume novidades de sites de interesse de um usuário, em português do Brasil, de forma direta e organizada por tema/fonte. Sem introdução nem conclusão — só o resumo em si. IMPORTANTE: texto puro, sem markdown nenhum (nada de **negrito**, #, -, *, listas numeradas) — a tela que exibe isso não interpreta markdown, só mostra texto corrido. Separe os temas em parágrafos curtos, cada um começando com o nome do tema/fonte seguido de dois pontos.";
+// Um resumo por fonte (não mais um texto único misturando tudo) — o
+// frontend exibe cada fonte com o resumo dela em cima dos próprios itens.
+async function summarizeOne(apiKey: string, source: string, items: { title: string }[]): Promise<string> {
+  const list = items.map((it) => `- ${it.title}`).join("\n");
+  const system = "Você resume as novidades de hoje de UM site de interesse de um usuário, em português do Brasil, de forma direta em 1-3 frases corridas. Sem introdução nem conclusão, sem citar o nome do site (o nome já aparece separado na tela) — só o resumo do conteúdo em si. IMPORTANTE: texto puro, sem markdown nenhum (nada de **negrito**, #, -, *, listas numeradas) — a tela que exibe isso não interpreta markdown.";
   const resp = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: { "x-api-key": apiKey, "anthropic-version": ANTHROPIC_VERSION, "content-type": "application/json" },
     body: JSON.stringify({
-      model: MODEL, max_tokens: 1024, system,
-      messages: [{ role: "user", content: `Resuma essas novidades de hoje:\n\n${list}` }],
+      model: MODEL, max_tokens: 400, system,
+      messages: [{ role: "user", content: `Resuma essas novidades de hoje do site "${source}":\n\n${list}` }],
     }),
   });
   if (!resp.ok) throw new Error(`Anthropic API error ${resp.status}: ${(await resp.text()).slice(0, 300)}`);
   const data = await resp.json();
   return data.content?.find((b: any) => b.type === "text")?.text || "";
+}
+
+async function summarizeBySource(apiKey: string, allItems: { title: string; source: string }[]): Promise<{ source: string; summary: string }[]> {
+  const bySource = new Map<string, { title: string }[]>();
+  for (const it of allItems) {
+    if (!bySource.has(it.source)) bySource.set(it.source, []);
+    bySource.get(it.source)!.push({ title: it.title });
+  }
+  // Preserva a ordem de FEEDS (não a ordem de chegada do Promise.all).
+  const sources = FEEDS.map((f) => f.name).filter((name) => bySource.has(name));
+  const summaries = await Promise.all(sources.map((source) => summarizeOne(apiKey, source, bySource.get(source)!)));
+  return sources.map((source, i) => ({ source, summary: summaries[i] }));
 }
 
 Deno.serve(async (req: Request) => {
@@ -163,10 +177,10 @@ Deno.serve(async (req: Request) => {
     }));
     if (allItems.length === 0) return json({ error: "Nenhum feed retornou itens." }, 502);
 
-    const summary = await summarize(apiKey, allItems);
+    const bySource = await summarizeBySource(apiKey, allItems);
 
     const { data: digest, error: insertErr } = await sb.from("news_digests").insert({
-      id: "nd" + Date.now(), user_id: OWNER_USER_ID, summary, items: allItems,
+      id: "nd" + Date.now(), user_id: OWNER_USER_ID, summary: JSON.stringify(bySource), items: allItems,
     }).select().single();
 
     if (insertErr) return json({ error: insertErr.message }, 500);

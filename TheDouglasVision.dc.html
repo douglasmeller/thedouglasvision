@@ -109,6 +109,46 @@
   </div>
 </sc-if>
 
+<!-- ═══ DEFINIR NOVA SENHA (link de recuperação do e-mail) ═══ -->
+<sc-if value="{{ isRecovery }}" hint-placeholder-val="{{ false }}">
+  <div style="min-height: 100vh; display: flex; align-items: center; justify-content: center; background: #0A0A0F; background-image: radial-gradient(ellipse at 20% 20%, #2563EB14 0%, transparent 55%), radial-gradient(ellipse at 80% 80%, #06B6D410 0%, transparent 55%); padding: 20px;">
+    <div class="modal-in" style="width: 100%; max-width: 360px; background: #111118; border: 1px solid #1E2A45; border-radius: 16px; padding: 36px 28px; box-shadow: 0 32px 80px #2563EB14, 0 0 0 1px #2563EB0A;">
+      <div style="text-align: center; margin-bottom: 28px;">
+        <img src="uploads/logo.png" alt="" style="width: 60px; height: 60px; border-radius: 14px; margin-bottom: 12px; filter: invert(1) hue-rotate(180deg); box-shadow: 0 8px 32px #2563EB44; display: block; margin-left: auto; margin-right: auto;">
+        <div style="font-size: 18px; font-weight: 700; background: linear-gradient(135deg, #60A5FA, #22D3EE); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; letter-spacing: -0.3px;">TheDouglasVision</div>
+      </div>
+
+      <sc-if value="{{ recoveryPending }}" hint-placeholder-val="{{ true }}">
+        <div style="display: flex; flex-direction: column; gap: 14px;">
+          <div>
+            <label class="jarvis-font-display" style="display: block; font-size: 11px; color: #38BDF8; margin-bottom: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; text-shadow: 0 0 8px #38BDF866;">NOVA SENHA</label>
+            <input type="password" inputmode="text" value="{{ newPassword }}" onInput="{{ setNewPassword }}" onKeyDown="{{ newPasswordKeyDown }}" placeholder="••••••••" autofocus class="jarvis-font" style="width: 100%; box-sizing: border-box; background: #0D0D1A; border: 1px solid #38BDF877; border-radius: 8px; padding: 13px 14px; color: #E2E8F0; font-size: 15px; letter-spacing: 3px; box-shadow: 0 0 18px #38BDF833, inset 0 0 14px #38BDF811;">
+          </div>
+          <div>
+            <label class="jarvis-font-display" style="display: block; font-size: 11px; color: #38BDF8; margin-bottom: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; text-shadow: 0 0 8px #38BDF866;">CONFIRMAR</label>
+            <input type="password" inputmode="text" value="{{ newPassword2 }}" onInput="{{ setNewPassword2 }}" onKeyDown="{{ newPasswordKeyDown }}" placeholder="••••••••" class="jarvis-font" style="width: 100%; box-sizing: border-box; background: #0D0D1A; border: 1px solid #38BDF877; border-radius: 8px; padding: 13px 14px; color: #E2E8F0; font-size: 15px; letter-spacing: 3px; box-shadow: 0 0 18px #38BDF833, inset 0 0 14px #38BDF811;">
+          </div>
+        </div>
+        <sc-if value="{{ hasRecoveryError }}" hint-placeholder-val="{{ false }}">
+          <div class="jarvis-font" style="margin-top: 12px; padding: 9px 12px; background: #EF444420; border: 1px solid #EF4444; border-radius: 7px; font-size: 12px; color: #F87171; text-shadow: 0 0 6px #EF444488;">⚠ {{ recoveryError }}</div>
+        </sc-if>
+        <button onClick="{{ saveNewPassword }}" disabled="{{ savingNewPassword }}" style="margin-top: 20px; width: 100%; padding: 13px; background: linear-gradient(135deg, #2563EB, #06B6D4); border: none; border-radius: 9px; color: white; font-size: 15px; font-weight: 600; cursor: pointer; font-family: inherit; letter-spacing: -0.2px; box-shadow: 0 4px 16px #2563EB44; display: flex; align-items: center; justify-content: center; gap: 8px;">
+          <sc-if value="{{ savingNewPassword }}" hint-placeholder-val="{{ false }}"><span class="btn-spinner"></span></sc-if>
+          <span>{{ saveNewPasswordLabel }}</span>
+        </button>
+      </sc-if>
+
+      <sc-if value="{{ recoveryDone }}" hint-placeholder-val="{{ false }}">
+        <div style="text-align: center; display: flex; flex-direction: column; align-items: center; gap: 14px;">
+          <i class="ph ph-check-circle" style="font-size: 42px; color: #22C55E;"></i>
+          <div class="jarvis-font" style="font-size: 13px; color: #CBD5E1; line-height: 1.6;">Senha alterada com sucesso, Sr. Douglas.</div>
+          <button onClick="{{ finishRecovery }}" style="margin-top: 4px; width: 100%; padding: 13px; background: linear-gradient(135deg, #2563EB, #06B6D4); border: none; border-radius: 9px; color: white; font-size: 15px; font-weight: 600; cursor: pointer; font-family: inherit; box-shadow: 0 4px 16px #2563EB44;">Entrar no sistema</button>
+        </div>
+      </sc-if>
+    </div>
+  </div>
+</sc-if>
+
 <!-- ═══ LOGIN ═══ -->
 <sc-if value="{{ isLogin }}" hint-placeholder-val="{{ true }}">
   <div style="min-height: 100vh; display: flex; align-items: center; justify-content: center; background: #0A0A0F; background-image: radial-gradient(ellipse at 20% 20%, #2563EB14 0%, transparent 55%), radial-gradient(ellipse at 80% 80%, #06B6D410 0%, transparent 55%); padding: 20px;">
@@ -2588,6 +2628,14 @@ class Component extends DCLogic {
     loginPassword: '',
     loginError: '',
     bootLine: 'INICIALIZANDO SISTEMA',
+    // Fluxo de "definir nova senha" — ligado quando o app abre pelo link de recuperação
+    // que o Supabase manda por e-mail (ver _isRecoveryFlow no componentDidMount).
+    recoveryMode: false,
+    newPassword: '',
+    newPassword2: '',
+    savingNewPassword: false,
+    recoveryError: '',
+    recoveryDone: false,
     authMode: 'login',
     loading: false,
     loadingMsg: '',
@@ -2805,7 +2853,17 @@ class Component extends DCLogic {
       this._lastVisRefresh = now;
       this._refreshData();
     });
+    // O link de recuperação de senha do e-mail abre o app com "type=recovery" no hash da URL,
+    // e o Supabase troca isso por uma sessão válida. Sem essa checagem o getSession() abaixo
+    // via a sessão e entrava direto no app — o que fazia parecer que o e-mail "não funcionou",
+    // quando na verdade ele funcionava e só faltava a tela pra digitar a senha nova.
+    // Precisa ser síncrono e antes de tudo: o hash some assim que o Supabase o consome.
+    const authHash = window.location.hash || '';
+    this._isRecoveryFlow = authHash.includes('type=recovery');
+    if (this._isRecoveryFlow) this.setState({ recoveryMode: true, loading: false });
+
     window._sb.auth.getSession().then(({ data: { session } }) => {
+      if (this._isRecoveryFlow) return; // fica na tela de nova senha, não entra no app
       if (session) {
         this._loadFromSupabase(session.user);
       } else {
@@ -2813,10 +2871,51 @@ class Component extends DCLogic {
       }
     });
     window._sb.auth.onAuthStateChange((event, session) => {
+      if (event === 'PASSWORD_RECOVERY') {
+        this._isRecoveryFlow = true;
+        this.setState({ recoveryMode: true, loading: false });
+        return;
+      }
       if (event === 'SIGNED_OUT') {
         this.setState({ screen: 'login', user: null, transactions: [], categories: [], goals: [], loading: false });
       }
     });
+  }
+
+  setNewPassword = (e) => this.setState({ newPassword: e.target.value, recoveryError: '' })
+  setNewPassword2 = (e) => this.setState({ newPassword2: e.target.value, recoveryError: '' })
+  newPasswordKeyDown = (e) => { if (e.key === 'Enter') this.saveNewPassword(); }
+
+  saveNewPassword = async () => {
+    const { newPassword, newPassword2, savingNewPassword } = this.state;
+    if (savingNewPassword) return;
+    if (!newPassword || newPassword.length < 6) { this.setState({ recoveryError: 'A senha precisa ter ao menos 6 caracteres.' }); return; }
+    if (newPassword !== newPassword2) { this.setState({ recoveryError: 'As duas senhas não são iguais.' }); return; }
+    this.setState({ savingNewPassword: true, recoveryError: '' });
+    const { error } = await window._sb.auth.updateUser({ password: newPassword });
+    if (error) {
+      // O link de recuperação vale por tempo limitado — expirado, a única saída é pedir outro.
+      const expirou = /expired|invalid|not found/i.test(error.message || '');
+      this.setState({
+        savingNewPassword: false,
+        recoveryError: expirou ? 'Esse link de recuperação expirou. Peça um novo e-mail e tente de novo.' : (error.message || 'Não foi possível alterar a senha.'),
+      });
+      return;
+    }
+    // Limpa o token da URL pra um F5 não cair de novo no fluxo de recuperação.
+    if (window.history && window.history.replaceState) {
+      window.history.replaceState(null, '', window.location.pathname + window.location.search);
+    }
+    this._isRecoveryFlow = false;
+    this.setState({ savingNewPassword: false, recoveryDone: true, newPassword: '', newPassword2: '' });
+  }
+
+  // Depois de trocar a senha, entra no app com a sessão que o próprio link já criou.
+  finishRecovery = async () => {
+    const { data: { session } } = await window._sb.auth.getSession();
+    this.setState({ recoveryMode: false, recoveryDone: false });
+    if (session) this._loadFromSupabase(session.user);
+    else this.setState({ screen: 'login', loading: false });
   }
 
   componentWillUnmount() {
@@ -4811,8 +4910,11 @@ class Component extends DCLogic {
     const showOnboarding = !s.onboardingDismissed && obDone < obSteps.length;
     const obPct = Math.round((obDone / obSteps.length) * 100);
 
-    const isLogin = screen === 'login' && !s.loading;
-    const isApp = screen !== 'login' && !s.loading;
+    // A tela de nova senha tem prioridade sobre login e app: o link de recuperação já traz uma
+    // sessão válida, então sem esse guard o app apareceria por baixo em vez do formulário.
+    const isRecovery = s.recoveryMode && !s.loading;
+    const isLogin = screen === 'login' && !s.loading && !isRecovery;
+    const isApp = screen !== 'login' && !s.loading && !isRecovery;
     const isHome = screen === 'home';
     const isDashboard = screen === 'dashboard';
     const isLancamentos = screen === 'lancamentos';
@@ -5671,6 +5773,18 @@ class Component extends DCLogic {
       loginEmail: s.loginEmail, loginPassword: s.loginPassword, loginError: s.loginError,
       hasLoginError: !!s.loginError,
       bootLine: s.bootLine,
+      // definir nova senha (link de recuperação)
+      isRecovery,
+      recoveryPending: !s.recoveryDone,
+      recoveryDone: s.recoveryDone,
+      newPassword: s.newPassword, newPassword2: s.newPassword2,
+      setNewPassword: this.setNewPassword, setNewPassword2: this.setNewPassword2,
+      newPasswordKeyDown: this.newPasswordKeyDown,
+      saveNewPassword: this.saveNewPassword,
+      finishRecovery: this.finishRecovery,
+      savingNewPassword: s.savingNewPassword,
+      saveNewPasswordLabel: s.savingNewPassword ? 'Salvando…' : 'Definir nova senha',
+      recoveryError: s.recoveryError, hasRecoveryError: !!s.recoveryError,
       setEmail: e => this.setState({ loginEmail: e.target.value }),
       setPassword: e => this.setState({ loginPassword: e.target.value }),
       handleLogin: this.handleLogin,

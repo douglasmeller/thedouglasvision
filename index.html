@@ -62,7 +62,7 @@
     .news-card:hover .news-card-img { transform: scale(1.04); }
     .news-card-img { transition: transform 0.4s ease; }
     .news-card-title { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-    @media (prefers-reduced-motion: reduce) { .news-card, .news-card:hover, .news-card-img { transition: none; transform: none; } }
+    @media (prefers-reduced-motion: reduce) { .news-card, .news-card:hover, .news-card-img { transition: none; transform: none; } .hud-scan-line { animation: none; opacity: 0; } }
     @keyframes jarvisGlitch {
       0% { clip-path: inset(0 0 0 0); transform: translate(0,0); filter: hue-rotate(0deg); }
       10% { clip-path: inset(10% 0 60% 0); transform: translate(-3px,1px); filter: hue-rotate(40deg); }
@@ -136,6 +136,12 @@
     .hud-panel::after { content: ''; position: absolute; bottom: 0; right: 0; width: 9px; height: 9px; border-bottom: 1.5px solid #38BDF880; border-right: 1.5px solid #38BDF880; pointer-events: none; opacity: 0.8; }
     .hud-header { display: flex; align-items: center; gap: 8px; padding-bottom: 8px; margin-bottom: 10px; border-bottom: 1px solid #1E2A45; }
     .hud-label { font-size: 10px; font-weight: 600; color: #334155; text-transform: uppercase; letter-spacing: 1.5px; }
+
+    /* Varredura sutil nos estados vazios ("sem sinal, escaneando") — .hud-panel/o seletor
+       de atributo acima já cuidam do canto marcado; isso é só o feixe passando por cima. */
+    .hud-scan-wrap { position: relative; overflow: hidden; }
+    @keyframes hudScanSweep { 0% { transform: translateX(-120%); opacity: 0; } 15% { opacity: 0.5; } 50% { opacity: 0.5; } 85% { opacity: 0; } 100% { transform: translateX(220%); opacity: 0; } }
+    .hud-scan-line { position: absolute; top: 0; left: 0; width: 35%; height: 100%; background: linear-gradient(90deg, transparent, #38BDF822, #38BDF80A, transparent); pointer-events: none; animation: hudScanSweep 6s ease-in-out infinite; }
 
     /* Campos e botões ganham brilho ciano no foco, no lugar do azul genérico
        do outline padrão — reforça a sensação de console em qualquer input. */
@@ -231,6 +237,30 @@
       <div onClick="{{ closeSidebar }}" style="position: fixed; inset: 0; background: #00000099; z-index: 99;"></div>
     </sc-if>
 
+    <!-- Command palette (Ctrl/Cmd+K) — sem fechar ao clicar fora, igual a todos os outros modais do app. -->
+    <sc-if value="{{ commandPaletteOpen }}" hint-placeholder-val="{{ false }}">
+      <div style="position: fixed; inset: 0; background: #00000099; z-index: 400; display: flex; align-items: flex-start; justify-content: center; padding: 80px 16px 16px;">
+        <div class="modal-in" style="background: #111118; border: 1px solid #1E2A45; border-radius: 14px; width: 100%; max-width: 480px; max-height: 70vh; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 32px 80px #00000088;">
+          <div style="padding: 14px 16px; border-bottom: 1px solid #151525; display: flex; align-items: center; gap: 10px;">
+            <i class="ph ph-magnifying-glass" style="font-size: 15px; color: #334155;"></i>
+            <input type="text" autofocus class="jarvis-font" value="{{ commandPaletteQuery }}" onInput="{{ setCommandPaletteQuery }}" onKeyDown="{{ commandPaletteKeyDown }}" placeholder="Buscar comando ou ir para..." style="flex: 1; background: none; border: none; color: #E2E8F0; font-size: 14px; outline: none;">
+          </div>
+          <div style="overflow-y: auto; padding: 6px;">
+            <sc-if value="{{ commandPaletteEmpty }}" hint-placeholder-val="{{ false }}">
+              <div style="padding: 24px; text-align: center; font-size: 12px; color: #334155;">Nada encontrado.</div>
+            </sc-if>
+            <sc-for list="{{ commandPaletteEntries }}" as="en" hint-placeholder-count="6">
+              <div onClick="{{ en.onClick }}" style="{{ en.rowStyle }}">
+                <i class="{{ en.icon }}" style="font-size: 15px; flex-shrink: 0;"></i>
+                <span style="flex: 1; font-size: 13px;">{{ en.label }}</span>
+                <span style="font-size: 10px; color: #334155; text-transform: uppercase; letter-spacing: 0.5px;">{{ en.hint }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
     <!-- ── Sidebar ── -->
     <nav style="{{ sidebarStyle }}">
       <div style="{{ sidebarHeaderStyle }}">
@@ -267,6 +297,12 @@
         </sc-for>
       </div>
       <div style="{{ sidebarFooterStyle }}">
+        <sc-if value="{{ sidebarExpanded }}" hint-placeholder-val="{{ true }}">
+          <div class="jarvis-font" style="display: flex; flex-direction: column; gap: 4px; font-size: 9px; color: #1E2A3A; letter-spacing: 1px; margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px solid #151525;">
+            <div style="display: flex; justify-content: space-between;"><span>HORA LOCAL</span><span style="color: #334155;">{{ hudClockLabel }}</span></div>
+            <div style="display: flex; justify-content: space-between;"><span>SYNC</span><span style="color: #334155;">{{ hudSyncLabel }}</span></div>
+          </div>
+        </sc-if>
         <button onClick="{{ handleLogout }}" title="Sair" style="{{ logoutBtnStyle }}">
           <i class="ph ph-sign-out" style="font-size: 13px;"></i>
           <sc-if value="{{ sidebarExpanded }}" hint-placeholder-val="{{ true }}">
@@ -313,16 +349,28 @@
               </button>
             </div>
 
-            <button onClick="{{ goToFinanceFromHome }}" style="text-align: left; background: #111118; border: 1px solid #151525; border-radius: 12px; padding: 18px 20px; cursor: pointer; font-family: inherit; display: flex; flex-direction: column; gap: 10px;">
-              <div style="display: flex; align-items: center; gap: 7px;">
-                <i class="ph ph-wallet" style="font-size: 14px; color: #06B6D4;"></i>
-                <span style="font-size: 10px; font-weight: 600; color: #334155; text-transform: uppercase; letter-spacing: 0.8px; flex: 1;">Finance</span>
-                <i class="ph ph-caret-right" style="font-size: 13px; color: #334155;"></i>
+            <button onClick="{{ goToFinanceFromHome }}" style="text-align: left; background: #111118; border: 1px solid #151525; border-radius: 12px; padding: 18px 20px; cursor: pointer; font-family: inherit; display: flex; align-items: center; gap: 18px;">
+              <div style="position: relative; width: 96px; height: 96px; flex-shrink: 0;">
+                <svg viewBox="{{ gaugeViewBox }}" style="width: 100%; height: 100%; transform: rotate(-90deg);">
+                  <circle cx="{{ gaugeCx }}" cy="{{ gaugeCy }}" r="{{ gaugeR }}" fill="none" stroke="#1E2A3A" stroke-width="{{ gaugeStrokeWidth }}"></circle>
+                  <circle cx="{{ gaugeCx }}" cy="{{ gaugeCy }}" r="{{ gaugeR }}" fill="none" stroke-width="{{ gaugeStrokeWidth }}" stroke-linecap="round" style="{{ gaugeCircleStyle }}"></circle>
+                </svg>
+                <div style="position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                  <div class="jarvis-font-display" style="font-size: 17px; font-weight: 700; color: {{ gaugeColor }};">{{ gaugePctLabel }}</div>
+                  <div class="jarvis-font" style="font-size: 7px; color: #334155; letter-spacing: 0.5px; text-align: center; line-height: 1.3;">{{ gaugeSubLabel }}</div>
+                </div>
               </div>
-              <div style="font-size: clamp(20px, 6vw, 30px); font-weight: 800; color: #06B6D4; letter-spacing: -1.5px;">{{ totalBalance }}</div>
-              <div style="display: flex; gap: 18px; font-size: 12px;">
-                <span style="color: #22C55E;">+{{ incomeFormatted }}</span>
-                <span style="color: #EF4444;">-{{ expenseFormatted }}</span>
+              <div style="display: flex; flex-direction: column; gap: 10px; min-width: 0; flex: 1;">
+                <div style="display: flex; align-items: center; gap: 7px;">
+                  <i class="ph ph-wallet" style="font-size: 14px; color: #06B6D4;"></i>
+                  <span style="font-size: 10px; font-weight: 600; color: #334155; text-transform: uppercase; letter-spacing: 0.8px; flex: 1;">Finance</span>
+                  <i class="ph ph-caret-right" style="font-size: 13px; color: #334155;"></i>
+                </div>
+                <div style="font-size: clamp(20px, 6vw, 30px); font-weight: 800; color: #06B6D4; letter-spacing: -1.5px;">{{ totalBalance }}</div>
+                <div style="display: flex; gap: 18px; font-size: 12px;">
+                  <span style="color: #22C55E;">+{{ incomeFormatted }}</span>
+                  <span style="color: #EF4444;">-{{ expenseFormatted }}</span>
+                </div>
               </div>
             </button>
 
@@ -406,7 +454,8 @@
                 </div>
                 <div style="flex: 1; overflow-y: auto; padding: 4px 12px; display: flex; flex-direction: column;">
                   <sc-if value="{{ noStockItems }}" hint-placeholder-val="{{ false }}">
-                    <div style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; color: #334155; padding: 20px 0;">
+                    <div class="hud-scan-wrap" style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; color: #334155; padding: 20px 0;">
+                      <div class="hud-scan-line"></div>
                       <i class="ph ph-chart-line-up" style="font-size: 22px;"></i>
                       <div style="font-size: 10.5px; text-align: center;">Adicione um ticker da B3 pra acompanhar</div>
                     </div>
@@ -1465,6 +1514,15 @@
                 <div style="font-size: 11px; color: #1E2A3A; margin-top: 5px;">Só afeta este dispositivo/navegador — útil pra abrir sempre em Finance no celular, por exemplo, e diferente no computador.</div>
               </div>
             </div>
+            <!-- Som -->
+            <div style="background: #111118; border: 1px solid #151525; border-radius: 12px; padding: 20px; display: flex; flex-direction: column; gap: 12px;">
+              <div style="font-size: 10px; font-weight: 600; color: #334155; text-transform: uppercase; letter-spacing: 1px;">Som</div>
+              <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                <input type="checkbox" checked="{{ hudSoundEnabled }}" onChange="{{ toggleHudSound }}" style="width: 18px; height: 18px; accent-color: #2563EB; cursor: pointer; flex-shrink: 0;">
+                <span style="font-size: 13px; color: #CBD5E1;">Efeitos sonoros do HUD</span>
+              </label>
+              <div style="font-size: 11px; color: #1E2A3A; line-height: 1.6;">Bipes curtos de confirmação e o som de ativação do Jarvis ao vivo. Não afeta a voz do Jarvis — esse mudo é separado, no chat.</div>
+            </div>
             <!-- About -->
             <div style="background: #111118; border: 1px solid #151525; border-radius: 12px; padding: 20px; display: flex; flex-direction: column; gap: 12px;">
               <div style="font-size: 10px; font-weight: 600; color: #334155; text-transform: uppercase; letter-spacing: 1px;">Sobre</div>
@@ -1538,7 +1596,8 @@
               <button onClick="{{ setTaskFilterAll }}" style="{{ taskFilterAllStyle }}">Todas</button>
             </div>
             <sc-if value="{{ noTaskItems }}" hint-placeholder-val="{{ false }}">
-              <div style="background: #111118; border: 1px solid #151525; border-radius: 12px; padding: 48px 24px; display: flex; flex-direction: column; align-items: center; gap: 0; text-align: center;">
+              <div class="hud-scan-wrap" style="background: #111118; border: 1px solid #151525; border-radius: 12px; padding: 48px 24px; display: flex; flex-direction: column; align-items: center; gap: 0; text-align: center;">
+                <div class="hud-scan-line"></div>
                 <div style="width: 56px; height: 56px; border-radius: 14px; background: #1A1A2A; display: flex; align-items: center; justify-content: center; margin-bottom: 14px;">
                   <i class="ph ph-check-square" style="font-size: 26px; color: #2A3A55;"></i>
                 </div>
@@ -1733,7 +1792,8 @@
                 </button>
               </div>
               <sc-if value="{{ noNoteItems }}" hint-placeholder-val="{{ false }}">
-                <div style="background: #111118; border: 1px solid #151525; border-radius: 12px; padding: 48px 24px; display: flex; flex-direction: column; align-items: center; gap: 0; text-align: center;">
+                <div class="hud-scan-wrap" style="background: #111118; border: 1px solid #151525; border-radius: 12px; padding: 48px 24px; display: flex; flex-direction: column; align-items: center; gap: 0; text-align: center;">
+                  <div class="hud-scan-line"></div>
                   <div style="width: 56px; height: 56px; border-radius: 14px; background: #1A1A2A; display: flex; align-items: center; justify-content: center; margin-bottom: 14px;">
                     <i class="ph ph-note-pencil" style="font-size: 26px; color: #2A3A55;"></i>
                   </div>
@@ -1816,7 +1876,8 @@
             </div>
 
             <sc-if value="{{ noNewsDigest }}" hint-placeholder-val="{{ false }}">
-              <div style="background: #111118; border: 1px solid #151525; border-radius: 12px; padding: 48px 24px; display: flex; flex-direction: column; align-items: center; gap: 0; text-align: center;">
+              <div class="hud-scan-wrap" style="background: #111118; border: 1px solid #151525; border-radius: 12px; padding: 48px 24px; display: flex; flex-direction: column; align-items: center; gap: 0; text-align: center;">
+                <div class="hud-scan-line"></div>
                 <div style="width: 56px; height: 56px; border-radius: 14px; background: #1A1A2A; display: flex; align-items: center; justify-content: center; margin-bottom: 14px;">
                   <i class="ph ph-newspaper" style="font-size: 26px; color: #2A3A55;"></i>
                 </div>
@@ -2698,6 +2759,12 @@ class Component extends DCLogic {
     toastTs: 0,
     sidebarCollapsed: false,
     jarvisVoiceMuted: false,
+    hudSoundEnabled: true,
+    lastSyncAt: 0,
+    _clockTick: 0,
+    commandPaletteOpen: false,
+    commandPaletteQuery: '',
+    commandPaletteActiveIndex: 0,
     jarvisLiveMode: false,
     jarvisLiveTranscript: '',
     jarvisLiveStatus: 'listening', // 'listening' | 'thinking' | 'speaking'
@@ -2849,13 +2916,29 @@ class Component extends DCLogic {
     let i = 0;
     this._bootTimer = setInterval(() => {
       i++;
-      if (i >= this._BOOT_LINES.length) { this._stopBootLines(); return; }
+      if (i >= this._BOOT_LINES.length) {
+        this._stopBootLines();
+        this._playHudChime([[440, 0.09], [660, 0.09], [880, 0.14]]); // só na conclusão natural — não quando o login corta a sequência antes do fim
+        return;
+      }
       this.setState({ bootLine: this._BOOT_LINES[i] });
     }, 900);
   }
 
   _stopBootLines = () => {
     if (this._bootTimer) { clearInterval(this._bootTimer); this._bootTimer = null; }
+  }
+
+  // Relógio do rodapé da sidebar — 30s (não 1s) de propósito: cada tick força um render
+  // inteiro (renderVals recalcula tudo, gráficos inclusive), então 1s giraria isso 3600x/hora
+  // pela sessão toda. 30s ainda parece "vivo" sem esse custo.
+  _startHudClock = () => {
+    if (this._clockTimer) return;
+    this._clockTimer = setInterval(() => this.setState(s => ({ _clockTick: s._clockTick + 1 })), 30000);
+  }
+
+  _stopHudClock = () => {
+    if (this._clockTimer) { clearInterval(this._clockTimer); this._clockTimer = null; }
   }
 
   componentDidMount() {
@@ -2870,17 +2953,27 @@ class Component extends DCLogic {
       sidebarCollapsed: this._load('sidebarCollapsed') || false,
       jarvisModel: this._load('jarvisModel') || 'sonnet',
       jarvisVoiceMuted: !!this._load('jarvisVoiceMuted'),
+      hudSoundEnabled: this._load('hudSoundEnabled') !== false, // só um false salvo explicitamente desliga — na primeira vez fica ligado
     });
     this._startBootLines();
+    this._startHudClock();
     window.addEventListener('resize', this._resize = () =>
       this.setState({ isMobile: window.innerWidth < 768 })
     );
     window.addEventListener('keydown', this._hotkey = (e) => {
+      // Ctrl/Cmd+K precisa abrir mesmo com foco em outro campo de texto (padrão universal de
+      // command palette) — por isso vem ANTES do early-return de INPUT/TEXTAREA/SELECT abaixo.
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'k' || e.key === 'K')) {
+        e.preventDefault();
+        if (this.state.commandPaletteOpen) this.closeCommandPalette(); else this.openCommandPalette();
+        return;
+      }
       const tag = document.activeElement?.tagName;
       if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
       const s = this.state;
       if (e.key === 'Escape') {
-        if (s.showTxnModal) this.setState({ showTxnModal: false, editTxnId: null });
+        if (s.commandPaletteOpen) this.closeCommandPalette();
+        else if (s.showTxnModal) this.setState({ showTxnModal: false, editTxnId: null });
         else if (s.showCatModal) this.setState({ showCatModal: false, editCatId: null });
         else if (s.showGoalModal) this.setState({ showGoalModal: false });
         else if (s.showContribModal) this.closeContribModal();
@@ -2974,6 +3067,7 @@ class Component extends DCLogic {
   componentWillUnmount() {
     window.removeEventListener('resize', this._resize);
     window.removeEventListener('keydown', this._hotkey);
+    this._stopHudClock();
   }
 
   _autoRecurring = async () => {
@@ -3164,6 +3258,7 @@ class Component extends DCLogic {
       cfgSavingsGoal: profile?.savings_goal ? String(profile.savings_goal) : '',
       cfgJarvisNotes: jarvisCtx?.personal_notes || '',
       screen: this._load('defaultScreen') || 'home', cfgDefaultScreen: this._load('defaultScreen') || 'home', loading: false, loginError: '',
+      lastSyncAt: Date.now(),
     }, () => { this._autoRecurring(); this._autoRecurringExpenses(); if (stockList.length > 0) this.fetchStockQuotes(); this.loadJarvisHistory(); });
   }
 
@@ -3206,7 +3301,7 @@ class Component extends DCLogic {
     const finalTxnList = pendingDeleteId ? txnList.filter(t => t.id !== pendingDeleteId) : txnList;
     const eventList = (eventsData || []).map(ev => this._eventRowIn(ev));
     const stockList = (stockData || []).map(w => this._stockRowIn(w));
-    const patch = { transactions: finalTxnList, categories: catList, goals: goalList, recurringExpenses: expenseList, cardSettings, tasks: taskList, agendaEvents: eventList, newsDigest: newsRow || null, stockWatchlist: stockList };
+    const patch = { transactions: finalTxnList, categories: catList, goals: goalList, recurringExpenses: expenseList, cardSettings, tasks: taskList, agendaEvents: eventList, newsDigest: newsRow || null, stockWatchlist: stockList, lastSyncAt: Date.now() };
     // Não pisa na lista de notas enquanto uma está sendo editada — o autosave (debounce) pode
     // ainda não ter batido no servidor, e um refresh nesse meio-tempo mostraria uma prévia velha.
     if (!this.state.editingNoteId) patch.notes = (notesData || []).map(n => this._noteRowIn(n));
@@ -3647,6 +3742,13 @@ class Component extends DCLogic {
     this.setState({ jarvisVoiceMuted: muted });
   }
 
+  // Mudo separado do jarvisVoiceMuted acima — esse é só pros bipes/confirmações do HUD.
+  toggleHudSound = () => {
+    const v = !this.state.hudSoundEnabled;
+    this._save('hudSoundEnabled', v);
+    this.setState({ hudSoundEnabled: v });
+  }
+
   // Um WAV de 1 amostra em silêncio, só pra "destravar" o elemento de áudio — celular (Safari/Chrome
   // mobile) só deixa audio.play() funcionar de verdade se o PRIMEIRO play() de um elemento acontecer
   // dentro de um gesto direto do usuário (um toque de verdade). Depois de destravado uma vez, esse
@@ -3658,6 +3760,99 @@ class Component extends DCLogic {
   _getJarvisAudioEl = () => {
     if (!this._jarvisAudio) this._jarvisAudio = new Audio();
     return this._jarvisAudio;
+  }
+
+  // ─── Sons de HUD — tons sintetizados via Web Audio API, sem arquivo de áudio nenhum,
+  // separados do mudo da voz do Jarvis (esse aqui é hudSoundEnabled, aquele é jarvisVoiceMuted). ───
+
+  _getAudioCtx = () => {
+    if (!this._audioCtx) {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return null;
+      this._audioCtx = new AC();
+    }
+    if (this._audioCtx.state === 'suspended') this._audioCtx.resume();
+    return this._audioCtx;
+  }
+
+  // Beep curto — freq em Hz, duration em segundos.
+  _playHudTone = (freq, duration, type) => {
+    if (!this.state.hudSoundEnabled) return;
+    const ctx = this._getAudioCtx();
+    if (!ctx) return;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = type || 'sine';
+    osc.frequency.value = freq;
+    gain.gain.setValueAtTime(0.001, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.18, ctx.currentTime + 0.015);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + duration + 0.02);
+  }
+
+  // Sequência de 2-3 tons pra momentos maiores (boot, ativação) — reaproveita _playHudTone.
+  // steps: [[freq, duration, gapMs?], ...] — sem gapMs, usa duration*1000 como espaçamento.
+  _playHudChime = (steps) => {
+    if (!this.state.hudSoundEnabled) return;
+    let t = 0;
+    steps.forEach(([freq, duration, gap]) => {
+      setTimeout(() => this._playHudTone(freq, duration, 'sine'), t);
+      t += gap != null ? gap : duration * 1000;
+    });
+  }
+
+  // ─── Command palette (Ctrl/Cmd+K) — single source of truth pra lista de entradas, usada
+  // tanto por renderVals (pra desenhar) quanto por commandPaletteKeyDown (pra navegar com setas). ───
+
+  _commandPaletteAllEntries = () => {
+    const navEntries = [
+      { id: 'nav-home', label: 'Home', icon: 'ph ph-house', hint: 'Ir para', onSelect: () => this.setState({ screen: 'home', sidebarOpen: false }) },
+      { id: 'nav-finance', label: 'Finance', icon: 'ph ph-wallet', hint: 'Ir para', onSelect: () => this.setState({ screen: 'dashboard', sidebarOpen: false }) },
+      { id: 'nav-tarefas', label: 'Tarefas', icon: 'ph ph-check-square', hint: 'Ir para', onSelect: () => this.setState({ screen: 'tarefas', sidebarOpen: false }) },
+      { id: 'nav-agenda', label: 'Agenda', icon: 'ph ph-calendar-blank', hint: 'Ir para', onSelect: () => this.setState({ screen: 'agenda', sidebarOpen: false }) },
+      { id: 'nav-notas', label: 'Anotações', icon: 'ph ph-note-pencil', hint: 'Ir para', onSelect: () => this.setState({ screen: 'notas', sidebarOpen: false }) },
+      { id: 'nav-noticias', label: 'Notícias', icon: 'ph ph-newspaper', hint: 'Ir para', onSelect: () => this.setState({ screen: 'noticias', sidebarOpen: false }) },
+      { id: 'nav-jarvis', label: 'Jarvis', icon: 'ph ph-robot', hint: 'Ir para', onSelect: () => this.goToJarvisScreen() },
+      { id: 'nav-config', label: 'Configurações', icon: 'ph ph-gear', hint: 'Ir para', onSelect: () => this.setState({ screen: 'configuracoes', sidebarOpen: false }) },
+    ];
+    const actionEntries = [
+      { id: 'qa-txn', label: 'Nova transação', icon: 'ph ph-plus', hint: 'Ação', onSelect: () => this.quickAddTxnFromHome() },
+      { id: 'qa-task', label: 'Nova tarefa', icon: 'ph ph-plus', hint: 'Ação', onSelect: () => this.quickAddTaskFromHome() },
+      { id: 'qa-event', label: 'Novo evento', icon: 'ph ph-plus', hint: 'Ação', onSelect: () => this.quickAddEventFromHome() },
+      { id: 'qa-note', label: 'Nova nota', icon: 'ph ph-plus', hint: 'Ação', onSelect: () => this.quickAddNoteFromHome() },
+      { id: 'qa-jarvis-live', label: 'Iniciar Jarvis ao vivo', icon: 'ph ph-phone-call', hint: 'Ação', onSelect: () => this.startJarvisLiveMode() },
+    ];
+    return [...navEntries, ...actionEntries];
+  }
+
+  _commandPaletteFilteredEntries = () => {
+    const q = (this.state.commandPaletteQuery || '').trim().toLowerCase();
+    const all = this._commandPaletteAllEntries();
+    return q ? all.filter(en => en.label.toLowerCase().includes(q)) : all;
+  }
+
+  openCommandPalette = () => this.setState({ commandPaletteOpen: true, commandPaletteQuery: '', commandPaletteActiveIndex: 0 })
+  closeCommandPalette = () => this.setState({ commandPaletteOpen: false })
+  setCommandPaletteQuery = (e) => this.setState({ commandPaletteQuery: e.target.value, commandPaletteActiveIndex: 0 })
+  runCommandPaletteEntry = (entry) => { this.closeCommandPalette(); entry.onSelect(); }
+
+  commandPaletteKeyDown = (e) => {
+    const list = this._commandPaletteFilteredEntries();
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      this.setState(s => ({ commandPaletteActiveIndex: Math.min(list.length - 1, s.commandPaletteActiveIndex + 1) }));
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      this.setState(s => ({ commandPaletteActiveIndex: Math.max(0, s.commandPaletteActiveIndex - 1) }));
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      const entry = list[this.state.commandPaletteActiveIndex];
+      if (entry) this.runCommandPaletteEntry(entry);
+    }
+    // Escape não entra aqui de propósito — tratado central no _hotkey único do componentDidMount.
   }
 
   // Chamado de dentro de um clique de verdade (abrir o Jarvis, ligar o modo ao vivo) — nunca de
@@ -3720,6 +3915,7 @@ class Component extends DCLogic {
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SR) { this._toast('Reconhecimento de voz não é suportado neste navegador.'); return; }
     this._unlockJarvisAudio(); // toque de verdade — destrava o áudio pro resto da "ligação" (essencial no celular)
+    this._playHudChime([[880, 0.05], [1320, 0.09]]); // chirp de "canal aberto" — mesmo gesto do usuário libera o áudio
     this._liveClearSpeakQueue(); this._liveSpeaking = false; this._liveStreamDone = false;
     this._liveGen = (this._liveGen || 0) + 1; // nova "ligação" — invalida qualquer resto de uma anterior
     this.setState({ jarvisLiveMode: true, jarvisLiveTranscript: '', jarvisLiveStatus: 'listening' }, () => this._liveListenOnce());
@@ -4130,6 +4326,7 @@ class Component extends DCLogic {
       : [...s.transactions, txn];
     this.setState({ transactions, showTxnModal: false, editTxnId: null, savingTxn: false });
     this._toast(s.editTxnId ? 'Lançamento atualizado!' : 'Lançamento salvo!');
+    if (!s.editTxnId) this._playHudTone(720, 0.08, 'sine');
   }
 
   deleteTxn = async (id) => {
@@ -4482,6 +4679,7 @@ class Component extends DCLogic {
     const tasks = s.editTaskId ? s.tasks.map(t => t.id === s.editTaskId ? task : t) : [...s.tasks, task];
     this.setState({ tasks, showTaskModal: false, savingTask: false });
     this._toast(s.editTaskId ? 'Tarefa atualizada!' : 'Tarefa criada!');
+    if (!s.editTaskId) this._playHudTone(720, 0.08, 'sine');
   }
 
   deleteTask = async (id) => {
@@ -4533,6 +4731,7 @@ class Component extends DCLogic {
     const agendaEvents = s.editEventId ? s.agendaEvents.map(e => e.id === s.editEventId ? event : e) : [...s.agendaEvents, event];
     this.setState({ agendaEvents, editEventId: null, eventTitle: '', eventTime: '', eventNotes: '', savingEvent: false });
     this._toast(s.editEventId ? 'Evento atualizado!' : 'Evento criado!');
+    if (!s.editEventId) this._playHudTone(720, 0.08, 'sine');
   }
 
   deleteEvent = async (id) => {
@@ -4567,6 +4766,7 @@ class Component extends DCLogic {
       const titleEl = document.getElementById('note-title-input');
       if (titleEl) titleEl.focus();
     });
+    this._playHudTone(720, 0.08, 'sine');
     await window._sb.from('notes').upsert(this._noteRowOut(note, s.user.id));
   }
 
@@ -5045,6 +5245,12 @@ class Component extends DCLogic {
       gap: '10px',
     };
     const sidebarFooterStyle = { padding: sidebarCollapsed ? '14px 12px' : '14px 20px', borderTop: '1px solid #151525' };
+    // Diagnóstico do rodapé da sidebar — relógio (atualiza a cada 30s via _clockTick, ver
+    // _startHudClock) e há quanto tempo os dados foram sincronizados pela última vez.
+    const hudClockDate = new Date();
+    const hudClockLabel = String(hudClockDate.getHours()).padStart(2, '0') + ':' + String(hudClockDate.getMinutes()).padStart(2, '0');
+    const syncDeltaMin = s.lastSyncAt ? Math.max(0, Math.floor((Date.now() - s.lastSyncAt) / 60000)) : null;
+    const hudSyncLabel = syncDeltaMin === null ? '—' : (syncDeltaMin < 1 ? 'AGORA' : syncDeltaMin + 'min ATRÁS');
     const logoutBtnStyle = {
       marginTop: sidebarCollapsed ? '0' : '10px', display: 'flex', alignItems: 'center',
       justifyContent: sidebarCollapsed ? 'center' : 'flex-start',
@@ -5205,6 +5411,17 @@ class Component extends DCLogic {
     const allExpense = s.transactions.filter(t => t.type === 'expense' && isCash(t)).reduce((a, t) => a + t.amount, 0);
     const goalsTotalSaved = s.goals.reduce((a, g) => a + (g.current || 0), 0);
     const openCardDebt = s.transactions.filter(t => t.paymentMethod === 'credit_card' && !t.invoicePaid).reduce((a, t) => a + t.amount, 0);
+
+    // Medidor tipo arc-reactor no card de saldo da Home — usa as MESMAS income/expense
+    // de cima (por isso fica consistente com os deltas +/- que já aparecem do lado dele).
+    const GAUGE_SIZE = 96, GAUGE_STROKE = 7, GAUGE_R = (GAUGE_SIZE - GAUGE_STROKE) / 2, GAUGE_CIRC = 2 * Math.PI * GAUGE_R;
+    const spentRatioRaw = income > 0 ? (expense / income) : 0;
+    const spentRatio = Math.min(1, Math.max(0, spentRatioRaw));
+    const gaugeDashOffset = GAUGE_CIRC * (1 - spentRatio);
+    const gaugeColor = spentRatioRaw > 1 ? '#EF4444' : (spentRatio > 0.75 ? '#EAB308' : '#22D3EE');
+    const gaugePctLabel = income > 0 ? Math.round(spentRatioRaw * 100) + '%' : '—'; // número real, sem limitar em 100 — só o anel visual é que satura (spentRatio)
+    const gaugeSubLabel = income > 0 ? 'DA RENDA GASTA' : 'SEM RENDA NO MÊS';
+    const gaugeCircleStyle = { strokeDasharray: GAUGE_CIRC, strokeDashoffset: gaugeDashOffset, stroke: gaugeColor, transition: 'stroke-dashoffset 0.6s ease', filter: 'drop-shadow(0 0 6px ' + gaugeColor + '88)' };
 
     // Previous month comparison
     const prevDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
@@ -5791,13 +6008,32 @@ class Component extends DCLogic {
       : s.jarvisListening ? { label: 'ouvindo…', color: '#22C55E' }
       : { label: 'online', color: '#334155' };
 
+    // Command palette — filtro roda de novo aqui (mesma lógica de _commandPaletteFilteredEntries)
+    // só pra poder anexar rowStyle/onClick por entrada, que dependem do índice ativo.
+    const cmdFilteredEntries = this._commandPaletteFilteredEntries();
+    const cmdActiveIndex = Math.min(s.commandPaletteActiveIndex, Math.max(0, cmdFilteredEntries.length - 1));
+    const commandPaletteEntries = cmdFilteredEntries.map((en, i) => ({
+      ...en,
+      rowStyle: {
+        display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 14px', borderRadius: '8px', cursor: 'pointer',
+        background: i === cmdActiveIndex ? '#2563EB1A' : 'transparent',
+        color: i === cmdActiveIndex ? '#60A5FA' : '#94A3B8',
+      },
+      onClick: () => this.runCommandPaletteEntry(en),
+    }));
+    const commandPaletteEmpty = commandPaletteEntries.length === 0;
+
     return {
       isLogin, isApp, isHome, isDashboard, isLancamentos, isPlanejamento, isCategorias, isFinanceSector, financeSubNavItems, isTarefas, isAgenda, isNotas, isNoticias, isConfiguracoes,
       currentScreenTitle: titles[screen] || '',
+      commandPaletteOpen: s.commandPaletteOpen, commandPaletteQuery: s.commandPaletteQuery,
+      commandPaletteEntries, commandPaletteEmpty,
+      openCommandPalette: this.openCommandPalette, closeCommandPalette: this.closeCommandPalette,
+      setCommandPaletteQuery: this.setCommandPaletteQuery, commandPaletteKeyDown: this.commandPaletteKeyDown,
       appShellHeight,
       isMobile, sidebarOpen, sidebarStyle, navItems, mobilePrimaryNavItems, mobileMoreStyle,
       sidebarCollapsed, sidebarExpanded, collapseToggleStyle, logoRowStyle,
-      sidebarHeaderStyle, sidebarFooterStyle, logoutBtnStyle,
+      sidebarHeaderStyle, sidebarFooterStyle, logoutBtnStyle, hudClockLabel, hudSyncLabel,
       collapseToggleIcon: sidebarCollapsed ? 'ph ph-caret-right' : 'ph ph-caret-left',
       toggleSidebarCollapse: () => this.setState(st => {
         const next = !st.sidebarCollapsed;
@@ -5878,6 +6114,9 @@ class Component extends DCLogic {
       totalBalance: this.fmt(allIncome - allExpense + goalsTotalSaved - openCardDebt),
       incomeFormatted: this.fmt(income),
       expenseFormatted: this.fmt(expense),
+      gaugeViewBox: '0 0 ' + GAUGE_SIZE + ' ' + GAUGE_SIZE,
+      gaugeCx: GAUGE_SIZE / 2, gaugeCy: GAUGE_SIZE / 2, gaugeR: GAUGE_R, gaugeStrokeWidth: GAUGE_STROKE,
+      gaugeColor, gaugePctLabel, gaugeSubLabel, gaugeCircleStyle,
       incDeltaTxt: incDeltaFmt.txt, incDeltaColor: incDeltaFmt.color, incDeltaIcon: incDeltaFmt.icon,
       expDeltaTxt: expDeltaFmt.txt, expDeltaColor: expDeltaFmt.color, expDeltaIcon: expDeltaFmt.icon,
       hasPrevData: prevIncome > 0 || prevExpense > 0,
@@ -6409,6 +6648,8 @@ class Component extends DCLogic {
       toggleJarvisVoiceMuted: this.toggleJarvisVoiceMuted,
       jarvisMuteIcon: s.jarvisVoiceMuted ? 'ph ph-speaker-slash' : 'ph ph-speaker-high',
       jarvisMuteTitle: s.jarvisVoiceMuted ? 'Voz desligada — clique pra ligar' : 'Voz ligada — clique pra silenciar',
+      hudSoundEnabled: s.hudSoundEnabled,
+      toggleHudSound: this.toggleHudSound,
       // Status vivo no header (substitui o antigo subtítulo fixo "assistente financeiro") —
       // tudo derivado de estado que já existia, sem campo novo no state.
       jarvisStatusLabel: jarvisStatus.label,

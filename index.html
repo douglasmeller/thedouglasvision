@@ -3088,6 +3088,14 @@ class Component extends DCLogic {
     if (prevState.screen === 'notas' && this.state.screen !== 'notas' && this.state.editingNoteId) {
       this.setState({ editingNoteId: null });
     }
+    // O mini-chat do Jarvis na Home é desmontado/remontado toda vez que sai e volta pra essa
+    // aba (é uma sc-if condicionada a "screen === 'home'", não um componente que persiste por
+    // trás) — o container nasce de novo com scrollTop 0, ou seja, no topo do histórico inteiro
+    // (o "primeiro dia da conversa"). Só rola pro fim sozinho na primeira carga (loadJarvisHistory).
+    // Isso cobre toda vez que a Home é revisitada depois.
+    if (prevState.screen !== 'home' && this.state.screen === 'home' && this.state.jarvisLoaded) {
+      this._scrollJarvisToBottom();
+    }
     this._syncUrlToScreen();
   }
 

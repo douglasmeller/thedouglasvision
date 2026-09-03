@@ -3081,12 +3081,18 @@ class Component extends DCLogic {
     if (window.location.pathname !== path) window.history.pushState({ screen: s.screen }, '', path);
   }
 
-  componentDidUpdate() {
+  componentDidUpdate(prevProps, prevState) {
+    // Sair da aba Anotações com uma nota aberta (pelo menu lateral, command palette, ação rápida
+    // da Home etc.) não limpava editingNoteId — voltar pra Anotações depois caía direto na mesma
+    // nota em vez da lista, em vez de "esquecer" que ela tava aberta (achado numa auditoria).
+    if (prevState.screen === 'notas' && this.state.screen !== 'notas' && this.state.editingNoteId) {
+      this.setState({ editingNoteId: null });
+    }
     this._syncUrlToScreen();
   }
 
   componentDidMount() {
-    const today = new Date().toISOString().split('T')[0];
+    const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' });
     this.setState({
       isMobile: window.innerWidth < 768,
       filterMonth: this.mKey(new Date()),
@@ -3106,7 +3112,17 @@ class Component extends DCLogic {
     );
     // Botão voltar/avançar do navegador — mantém em sincronia com a URL que o
     // próprio _syncUrlToScreen empurrou. Rota desconhecida (null) não mexe em nada.
-    window.addEventListener('popstate', this._onPopState = () => {
+    window.addEventListener('popstate', this._onPopState = (e) => {
+      // Abrir uma nota nunca mudava a URL (a aba continua sendo /notas), então não existia
+      // entrada de histórico própria pra ela — apertar Voltar com uma nota aberta pulava
+      // direto pra tela de ANTES de entrar em Anotações, saindo da seção inteira em vez de só
+      // fechar a nota. openNote/newNote agora empilham uma entrada marcada; se ela for a que
+      // acabou de sair (sem essa marca no state recém-restaurado) e uma nota ainda tava aberta,
+      // só fecha a nota (achado numa auditoria).
+      if (this.state.editingNoteId && !(e.state && e.state.noteEditor)) {
+        this.setState({ editingNoteId: null });
+        return;
+      }
       const screen = this._screenFromPath(window.location.pathname);
       if (screen) this.setState({ screen, sidebarOpen: false });
     });
@@ -3131,6 +3147,11 @@ class Component extends DCLogic {
       // command palette) — por isso vem ANTES do early-return de INPUT/TEXTAREA/SELECT abaixo.
       if ((e.ctrlKey || e.metaKey) && (e.key === 'k' || e.key === 'K')) {
         e.preventDefault();
+        // Se o menu de barra (/) tava aberto, fecha ele em vez de abrir o command palette por
+        // cima — sem essa checagem, o menu de barra ficava "órfão" flutuando na tela (o foco ia
+        // pro campo de busca do palette, então nem tecla nem clique fora nele fazia mais nada)
+        // (achado numa auditoria).
+        if (this.state.slashMenuOpen) { this._closeSlashMenu(); return; }
         if (this.state.commandPaletteOpen) this.closeCommandPalette(); else this.openCommandPalette();
         return;
       }
@@ -3139,6 +3160,9 @@ class Component extends DCLogic {
       const s = this.state;
       if (e.key === 'Escape') {
         if (s.commandPaletteOpen) this.closeCommandPalette();
+        else if (s.slashMenuOpen) this._closeSlashMenu();
+        else if (s.showMoveModal) this.closeMoveModal();
+        else if (s.selectionToolbarOpen) this.setState({ selectionToolbarOpen: false });
         else if (s.showTxnModal) this.setState({ showTxnModal: false, editTxnId: null });
         else if (s.showCatModal) this.setState({ showCatModal: false, editCatId: null });
         else if (s.showGoalModal) this.setState({ showGoalModal: false });
@@ -3244,8 +3268,21 @@ class Component extends DCLogic {
     const curKey = this.mKey(now);
     if (this._load('autoMonth') === curKey) return;
     const recurring = transactions.filter(t => t.recurring && t.recurringFreq === 'monthly');
+    // Cada mês gerado por essa própria função também fica marcado recurring:true, então uma série
+    // que já rodou algumas vezes tem várias instâncias passadas em `recurring`. Sem reduzir a UMA
+    // representante por série (description+categoria+tipo) antes de decidir o que criar, cada
+    // instância passada disparava sua própria criação pro mês atual — o número de lançamentos
+    // duplicava a cada mês, compondo (achado numa auditoria).
+    const seriesKey = t => t.description + '|' + t.categoryId + '|' + t.type;
+    const recurringSeries = Array.from(
+      recurring.reduce((map, t) => {
+        const existing = map.get(seriesKey(t));
+        if (!existing || t.date > existing.date) map.set(seriesKey(t), t);
+        return map;
+      }, new Map()).values()
+    );
     const curMonthTxns = transactions.filter(t => t.date && t.date.startsWith(curKey));
-    const toCreate = recurring.filter(orig =>
+    const toCreate = recurringSeries.filter(orig =>
       !curMonthTxns.some(cur =>
         cur.description === orig.description &&
         cur.categoryId === orig.categoryId &&
@@ -3479,6 +3516,14 @@ class Component extends DCLogic {
     // ainda não ter batido no servidor, e um refresh nesse meio-tempo mostraria uma prévia velha.
     if (!this.state.editingNoteId) patch.notes = (notesData || []).map(n => this._noteRowIn(n));
     patch.noteFolders = (folderData || []).map(f => this._folderRowIn(f));
+    // Se a pasta ABERTA agora foi apagada em outro dispositivo, currentFolderId ficava apontando
+    // pra um id que não existe mais em noteFolders — a tela renderizava como se a pasta tivesse
+    // ficado vazia do nada (e a trilha some, sem explicar por quê), quando na verdade o conteúdo
+    // só subiu de nível junto com a pasta apagada. Volta pra raiz, de onde dá pra navegar de novo
+    // (achado numa auditoria).
+    if (this.state.currentFolderId && !patch.noteFolders.some(f => f.id === this.state.currentFolderId)) {
+      patch.currentFolderId = null;
+    }
     this.setState(patch);
   }
 
@@ -4125,9 +4170,17 @@ class Component extends DCLogic {
     this._liveGen = (this._liveGen || 0) + 1; // invalida qualquer resposta/escuta ainda em andamento
     if (this._jarvisLiveRecognition) { this._jarvisLiveRecognition.onend = null; this._jarvisLiveRecognition.onerror = null; this._jarvisLiveRecognition.stop(); this._jarvisLiveRecognition = null; }
     this._liveStopBargeIn();
-    if (this._jarvisAudio) { this._jarvisAudio.onended = null; this._jarvisAudio.pause(); }
+    if (this._jarvisAudio) {
+      this._jarvisAudio.onended = null; this._jarvisAudio.pause();
+      if (this._jarvisAudio.src && this._jarvisAudio.src.startsWith('blob:')) URL.revokeObjectURL(this._jarvisAudio.src);
+    }
     this._liveClearSpeakQueue(); this._liveSpeaking = false;
-    this.setState({ jarvisLiveMode: false, jarvisLiveTranscript: '', jarvisLiveStatus: 'listening' });
+    // jarvisLoading: false é essencial aqui — sem isso, encerrar a ligação enquanto uma resposta
+    // ainda estava chegando da rede (o gen bump acima invalida os callbacks de sendJarvisMessage,
+    // que são quem normalmente zera isso) deixava jarvisLoading travado em true pra sempre, o que
+    // bloqueava TODA mensagem futura — de voz ou digitada — porque sendJarvisMessage recusa enviar
+    // enquanto jarvisLoading for true (achado numa auditoria).
+    this.setState({ jarvisLiveMode: false, jarvisLiveTranscript: '', jarvisLiveStatus: 'listening', jarvisLoading: false });
   }
 
   // O reconhecimento por si só considerava qualquer pausa (até uma vírgula) como "parou de
@@ -4194,7 +4247,7 @@ class Component extends DCLogic {
     };
     maxWaitTimer = setTimeout(finish, LIVE_MAX_WAIT_MS);
     this._jarvisLiveRecognition = rec;
-    rec.start();
+    try { rec.start(); } catch (e) { finish(); }
   }
 
   // Separador de frases pro streaming de voz — um "." só conta como fim de frase se vier seguido
@@ -4309,12 +4362,21 @@ class Component extends DCLogic {
   _liveInterrupt = () => {
     if (!this.state.jarvisLiveMode) return;
     // Invalida a resposta em andamento (se a rede ainda estiver mandando texto/gerando fala,
-    // seus callbacks passam a checar isso e não fazem mais nada — ver sendJarvisMessage).
+    // seus callbacks passam a checar isso e não fazem mais nada — ver sendJarvisMessage). Só que
+    // isso também significa que NINGUÉM mais vai zerar jarvisLoading pra essa resposta (o
+    // finishUp() de sendJarvisMessage se recusa a rodar quando o gen não bate mais) — sem zerar
+    // aqui também, jarvisLoading ficava travado em true pra sempre a cada barge-in, e isso bloqueava
+    // toda mensagem seguinte (de voz ou digitada, sendJarvisMessage recusa enviar com jarvisLoading
+    // true). Era essa a causa real do "só responde a minha primeira fala" (achado numa auditoria).
     this._liveGen = (this._liveGen || 0) + 1;
     this._liveStopBargeIn();
     this._liveClearSpeakQueue();
     this._liveSpeaking = false;
-    if (this._jarvisAudio) { this._jarvisAudio.onended = null; this._jarvisAudio.pause(); }
+    if (this._jarvisAudio) {
+      this._jarvisAudio.onended = null; this._jarvisAudio.pause();
+      if (this._jarvisAudio.src && this._jarvisAudio.src.startsWith('blob:')) URL.revokeObjectURL(this._jarvisAudio.src);
+    }
+    this.setState({ jarvisLoading: false });
     this._liveListenOnce();
   }
 
@@ -4468,7 +4530,7 @@ class Component extends DCLogic {
       this.setState({
         showTxnModal: true, editTxnId: null,
         txnType: 'expense', txnAmount: '', txnDescription: '',
-        txnCategoryId: '', txnDate: new Date().toISOString().split('T')[0],
+        txnCategoryId: '', txnDate: new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' }),
         txnRecurring: false, txnRecurringFreq: 'monthly', txnPlanned: false,
         txnNotes: '', txnPaymentMethod: 'cash',
       });
@@ -4566,7 +4628,18 @@ class Component extends DCLogic {
   duplicateTxn = async (id) => {
     const txn = this.state.transactions.find(t => t.id === id);
     if (!txn) return;
-    const newTxn = { ...txn, id: 't' + Date.now(), date: new Date().toISOString().split('T')[0], planned: false };
+    const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' });
+    // Recalcula a fatura pra data NOVA (hoje), não copia a do original — sem isso, duplicar um
+    // lançamento de cartão nascia preso à fatura antiga (às vezes já paga, então a cópia já surgia
+    // "paga" sem nunca ter sido) em vez da fatura que a data de hoje realmente cai (achado numa
+    // auditoria; mesmo cálculo que saveTxn já faz ao editar).
+    const closingDay = this.state.cardSettings?.closingDay || 1;
+    const isCredit = txn.paymentMethod === 'credit_card';
+    const newTxn = {
+      ...txn, id: 't' + Date.now(), date: today, planned: false,
+      invoiceKey: isCredit ? this._invoiceKeyFor(today, closingDay) : null,
+      invoicePaid: false,
+    };
     this.setState({ transactions: [...this.state.transactions, newTxn] });
     await window._sb.from('transactions').insert(this._txnRow(newTxn, this.state.user.id));
   }
@@ -4622,11 +4695,18 @@ class Component extends DCLogic {
   }
 
   addGoalContrib = async (id, amount) => {
+    const before = this.state.goals.find(g => g.id === id);
     const goals = this.state.goals.map(g => g.id === id ? { ...g, current: Math.min(g.current + amount, g.target) } : g);
     const updated = goals.find(g => g.id === id);
     this.setState({ goals });
     await window._sb.from('goals').update({ current: updated.current }).eq('id', id);
-    this._toast('Aporte registrado!');
+    // Se o aporte passava da meta, o excedente era descartado em silêncio (a meta só ia até o
+    // teto) e o toast dizia "registrado" como se o valor inteiro tivesse entrado — sem aviso,
+    // parecia que o dinheiro tinha sumido (achado numa auditoria).
+    const actuallyAdded = updated.current - (before?.current || 0);
+    const leftover = amount - actuallyAdded;
+    if (leftover > 0.005) this._toast('Meta concluída! ' + this.fmt(leftover) + ' não entraram — a meta já estava no teto.');
+    else this._toast('Aporte registrado!');
   }
 
   openContribModal = (id) => this.setState({ showContribModal: true, contribGoalId: id, contribAmount: '' });
@@ -4740,15 +4820,20 @@ class Component extends DCLogic {
     }
     const txn = {
       id: 't' + Date.now(), type: 'expense', amount: a, description: exp.name,
-      categoryId: exp.categoryId, date: new Date().toISOString().split('T')[0],
+      categoryId: exp.categoryId, date: new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' }),
       recurring: true, recurringFreq: exp.freq, planned: false, recurringExpenseId: exp.id,
     };
     const curKey = this.mKey(new Date());
     this.setState({ savingPayExpense: true });
-    const { error } = await Promise.all([
+    // Checa os DOIS resultados, não só o primeiro — se só o segundo write (marcar o mês como já
+    // gerado) falhasse, o código seguia como se tivesse dado tudo certo: o lançamento ficava
+    // salvo mas o servidor continuava sem saber que esse mês já foi pago, e o gerador automático
+    // podia tentar recriar a parcela depois (achado numa auditoria).
+    const [r1, r2] = await Promise.all([
       window._sb.from('transactions').insert(this._txnRow(txn, s.user.id)),
       window._sb.from('recurring_expenses').update({ last_generated_month: curKey }).eq('id', exp.id),
-    ]).then(([r1]) => r1);
+    ]);
+    const error = r1.error || r2.error;
     if (error) { this.setState({ savingPayExpense: false }); this._toast('Não foi possível registrar o pagamento. Tente novamente.'); return; }
     const recurringExpenses = s.recurringExpenses.map(e => e.id === exp.id ? { ...e, lastGeneratedMonth: curKey } : e);
     this.setState({ transactions: [...s.transactions, txn], recurringExpenses, showPayExpenseModal: false, payExpenseId: null, payExpenseAmount: '', savingPayExpense: false });
@@ -4827,16 +4912,22 @@ class Component extends DCLogic {
     const paymentTxn = {
       id: 't' + Date.now(), type: 'expense', amount: total,
       description: 'Fatura ' + cardName + ' — ' + invoiceKey,
-      categoryId: null, date: new Date().toISOString().split('T')[0],
+      categoryId: null, date: new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' }),
       recurring: false, recurringFreq: null, planned: false, notes: null,
       recurringExpenseId: null, paymentMethod: null, invoiceKey: null, invoicePaid: false,
     };
     const itemIds = new Set(items.map(t => t.id));
     this.setState({ payingInvoiceKey: invoiceKey });
-    const [{ error }] = await Promise.all([
+    // Checa os DOIS resultados — se só o segundo write (marcar os itens da fatura como pagos)
+    // falhasse, o lançamento de pagamento era criado mas os itens continuavam invoice_paid=false
+    // no banco; a tela mostrava tudo pago (estado local otimista) até o próximo refresh, quando a
+    // fatura "voltava" a aparecer em aberto, duplicada com o pagamento que já tinha sido feito
+    // (achado numa auditoria).
+    const [r1, r2] = await Promise.all([
       window._sb.from('transactions').insert(this._txnRow(paymentTxn, s.user.id)),
       window._sb.from('transactions').update({ invoice_paid: true }).eq('user_id', s.user.id).eq('invoice_key', invoiceKey).eq('payment_method', 'credit_card'),
     ]);
+    const error = r1.error || r2.error;
     if (error) { this.setState({ payingInvoiceKey: null }); this._toast('Não foi possível pagar a fatura. Tente novamente.'); return; }
     const transactions = [...s.transactions.map(t => itemIds.has(t.id) ? { ...t, invoicePaid: true } : t), paymentTxn];
     this.setState({ transactions, payingInvoiceKey: null });
@@ -4951,7 +5042,13 @@ class Component extends DCLogic {
   preventFocusLoss = (e) => e.preventDefault();
 
   openNote = (note) => {
-    this.setState({ editingNoteId: note.id, noteTitle: note.title, noteContent: note.content, noteSaveStatus: 'idle' }, () => {
+    // Marca uma entrada própria no histórico pro botão Voltar do navegador fechar a nota em vez
+    // de sair de Anotações inteira (ver _onPopState). slashMenuOpen/selectionToolbarOpen também
+    // zeram aqui — se a nota anterior tivesse ficado aberta com o menu de barra ainda de pé
+    // (ex: saiu sem apertar Escape), ele reaparecia flutuando por cima da nota nova, apontando
+    // pra um texto que nem existe mais nela (achados numa auditoria).
+    window.history.pushState({ noteEditor: true }, '', window.location.pathname);
+    this.setState({ editingNoteId: note.id, noteTitle: note.title, noteContent: note.content, noteSaveStatus: 'idle', slashMenuOpen: false, selectionToolbarOpen: false }, () => {
       const el = document.getElementById('note-editor-el');
       if (el) { el.innerHTML = note.content || ''; this._migrateOldChecklistRows(el); }
     });
@@ -4960,7 +5057,8 @@ class Component extends DCLogic {
   newNote = async () => {
     const s = this.state;
     const note = { id: 'nt' + Date.now(), title: '', content: '', updatedAt: new Date().toISOString(), folderId: s.currentFolderId };
-    this.setState({ notes: [note, ...s.notes], editingNoteId: note.id, noteTitle: '', noteContent: '', noteSaveStatus: 'idle' }, () => {
+    window.history.pushState({ noteEditor: true }, '', window.location.pathname);
+    this.setState({ notes: [note, ...s.notes], editingNoteId: note.id, noteTitle: '', noteContent: '', noteSaveStatus: 'idle', slashMenuOpen: false, selectionToolbarOpen: false }, () => {
       const el = document.getElementById('note-editor-el');
       if (el) el.innerHTML = '';
       const titleEl = document.getElementById('note-title-input');
@@ -4973,7 +5071,7 @@ class Component extends DCLogic {
   closeNoteEditor = () => {
     clearTimeout(this._noteSaveTimer);
     if (this._noteSavePending) this.saveNoteContent();
-    this.setState({ editingNoteId: null });
+    this.setState({ editingNoteId: null, slashMenuOpen: false, selectionToolbarOpen: false });
   }
 
   setNoteTitle = (e) => {
@@ -5151,6 +5249,25 @@ class Component extends DCLogic {
       return;
     }
     const range = sel.getRangeAt(0);
+    // Se o texto selecionado já tinha essa MESMA propriedade definida por uma formatação anterior
+    // (ex: já era colorido, e agora tá tentando mudar a cor de novo), só envolver com um span novo
+    // não bastava — o span de dentro (mais aninhado) continuava "ganhando" e a cor/fundo/tamanho
+    // parecia simplesmente não pegar. Limpa a propriedade em qualquer elemento já dentro da seleção
+    // antes de aplicar a nova.
+    const container = range.commonAncestorContainer;
+    const searchRoot = container.nodeType === 1 ? container : container.parentElement;
+    // Sobe pelos ancestrais (até o editor) — cobre o caso do texto selecionado estar INTEIRO dentro
+    // de um span que já tem essa formatação (o querySelectorAll abaixo só olha pra baixo, nunca ia
+    // achar o próprio pai). Sem isso, reselecionar um texto já colorido pra trocar a cor não fazia
+    // nada visível — o span de fora continuava sendo o único a definir a propriedade.
+    for (let node = searchRoot; node && node !== el && el.contains(node); node = node.parentElement) {
+      if (node.style && node.style[styleProp]) node.style[styleProp] = '';
+    }
+    if (searchRoot) {
+      searchRoot.querySelectorAll('[style]').forEach(node => {
+        if (node.style[styleProp] && range.intersectsNode(node)) node.style[styleProp] = '';
+      });
+    }
     const span = document.createElement('span');
     span.style[styleProp] = value;
     try {
@@ -5650,6 +5767,11 @@ class Component extends DCLogic {
     const { stockChartTicker, stockChartRange } = this.state;
     if (!stockChartTicker) return;
     const { range, interval } = this._STOCK_RANGE_MAP[stockChartRange] || this._STOCK_RANGE_MAP.mes;
+    // Trava essa chamada no ticker/range atuais — sem isso, trocar de ação ou de período
+    // rapidamente (antes da resposta anterior voltar) podia deixar uma resposta ANTIGA sobrescrever
+    // o gráfico depois que o usuário já tinha trocado pra outro ticker/período, mostrando uma série
+    // de preços errada sem nenhum aviso (achado numa auditoria).
+    const myGen = (this._stockChartGen = (this._stockChartGen || 0) + 1);
     this.setState({ stockChartLoading: true, stockChartError: '' });
     try {
       const { data: { session } } = await window._sb.auth.getSession();
@@ -5660,12 +5782,14 @@ class Component extends DCLogic {
         body: JSON.stringify({ ticker: stockChartTicker, range, interval }),
       });
       const data = await resp.json();
+      if (myGen !== this._stockChartGen) return;
       if (!resp.ok || data.error) { this.setState({ stockChartError: data.error || 'Não foi possível buscar o histórico.', stockChartLoading: false }); return; }
       this.setState({
         stockChartPoints: data.points || [], stockChartPrice: data.price, stockChartChangePercent: data.changePercent,
         stockChartLoading: false,
       });
     } catch (e) {
+      if (myGen !== this._stockChartGen) return;
       this.setState({ stockChartError: 'Não foi possível buscar o histórico.', stockChartLoading: false });
     }
   }
@@ -5714,7 +5838,7 @@ class Component extends DCLogic {
       id: 't' + Date.now(),
       type: s.quickType, amount, description: cat.name,
       categoryId: s.quickCategoryId,
-      date: new Date().toISOString().split('T')[0],
+      date: new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' }),
       recurring: false, recurringFreq: null, planned: false,
     };
     const transactions = [...s.transactions, txn];
@@ -6055,7 +6179,11 @@ class Component extends DCLogic {
     const agendaMonthLabel = agendaBase.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
     const agendaFirstDow = new Date(agendaYear, agendaMonthIdx, 1).getDay();
     const agendaDaysInMonth = new Date(agendaYear, agendaMonthIdx + 1, 0).getDate();
-    const agendaTodayStr = new Date().toISOString().split('T')[0];
+    // toLocaleDateString com fuso explícito, não toISOString() (que é sempre UTC) — sem isso, das
+    // 21h à meia-noite no horário de Brasília o "hoje" já virava amanhã aos olhos do app, porque o
+    // dia em UTC já tinha virado (achado numa auditoria — afetava o destaque de hoje na Agenda, os
+    // vencimentos de Tarefas e o widget "hoje e amanhã" da Home, todo santo dia nessa janela).
+    const agendaTodayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' });
     const agendaEventsByDate = {};
     s.agendaEvents.forEach(ev => { (agendaEventsByDate[ev.date] = agendaEventsByDate[ev.date] || []).push(ev); });
     const agendaTotalCells = Math.ceil((agendaFirstDow + agendaDaysInMonth) / 7) * 7;
@@ -6172,8 +6300,12 @@ class Component extends DCLogic {
     const gaugeSubLabel = income > 0 ? 'DA RENDA GASTA' : 'SEM RENDA NO MÊS';
     const gaugeCircleStyle = { strokeDasharray: GAUGE_CIRC, strokeDashoffset: gaugeDashOffset, stroke: gaugeColor, transition: 'stroke-dashoffset 0.6s ease', filter: 'drop-shadow(0 0 6px ' + gaugeColor + '88)' };
 
-    // Previous month comparison
-    const prevDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    // Previous month comparison — relativo ao mês SENDO VISTO (curKey, que respeita dashMonth),
+    // não ao mês real de hoje. Sem isso, navegar o dashboard pra um mês passado comparava esse mês
+    // com "o mês anterior a hoje" (dois meses sem relação nenhuma), em vez de com o mês anterior a
+    // ele mesmo (achado numa auditoria).
+    const [curKeyY, curKeyM] = curKey.split('-').map(Number);
+    const prevDate = new Date(curKeyY, curKeyM - 1 - 1, 1);
     const prevKey = this.mKey(prevDate);
     const prevTxns = s.transactions.filter(t => t.date && t.date.startsWith(prevKey));
     const prevIncome  = prevTxns.filter(t => t.type === 'income').reduce((a, t) => a + t.amount, 0);
@@ -6597,8 +6729,8 @@ class Component extends DCLogic {
 
     // Group transactions by date (only when sorted by date)
     const sortByDate = s.sortOrder === 'date_desc' || s.sortOrder === 'date_asc';
-    const todayStr = new Date().toISOString().split('T')[0];
-    const yesterdayStr = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+    const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' });
+    const yesterdayStr = new Date(Date.now() - 86400000).toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' });
     const groupedFilteredTxns = [];
     if (sortByDate && filteredTxns.length > 0) {
       let lastDate = null;
@@ -6632,8 +6764,19 @@ class Component extends DCLogic {
     }) : [];
     const seenNewsSources = new Set();
     const homeNewsBySourceList = [];
-    newsItemsList.forEach(it => {
-      if (seenNewsSources.has(it.source)) return;
+    // Ordena pela data de publicação (mais recente primeiro) ANTES de escolher uma notícia por
+    // fonte — sem isso, a Home confiava na ordem em que o digest já veio do servidor pra decidir
+    // qual notícia de cada fonte mostrar, sem garantia nenhuma de que essa ordem já era da mais
+    // nova pra mais velha (achado numa auditoria).
+    const newsSourceOrder = s.newsDigest ? (s.newsDigest.items || []).map((it, i) => ({ it, i }))
+      .slice().sort((a, b) => {
+        const ta = a.it.published_at ? new Date(a.it.published_at).getTime() : -Infinity;
+        const tb = b.it.published_at ? new Date(b.it.published_at).getTime() : -Infinity;
+        return tb - ta;
+      }).map(x => x.i) : [];
+    newsSourceOrder.forEach(idx => {
+      const it = newsItemsList[idx];
+      if (!it || seenNewsSources.has(it.source)) return;
       seenNewsSources.add(it.source);
       homeNewsBySourceList.push(it);
     });
@@ -6665,8 +6808,8 @@ class Component extends DCLogic {
     newsGroupsList.forEach(g => { g.hasSource = !!g.source; });
 
     // Home — tarefas com vencimento mais próximo (independe da aba/filtro ativo em Tarefas).
-    const homeTodayStr = new Date().toISOString().split('T')[0];
-    const homeTomorrowStr = new Date(Date.now() + 86400000).toISOString().split('T')[0];
+    const homeTodayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' });
+    const homeTomorrowStr = new Date(Date.now() + 86400000).toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' });
     const homePriorityColorMap = { high: '#EF4444', medium: '#F97316', low: '#3B82F6' };
     const homeUpcomingTasksList = s.tasks
       .filter(t => !t.done && !!t.dueDate)
@@ -6958,7 +7101,7 @@ class Component extends DCLogic {
         color: s.txnPaymentMethod === 'credit_card' ? '#F97316' : '#475569',
       },
       txnInvoicePreview: (() => {
-        const d = s.txnDate || new Date().toISOString().split('T')[0];
+        const d = s.txnDate || new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' });
         const key = this._invoiceKeyFor(d, s.cardSettings?.closingDay || 1);
         return new Date(key + '-01T12:00:00').toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
       })(),
@@ -7047,7 +7190,7 @@ class Component extends DCLogic {
         const hasTarget = exp.targetTotal != null;
         const pct = hasTarget && exp.targetTotal > 0 ? Math.min(100, Math.round((paid / exp.targetTotal) * 100)) : 0;
         const hasEndDate = !!exp.endDate;
-        const todayStr = new Date().toISOString().split('T')[0];
+        const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' });
         const isCompleted = (hasTarget && paid >= exp.targetTotal) || (hasEndDate && todayStr > exp.endDate);
         return {
           ...exp, catName: cat.name, catColor: cat.color, catIcon: 'ph ph-' + cat.icon,
@@ -7172,7 +7315,7 @@ class Component extends DCLogic {
       taskFilterDoneStyle: { flex: 1, padding: '8px', border: 'none', borderRadius: '7px', fontSize: '13px', fontWeight: '600', fontFamily: 'inherit', cursor: 'pointer', transition: 'all 0.15s', background: s.taskFilter === 'done' ? '#1E2A45' : 'transparent', color: s.taskFilter === 'done' ? '#60A5FA' : '#475569' },
       taskFilterAllStyle: { flex: 1, padding: '8px', border: 'none', borderRadius: '7px', fontSize: '13px', fontWeight: '600', fontFamily: 'inherit', cursor: 'pointer', transition: 'all 0.15s', background: s.taskFilter === 'all' ? '#1E2A45' : 'transparent', color: s.taskFilter === 'all' ? '#60A5FA' : '#475569' },
       taskItems: (() => {
-        const todayStr = new Date().toISOString().split('T')[0];
+        const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' });
         const priorityMap = { high: { label: 'Alta', color: '#EF4444' }, medium: { label: 'Média', color: '#F97316' }, low: { label: 'Baixa', color: '#3B82F6' } };
         const items = s.tasks.map(t => {
           const isOverdue = !t.done && !!t.dueDate && t.dueDate < todayStr;

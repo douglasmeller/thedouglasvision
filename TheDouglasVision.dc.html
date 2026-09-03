@@ -2945,6 +2945,34 @@ class Component extends DCLogic {
     if (this._clockTimer) { clearInterval(this._clockTimer); this._clockTimer = null; }
   }
 
+  // ─── URL sincronizada com a aba ativa ───────────────────────────────────
+  // Antes disso, "screen" só existia no state — dar F5 em qualquer aba caía
+  // sempre na Home (ou no default configurado), porque a URL nunca mudava.
+  _SCREENS = ['home', 'dashboard', 'lancamentos', 'planejamento', 'categorias', 'tarefas', 'agenda', 'notas', 'noticias', 'jarvis', 'configuracoes'];
+
+  _screenFromPath = (pathname) => {
+    const seg = (pathname || '/').replace(/^\/+|\/+$/g, '');
+    if (!seg) return 'home';
+    return this._SCREENS.includes(seg) ? seg : null; // null = rota desconhecida, não mexe em nada
+  }
+
+  _pathFromScreen = (screen) => screen === 'home' ? '/' : '/' + screen;
+
+  // Chamado a cada re-render (componentDidUpdate) — só empurra uma entrada nova no
+  // histórico quando a URL realmente ficou desatualizada em relação ao screen atual,
+  // então re-renders por qualquer outro motivo não geram push nenhum.
+  _syncUrlToScreen = () => {
+    const s = this.state;
+    const isApp = s.screen !== 'login' && !s.loading && !this._isRecoveryFlow;
+    if (!isApp) return;
+    const path = this._pathFromScreen(s.screen);
+    if (window.location.pathname !== path) window.history.pushState({ screen: s.screen }, '', path);
+  }
+
+  componentDidUpdate() {
+    this._syncUrlToScreen();
+  }
+
   componentDidMount() {
     const today = new Date().toISOString().split('T')[0];
     this.setState({
@@ -2964,6 +2992,12 @@ class Component extends DCLogic {
     window.addEventListener('resize', this._resize = () =>
       this.setState({ isMobile: window.innerWidth < 768 })
     );
+    // Botão voltar/avançar do navegador — mantém em sincronia com a URL que o
+    // próprio _syncUrlToScreen empurrou. Rota desconhecida (null) não mexe em nada.
+    window.addEventListener('popstate', this._onPopState = () => {
+      const screen = this._screenFromPath(window.location.pathname);
+      if (screen) this.setState({ screen, sidebarOpen: false });
+    });
     window.addEventListener('keydown', this._hotkey = (e) => {
       // Ctrl/Cmd+K precisa abrir mesmo com foco em outro campo de texto (padrão universal de
       // command palette) — por isso vem ANTES do early-return de INPUT/TEXTAREA/SELECT abaixo.
@@ -3071,6 +3105,7 @@ class Component extends DCLogic {
   componentWillUnmount() {
     window.removeEventListener('resize', this._resize);
     window.removeEventListener('keydown', this._hotkey);
+    window.removeEventListener('popstate', this._onPopState);
     this._stopHudClock();
   }
 
@@ -3261,7 +3296,9 @@ class Component extends DCLogic {
       savingsGoal: Number(profile?.savings_goal || 0),
       cfgSavingsGoal: profile?.savings_goal ? String(profile.savings_goal) : '',
       cfgJarvisNotes: jarvisCtx?.personal_notes || '',
-      screen: this._load('defaultScreen') || 'home', cfgDefaultScreen: this._load('defaultScreen') || 'home', loading: false, loginError: '',
+      // A URL manda, se apontar pra uma aba válida — só cai no default configurado quando abre pela raiz "/".
+      screen: this._screenFromPath(window.location.pathname) || this._load('defaultScreen') || 'home',
+      cfgDefaultScreen: this._load('defaultScreen') || 'home', loading: false, loginError: '',
       lastSyncAt: Date.now(),
     }, () => { this._autoRecurring(); this._autoRecurringExpenses(); if (stockList.length > 0) this.fetchStockQuotes(); this.loadJarvisHistory(); });
   }
@@ -3415,6 +3452,7 @@ class Component extends DCLogic {
 
   handleLogout = async () => {
     await window._sb.auth.signOut();
+    window.history.pushState(null, '', '/');
     this.setState({ user: null, screen: 'login', loginEmail: '', loginPassword: '', sidebarOpen: false, transactions: [], categories: [], goals: [], recurringExpenses: [], tasks: [], agendaEvents: [], notes: [], editingNoteId: null, jarvisMessages: [], jarvisLoaded: false, jarvisConversationId: null });
   }
 

@@ -10,7 +10,6 @@ const MODEL = "claude-sonnet-5";
 // frontend. Sem isso não teria como o cron (sem sessão de ninguém) saber de
 // quem é o resumo que está gravando.
 const OWNER_USER_ID = "c1f1f1f8-ba26-4e66-8c86-c645dc9cbb1d";
-const STALE_HOURS = 20; // não gera de novo se já tem um resumo mais recente que isso
 
 const FEEDS = [
   { name: "Flow Games", url: "https://flowgames.gg/feed" },
@@ -98,7 +97,7 @@ async function fetchFeedItems(feed: { name: string; url: string }) {
     const items = parseFeed(xml, feed.name, feed.url);
     const cutoff = Date.now() - 24 * 3600 * 1000;
     const recent = items.filter((it) => it.published_at && new Date(it.published_at).getTime() >= cutoff);
-    return (recent.length > 0 ? recent : items.slice(0, 2)).slice(0, 5);
+    return (recent.length > 0 ? recent : items.slice(0, 2)).slice(0, 6);
   } catch (_e) {
     return [];
   }
@@ -162,10 +161,15 @@ Deno.serve(async (req: Request) => {
     }
 
     if (!forced) {
+      // Um resumo por DIA (fuso de Brasília), não "nas últimas N horas" — com janela de horas, um
+      // clique manual em "Atualizar agora" à noite cancelava o cron da manhã seguinte (a janela
+      // ainda não tinha passado às 07:00), fazendo parecer que a atualização automática não rodava.
       const { data: last } = await sb.from("news_digests").select("created_at")
         .eq("user_id", OWNER_USER_ID).order("created_at", { ascending: false }).limit(1).maybeSingle();
-      if (last && Date.now() - new Date(last.created_at).getTime() < STALE_HOURS * 3600 * 1000) {
-        return json({ skipped: true, reason: "já existe um resumo recente" });
+      if (last) {
+        const lastDateBR = new Date(last.created_at).toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
+        const todayBR = new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
+        if (lastDateBR === todayBR) return json({ skipped: true, reason: "já existe um resumo de hoje" });
       }
     }
 

@@ -48,10 +48,24 @@ Ideias e próximos passos discutidos, ainda não implementados.
 
 ## Novos setores
 - **Agenda (feito)**: calendário em grade de mês, CRUD de eventos.
+  - **Pendente — refinamento grande**: integrar com prazo de conclusão das tarefas (evento auto-gerado ou vinculado). Eventos recorrentes (tipo de recorrência, duração do evento). Arrastar um evento de um dia pra outro. Integração com Google Maps — sugestões de endereço ao criar o evento e link pra abrir no Maps; se der, uma sessão de mapa dentro do próprio TDV. Escopo grande, dá pra quebrar em fases (recorrência + duração primeiro, drag-and-drop depois, Maps por último — é a parte que depende de API externa/chave nova).
 - **Anotações (feito)**: bloco de notas estilo dontpad — formatação rica, autosave.
-- **Notícias (feito)**: resumo diário por IA dos 4 sites de interesse (Flow Games, Meu Timão, Reforma Tributária, Ei Nerd), gerado via Edge Function + cron diário ou botão "Atualizar agora".
+  - **Pendente**: "deixar mais completa" — Douglas ainda não detalhou o que falta (busca por conteúdo? pastas/tags? anexar imagem? histórico de versões?). Perguntar antes de desenhar.
+- **Notícias (feito)**: resumo diário por IA dos 4 sites de interesse (Flow Games, Meu Timão, Reforma Tributária, Ei Nerd), gerado via Edge Function + cron diário ou botão "Atualizar agora". Resumo dividido por fonte, 6 manchetes por site (era 5).
+  - **Atualização automática — bug corrigido (feito, 03/09)**: a checagem de "resumo recente" comparava por janela de horas (20h) em vez de por dia — um clique manual em "Atualizar agora" à noite cancelava o cron da manhã seguinte (a janela de 20h ainda não tinha passado às 07:00). Trocado pra comparar a data (fuso de Brasília): gera no máximo uma vez por dia, mas sempre gera se o dia mudou, não importa quando foi o último clique manual.
 - **Ações (feito, ver "Home rica" acima)**: watchlist de tickers B3 com cotação quase-ao-vivo, dentro do widget da Home — não é um setor de nav própria, mora na Home.
 - **Mensagens**: Douglas ainda quer discutir como isso funcionaria antes de desenhar (o quê exatamente — mensageria interna? Integração com apps externos? Ainda em aberto).
+- **Cofre de senhas**: novo setor pra guardar todas as senhas, organizável por pastas. Exigência de segurança explícita do Douglas: precisa digitar a senha do app de novo pra entrar nessa sessão específica (uma segunda barreira, não basta já estar logado no TDV). Nome da página: "Cofre de Senhas". Não desenhar a arquitetura de criptografia sem alinhar antes — dado sensível de verdade, merece uma conversa própria sobre onde/como fica cifrado (client-side antes de subir pro Supabase, provavelmente) antes de qualquer linha de código.
+
+## Navegação
+- **URL sincronizada com a aba ativa**: hoje a tela inteira é controlada só por state (`screen`), sem refletir na URL — se o Douglas está em Agenda e dá F5, cai de volta na Home. Ajustar pra usar `history.pushState`/`popstate` (sem framework de rotas, é PWA de arquivo único) mantendo a URL em sincronia com `screen`, e ler a URL de volta no load inicial.
+
+## Jarvis — bugs reportados (precisam de mais detalhe pra reproduzir)
+- **Resposta só aparece depois de dar F5**: ao mandar mensagem, a resposta do Jarvis não aparece na hora — só depois de recarregar a página manualmente. Cheira a um problema no fluxo de streaming (SSE) do `jarvis-chat` ou em como o estado da conversa é atualizado no cliente depois do `done`. Preciso que o Douglas descreva o passo a passo (acontece sempre? só em conversa longa? no celular, no PC, nos dois?) antes de sair mexendo — é um bug sério (funcionalidade central) e merece diagnóstico, não um chute.
+- **Modo de conversa ao vivo "bugado"**: sem mais detalhe do que isso na anotação. Preciso saber o sintoma exato (não liga, corta a fala, não entende o que foi dito, trava o microfone) pra investigar o ponto certo.
+
+## Jarvis — pequenos ajustes
+- **Shift+Enter no chat deve rolar a tela pra baixo**: ao quebrar linha com Shift+Enter numa mensagem longa, o campo cresce mas a view não acompanha o cursor.
 
 ---
 *Itens marcados "(feito)" já foram implementados. O resto ainda é intenção — nada além disso foi construído.*

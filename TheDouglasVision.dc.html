@@ -1839,16 +1839,20 @@
                 <button onMouseDown="{{ preventFocusLoss }}" onClick="{{ noteBold }}" title="Negrito" style="width: 30px; height: 30px; border-radius: 6px; background: transparent; border: 1px solid #1E2A45; color: #94A3B8; cursor: pointer; font-weight: 700; font-size: 13px; display: flex; align-items: center; justify-content: center;">B</button>
                 <select onMouseDown="{{ preventFocusLoss }}" onChange="{{ noteExecFontSize }}" style="height: 30px; border-radius: 6px; background: #0D0D1A; border: 1px solid #1E2A45; color: #94A3B8; cursor: pointer; font-size: 12px; font-family: inherit; padding: 0 6px;">
                   <option value="">Tamanho</option>
-                  <option value="2">Pequeno</option>
-                  <option value="3">Normal</option>
-                  <option value="5">Grande</option>
-                  <option value="7">Título</option>
+                  <option value="12">Pequeno</option>
+                  <option value="14">Normal</option>
+                  <option value="20">Grande</option>
+                  <option value="28">Título</option>
                 </select>
                 <button onMouseDown="{{ preventFocusLoss }}" onClick="{{ noteOrderedList }}" title="Lista numerada" style="width: 30px; height: 30px; border-radius: 6px; background: transparent; border: 1px solid #1E2A45; color: #94A3B8; cursor: pointer; display: flex; align-items: center; justify-content: center;"><i class="ph ph-list-numbers" style="font-size: 14px;"></i></button>
                 <button onMouseDown="{{ preventFocusLoss }}" onClick="{{ noteUnorderedList }}" title="Lista com marcadores" style="width: 30px; height: 30px; border-radius: 6px; background: transparent; border: 1px solid #1E2A45; color: #94A3B8; cursor: pointer; display: flex; align-items: center; justify-content: center;"><i class="ph ph-list-bullets" style="font-size: 14px;"></i></button>
                 <button onMouseDown="{{ preventFocusLoss }}" onClick="{{ noteInsertChecklist }}" title="Checklist" style="width: 30px; height: 30px; border-radius: 6px; background: transparent; border: 1px solid #1E2A45; color: #94A3B8; cursor: pointer; display: flex; align-items: center; justify-content: center;"><i class="ph ph-check-square" style="font-size: 14px;"></i></button>
                 <button onMouseDown="{{ preventFocusLoss }}" onClick="{{ noteInsertTable }}" title="Tabela" style="width: 30px; height: 30px; border-radius: 6px; background: transparent; border: 1px solid #1E2A45; color: #94A3B8; cursor: pointer; display: flex; align-items: center; justify-content: center;"><i class="ph ph-table" style="font-size: 14px;"></i></button>
                 <button onMouseDown="{{ preventFocusLoss }}" onClick="{{ noteInsertLink }}" title="Link" style="width: 30px; height: 30px; border-radius: 6px; background: transparent; border: 1px solid #1E2A45; color: #94A3B8; cursor: pointer; display: flex; align-items: center; justify-content: center;"><i class="ph ph-link" style="font-size: 14px;"></i></button>
+                <div style="width: 1px; height: 20px; background: #1E2A45; margin: 0 2px;"></div>
+                <button onMouseDown="{{ preventFocusLoss }}" onClick="{{ noteJustifyLeft }}" title="Alinhar à esquerda" style="width: 30px; height: 30px; border-radius: 6px; background: transparent; border: 1px solid #1E2A45; color: #94A3B8; cursor: pointer; display: flex; align-items: center; justify-content: center;"><i class="ph ph-text-align-left" style="font-size: 14px;"></i></button>
+                <button onMouseDown="{{ preventFocusLoss }}" onClick="{{ noteJustifyCenter }}" title="Centralizar" style="width: 30px; height: 30px; border-radius: 6px; background: transparent; border: 1px solid #1E2A45; color: #94A3B8; cursor: pointer; display: flex; align-items: center; justify-content: center;"><i class="ph ph-text-align-center" style="font-size: 14px;"></i></button>
+                <button onMouseDown="{{ preventFocusLoss }}" onClick="{{ noteJustifyRight }}" title="Alinhar à direita" style="width: 30px; height: 30px; border-radius: 6px; background: transparent; border: 1px solid #1E2A45; color: #94A3B8; cursor: pointer; display: flex; align-items: center; justify-content: center;"><i class="ph ph-text-align-right" style="font-size: 14px;"></i></button>
                 <div style="width: 1px; height: 20px; background: #1E2A45; margin: 0 2px;"></div>
                 <sc-for list="{{ noteColorOptions }}" as="co" hint-placeholder-count="7">
                   <button onMouseDown="{{ preventFocusLoss }}" onClick="{{ co.onClick }}" title="Cor do texto" style="{{ co.swatchStyle }}"></button>
@@ -1858,7 +1862,7 @@
                   <button onMouseDown="{{ preventFocusLoss }}" onClick="{{ ho.onClick }}" title="Marca-texto" style="{{ ho.swatchStyle }}"></button>
                 </sc-for>
               </div>
-              <div id="note-editor-el" class="reading-font" contenteditable="true" onInput="{{ handleNoteInput }}" style="flex: 1; min-height: 320px; background: #111118; border: 1px solid #151525; border-radius: 10px; padding: 18px; color: #E2E8F0; font-size: 14px; line-height: 1.7; outline: none; overflow-wrap: break-word;"></div>
+              <div id="note-editor-el" class="reading-font" contenteditable="true" onInput="{{ handleNoteInput }}" onKeyDown="{{ noteEditorKeyDown }}" onClick="{{ noteEditorClick }}" style="flex: 1; min-height: 320px; background: #111118; border: 1px solid #151525; border-radius: 10px; padding: 18px; color: #E2E8F0; font-size: 14px; line-height: 1.7; outline: none; overflow-wrap: break-word;"></div>
             </div>
           </sc-if>
         </sc-if>
@@ -4753,7 +4757,7 @@ class Component extends DCLogic {
   openNote = (note) => {
     this.setState({ editingNoteId: note.id, noteTitle: note.title, noteContent: note.content, noteSaveStatus: 'idle' }, () => {
       const el = document.getElementById('note-editor-el');
-      if (el) el.innerHTML = note.content || '';
+      if (el) { el.innerHTML = note.content || ''; this._migrateOldChecklistRows(el); }
     });
   }
 
@@ -4825,13 +4829,40 @@ class Component extends DCLogic {
     this.handleNoteInput({ target: el });
   }
 
+  // document.execCommand('fontSize'/'foreColor'/'hiliteColor') é a API antiga de rich-text do
+  // navegador — o tamanho em especial mapeia pra uma escala legada de 1-7 (<font size>), não pixels
+  // de verdade, e renderiza errado/inconsistente. Em vez disso, envolve a seleção manualmente num
+  // <span style="..."> — mais código, mas o resultado é previsível em qualquer navegador.
+  _wrapSelectionStyle = (styleProp, value) => {
+    const el = document.getElementById('note-editor-el');
+    const sel = window.getSelection();
+    if (!el || !sel || sel.rangeCount === 0 || sel.isCollapsed || !el.contains(sel.anchorNode)) {
+      if (el) el.focus();
+      return;
+    }
+    const range = sel.getRangeAt(0);
+    const span = document.createElement('span');
+    span.style[styleProp] = value;
+    try {
+      range.surroundContents(span);
+    } catch (_e) {
+      // Seleção atravessa mais de um elemento (não dá pra "envolver" direto) — extrai e reinsere.
+      const frag = range.extractContents();
+      span.appendChild(frag);
+      range.insertNode(span);
+    }
+    sel.removeAllRanges();
+    const newRange = document.createRange();
+    newRange.selectNodeContents(span);
+    sel.addRange(newRange);
+    this.handleNoteInput({ target: el });
+  }
+
   noteExecFontSize = (e) => {
     const size = e.target.value;
+    e.target.value = ''; // volta pro placeholder — não fica "preso" mostrando o último tamanho aplicado
     if (!size) return;
-    const el = document.getElementById('note-editor-el');
-    if (el) el.focus();
-    document.execCommand('fontSize', false, size);
-    this.handleNoteInput({ target: el });
+    this._wrapSelectionStyle('fontSize', size + 'px');
   }
 
   noteInsertLink = () => {
@@ -4840,8 +4871,134 @@ class Component extends DCLogic {
     this.noteExec('createLink', url);
   }
 
+  // ─── Checklist — reescrito do zero. A versão antiga inseria um <div display:flex> raso com só um
+  // checkbox + &nbsp; dentro; apertar Enter ali fazia o navegador aninhar divs de forma imprevisível
+  // (cada Enter piorava a estrutura), e nunca "descia pra próxima linha" de verdade. Agora cada item
+  // é uma linha própria (.tdv-check-row) e o Enter é tratado manualmente em noteEditorKeyDown. ───
+
+  _makeCheckRow = () => {
+    const row = document.createElement('div');
+    row.className = 'tdv-check-row';
+    row.style.cssText = 'display:flex;align-items:flex-start;gap:8px;margin:2px 0;';
+    const cb = document.createElement('input');
+    cb.type = 'checkbox';
+    cb.contentEditable = 'false';
+    cb.style.cssText = 'margin-top:3px;flex-shrink:0;cursor:pointer;';
+    const text = document.createElement('span');
+    text.className = 'tdv-check-text';
+    text.style.cssText = 'flex:1;min-width:0;outline:none;';
+    text.innerHTML = '​'; // espaço de largura zero — sem isso um span vazio de verdade atrapalha o cursor
+    row.appendChild(cb);
+    row.appendChild(text);
+    return row;
+  }
+
+  _placeCaretAtStart = (el) => {
+    if (!el) return;
+    const sel = window.getSelection();
+    const range = document.createRange();
+    range.selectNodeContents(el);
+    range.collapse(true);
+    sel.removeAllRanges();
+    sel.addRange(range);
+  }
+
+  _placeCaretAtEnd = (el) => {
+    if (!el) return;
+    const sel = window.getSelection();
+    const range = document.createRange();
+    range.selectNodeContents(el);
+    range.collapse(false);
+    sel.removeAllRanges();
+    sel.addRange(range);
+  }
+
+  // Notas antigas têm checklists no formato quebrado de antes (div raso, só checkbox+&nbsp direto
+  // dentro) — ao abrir a nota, reescreve pra estrutura nova. Só mexe em divs cujo PRIMEIRO filho
+  // direto é o próprio checkbox (evita mexer em qualquer outro div que por acaso tenha um lá dentro).
+  // Não força salvar sozinho — só vira permanente se o Douglas editar a nota depois.
+  _migrateOldChecklistRows = (el) => {
+    el.querySelectorAll('div').forEach(div => {
+      if (div.classList.contains('tdv-check-row')) return;
+      const cb = div.querySelector(':scope > input[type="checkbox"]');
+      if (!cb || cb.parentElement !== div) return;
+      const newRow = this._makeCheckRow();
+      const checked = cb.checked;
+      newRow.querySelector('input').checked = checked;
+      const clone = div.cloneNode(true);
+      clone.querySelector('input[type="checkbox"]')?.remove();
+      const text = clone.innerHTML.replace(/^(<br\s*\/?>|&nbsp;|\s)+/i, '').replace(/(<br\s*\/?>|&nbsp;|\s)+$/i, '').trim();
+      const textSpan = newRow.querySelector('.tdv-check-text');
+      textSpan.innerHTML = text || '​';
+      if (checked) { textSpan.style.textDecoration = 'line-through'; textSpan.style.opacity = '0.5'; }
+      div.replaceWith(newRow);
+    });
+  }
+
   noteInsertChecklist = () => {
-    this.noteExec('insertHTML', '<div style="display:flex;align-items:center;gap:6px;"><input type="checkbox">&nbsp;</div>');
+    const el = document.getElementById('note-editor-el');
+    if (!el) return;
+    el.focus();
+    const row = this._makeCheckRow();
+    const sel = window.getSelection();
+    if (sel && sel.rangeCount > 0 && el.contains(sel.anchorNode)) {
+      const range = sel.getRangeAt(0);
+      range.deleteContents();
+      range.insertNode(row);
+    } else {
+      el.appendChild(row);
+    }
+    this._placeCaretAtStart(row.querySelector('.tdv-check-text'));
+    this.handleNoteInput({ target: el });
+  }
+
+  // Enter dentro de uma linha de checklist cria a próxima linha de checklist (ou sai da lista, se a
+  // linha atual estava vazia); Backspace numa linha vazia remove a linha e volta pra anterior.
+  noteEditorKeyDown = (e) => {
+    if (e.key !== 'Enter' && e.key !== 'Backspace') return;
+    const sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0) return;
+    const node = sel.anchorNode;
+    const startEl = node && (node.nodeType === 1 ? node : node.parentElement);
+    const row = startEl && startEl.closest('.tdv-check-row');
+    if (!row) return;
+    const textSpan = row.querySelector('.tdv-check-text');
+    const isEmpty = !textSpan || textSpan.textContent.replace(/​/g, '').trim() === '';
+
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      if (isEmpty) {
+        const p = document.createElement('div');
+        p.innerHTML = '<br>';
+        row.replaceWith(p);
+        this._placeCaretAtStart(p);
+      } else {
+        const newRow = this._makeCheckRow();
+        row.after(newRow);
+        this._placeCaretAtStart(newRow.querySelector('.tdv-check-text'));
+      }
+      this.handleNoteInput({ target: document.getElementById('note-editor-el') });
+    } else if (e.key === 'Backspace' && isEmpty) {
+      e.preventDefault();
+      const prev = row.previousElementSibling;
+      row.remove();
+      if (prev) this._placeCaretAtEnd(prev);
+      this.handleNoteInput({ target: document.getElementById('note-editor-el') });
+    }
+  }
+
+  // Clique no checkbox de uma linha de checklist — risca/esmaece o texto e salva. Delegado no
+  // container (não em cada checkbox individualmente) pra cobrir tanto linhas novas quanto as que
+  // acabaram de ser migradas de notas antigas.
+  noteEditorClick = (e) => {
+    if (e.target.tagName !== 'INPUT' || e.target.type !== 'checkbox') return;
+    const row = e.target.closest('.tdv-check-row');
+    const textSpan = row && row.querySelector('.tdv-check-text');
+    if (textSpan) {
+      textSpan.style.textDecoration = e.target.checked ? 'line-through' : 'none';
+      textSpan.style.opacity = e.target.checked ? '0.5' : '1';
+    }
+    this.handleNoteInput({ target: document.getElementById('note-editor-el') });
   }
 
   noteInsertTable = () => {
@@ -6533,12 +6690,17 @@ class Component extends DCLogic {
       noteInsertLink: this.noteInsertLink,
       noteInsertChecklist: this.noteInsertChecklist,
       noteInsertTable: this.noteInsertTable,
+      noteEditorKeyDown: this.noteEditorKeyDown,
+      noteEditorClick: this.noteEditorClick,
+      noteJustifyLeft: () => this.noteExec('justifyLeft'),
+      noteJustifyCenter: () => this.noteExec('justifyCenter'),
+      noteJustifyRight: () => this.noteExec('justifyRight'),
       noteColorOptions: ['#E2E8F0', '#EF4444', '#F97316', '#EAB308', '#22C55E', '#38BDF8', '#A78BFA'].map(c => ({
-        color: c, onClick: () => this.noteExec('foreColor', c),
+        color: c, onClick: () => this._wrapSelectionStyle('color', c),
         swatchStyle: { width: '18px', height: '18px', borderRadius: '50%', background: c, border: '1px solid #1E2A45', cursor: 'pointer', padding: 0, flexShrink: 0 },
       })),
       noteHighlightOptions: ['#FDE047', '#86EFAC', '#93C5FD', '#FCA5A5', '#D8B4FE'].map(c => ({
-        color: c, onClick: () => this.noteExec('hiliteColor', c),
+        color: c, onClick: () => this._wrapSelectionStyle('backgroundColor', c),
         swatchStyle: { width: '18px', height: '18px', borderRadius: '50%', background: c, border: '1px solid #1E2A45', cursor: 'pointer', padding: 0, flexShrink: 0 },
       })),
       // notícias

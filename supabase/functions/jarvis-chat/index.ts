@@ -298,13 +298,14 @@ const TOOLS = [
       properties: {
         title: { type: "string" },
         content: { type: "string", description: "Corpo da nota. HTML simples é aceito." },
+        folder_name: { type: "string", description: "Nome da pasta onde criar a nota. Cria a pasta na raiz se ela ainda não existir. Omitir cria na raiz (fora de qualquer pasta)." },
       },
       required: ["title"],
     },
   },
   {
     name: "update_note",
-    description: "Edita uma anotação pelo id (use list_notes pra achar).",
+    description: "Edita uma anotação pelo id (use list_notes pra achar). Também serve pra mover a nota de pasta.",
     input_schema: {
       type: "object",
       properties: {
@@ -312,6 +313,7 @@ const TOOLS = [
         title: { type: "string" },
         content: { type: "string" },
         append: { type: "boolean", description: "Se true, acrescenta o content ao fim do que já existe em vez de substituir." },
+        folder_name: { type: "string", description: "Move a nota pra essa pasta (cria na raiz se não existir). String vazia move de volta pra raiz." },
       },
       required: ["id"],
     },
@@ -328,6 +330,7 @@ const TOOLS = [
       type: "object",
       properties: {
         search: { type: "string", description: "Busca por texto no título." },
+        folder_name: { type: "string", description: "Filtra só as notas dentro dessa pasta." },
         include_content: { type: "boolean", description: "Padrão false — sem isso vem só id/título/data." },
         limit: { type: "number", description: "Padrão 20." },
       },
@@ -441,6 +444,19 @@ async function resolveCategoryId(sb: SupabaseClient, name: string): Promise<{ id
   if (error) return { error: error.message };
   if (!data || data.length === 0) return { error: `Categoria "${name}" não encontrada. Categorias existem só se já foram criadas — use create_category primeiro se for nova.` };
   return { id: data[0].id };
+}
+
+// Pastas de anotações são diferentes de categoria: acham OU criam (na raiz) — o Jarvis não deveria
+// ter que pedir pro Douglas criar a pasta antes só pra colocar uma nota nela.
+async function resolveOrCreateFolderId(sb: SupabaseClient, userId: string, name: string): Promise<{ id?: string; error?: string }> {
+  const trimmed = name.trim();
+  if (!trimmed) return { id: undefined };
+  const { data: existing, error: findErr } = await sb.from("note_folders").select("id").ilike("name", trimmed).is("parent_folder_id", null).maybeSingle();
+  if (findErr) return { error: findErr.message };
+  if (existing) return { id: existing.id };
+  const { data: created, error: createErr } = await sb.from("note_folders").insert({ id: genId("nf"), user_id: userId, name: trimmed }).select("id").single();
+  if (createErr) return { error: createErr.message };
+  return { id: created.id };
 }
 
 async function resolveGoalId(sb: SupabaseClient, name: string): Promise<{ id?: string; row?: any; error?: string }> {
@@ -774,9 +790,15 @@ async function executeTool(sb: SupabaseClient, userId: string, name: string, inp
 
     case "create_note": {
       if (!input.title || typeof input.title !== "string") return { error: "title é obrigatório." };
+      let folderId: string | null = null;
+      if (input.folder_name) {
+        const res = await resolveOrCreateFolderId(sb, userId, input.folder_name);
+        if (res.error) return { error: res.error };
+        folderId = res.id ?? null;
+      }
       const row = {
         id: genId("nt"), user_id: userId, title: input.title,
-        content: input.content || "", updated_at: new Date().toISOString(),
+        content: input.content || "", updated_at: new Date().toISOString(), folder_id: folderId,
       };
       const { data, error } = await sb.from("notes").insert(row).select();
       if (error) return { error: error.message };
@@ -797,6 +819,15 @@ async function executeTool(sb: SupabaseClient, userId: string, name: string, inp
           patch.content = input.content;
         }
       }
+      if (input.folder_name !== undefined) {
+        if (input.folder_name === "") {
+          patch.folder_id = null;
+        } else {
+          const res = await resolveOrCreateFolderId(sb, userId, input.folder_name);
+          if (res.error) return { error: res.error };
+          patch.folder_id = res.id ?? null;
+        }
+      }
       const { data, error } = await sb.from("notes").update(patch).eq("id", input.id).select();
       if (error) return { error: error.message };
       if (!data || data.length === 0) return { error: "Nenhuma anotação com esse id foi encontrada (ou não pertence a você)." };
@@ -815,6 +846,13 @@ async function executeTool(sb: SupabaseClient, userId: string, name: string, inp
       const cols = input.include_content ? "id, title, content, updated_at" : "id, title, updated_at";
       let q = sb.from("notes").select(cols).order("updated_at", { ascending: false }).limit(input.limit || 20);
       if (input.search) q = q.ilike("title", `%${input.search}%`);
+      if (input.folder_name) {
+        // Só busca (não cria) — listar não deveria criar uma pasta vazia por engano.
+        const { data: folder, error: folderErr } = await sb.from("note_folders").select("id").ilike("name", input.folder_name.trim()).maybeSingle();
+        if (folderErr) return { error: folderErr.message };
+        if (!folder) return { notes: [], aviso: `Nenhuma pasta chamada "${input.folder_name}" foi encontrada.` };
+        q = q.eq("folder_id", folder.id);
+      }
       const { data, error } = await q;
       if (error) return { error: error.message };
       const notes = (data || []).map((n: any) => input.include_content ? { ...n, content: htmlToPlain(n.content) } : n);
@@ -1105,7 +1143,7 @@ O TheDouglasVision não é um app de finanças — é o sistema pessoal completo
 - Finanças: lançamentos, categorias, metas, dívidas/despesas recorrentes
 - Tarefas: criar, editar, concluir e listar (com prazo, prioridade e lista)
 - Agenda: compromissos com data e hora
-- Anotações: bloco de notas pessoal
+- Anotações: bloco de notas pessoal, organizável em pastas (aninháveis) — use folder_name em create_note/update_note/list_notes pra criar, mover ou filtrar por pasta
 - Ações: a lista de papéis da B3 que ele acompanha
 - Notícias: o resumo diário dos sites que ele segue
 

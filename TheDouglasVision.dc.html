@@ -1942,6 +1942,24 @@
                   </div>
                 </div>
               </sc-if>
+              <!-- Barra de formatação flutuante — aparece perto de qualquer seleção de texto (duplo
+                   clique, arrastar, Shift+seta), igual Notion/Google Docs. -->
+              <sc-if value="{{ selectionToolbarOpen }}" hint-placeholder-val="{{ false }}">
+                <div style="{{ selectionToolbarStyle }}">
+                  <div class="modal-in" style="display: flex; flex-wrap: wrap; align-items: center; gap: 6px; background: #111118; border: 1px solid #1E2A45; border-radius: 10px; padding: 6px; box-shadow: 0 16px 48px #00000088;">
+                    <button onMouseDown="{{ preventFocusLoss }}" onClick="{{ noteBold }}" title="Negrito" style="width: 28px; height: 28px; border-radius: 6px; background: transparent; border: 1px solid #1E2A45; color: #94A3B8; cursor: pointer; font-weight: 700; font-size: 12px; display: flex; align-items: center; justify-content: center;">B</button>
+                    <button onMouseDown="{{ preventFocusLoss }}" onClick="{{ noteInsertLink }}" title="Link" style="width: 28px; height: 28px; border-radius: 6px; background: transparent; border: 1px solid #1E2A45; color: #94A3B8; cursor: pointer; display: flex; align-items: center; justify-content: center;"><i class="ph ph-link" style="font-size: 13px;"></i></button>
+                    <div style="width: 1px; height: 18px; background: #1E2A45; margin: 0 2px;"></div>
+                    <sc-for list="{{ noteColorOptions }}" as="co" hint-placeholder-count="7">
+                      <button onMouseDown="{{ preventFocusLoss }}" onClick="{{ co.onClick }}" title="Cor do texto" style="{{ co.swatchStyle }}">A</button>
+                    </sc-for>
+                    <div style="width: 1px; height: 18px; background: #1E2A45; margin: 0 2px;"></div>
+                    <sc-for list="{{ noteHighlightOptions }}" as="ho" hint-placeholder-count="5">
+                      <button onMouseDown="{{ preventFocusLoss }}" onClick="{{ ho.onClick }}" title="Marca-texto" style="{{ ho.swatchStyle }}">A</button>
+                    </sc-for>
+                  </div>
+                </div>
+              </sc-if>
             </div>
           </sc-if>
         </sc-if>
@@ -2852,6 +2870,8 @@ class Component extends DCLogic {
     slashMenuQuery: '',
     slashMenuActiveIndex: 0,
     slashMenuPos: null,
+    selectionToolbarOpen: false,
+    selectionToolbarPos: null,
     currentFolderId: null,
     showFolderModal: false,
     folderModalParentId: null,
@@ -3090,6 +3110,22 @@ class Component extends DCLogic {
       const screen = this._screenFromPath(window.location.pathname);
       if (screen) this.setState({ screen, sidebarOpen: false });
     });
+    // Barra de formatação flutuante do editor de notas — aparece perto de qualquer seleção de
+    // texto não vazia (duplo clique, arrastar o mouse, Shift+seta), igual Notion/Google Docs.
+    // 'selectionchange' é global (dispara pra seleção em qualquer lugar da página), por isso
+    // confere se ela está mesmo dentro do editor antes de mostrar qualquer coisa.
+    document.addEventListener('selectionchange', this._onSelectionChange = () => {
+      const el = document.getElementById('note-editor-el');
+      const sel = window.getSelection();
+      const inEditor = el && sel && sel.rangeCount > 0 && !sel.isCollapsed && el.contains(sel.anchorNode);
+      if (!inEditor || this.state.slashMenuOpen) {
+        if (this.state.selectionToolbarOpen) this.setState({ selectionToolbarOpen: false });
+        return;
+      }
+      const rect = sel.getRangeAt(0).getBoundingClientRect();
+      if (!rect || (!rect.top && !rect.left && !rect.width)) return;
+      this.setState({ selectionToolbarOpen: true, selectionToolbarPos: { top: rect.top - 46, left: rect.left } });
+    });
     window.addEventListener('keydown', this._hotkey = (e) => {
       // Ctrl/Cmd+K precisa abrir mesmo com foco em outro campo de texto (padrão universal de
       // command palette) — por isso vem ANTES do early-return de INPUT/TEXTAREA/SELECT abaixo.
@@ -3198,6 +3234,7 @@ class Component extends DCLogic {
     window.removeEventListener('resize', this._resize);
     window.removeEventListener('keydown', this._hotkey);
     window.removeEventListener('popstate', this._onPopState);
+    document.removeEventListener('selectionchange', this._onSelectionChange);
     this._stopHudClock();
   }
 
@@ -3798,6 +3835,16 @@ class Component extends DCLogic {
 
     const finishUp = () => {
       if (myLiveGen !== this._liveGen) return;
+      // Se o stream terminou sem NUNCA ter revelado uma única letra, o Douglas ficava olhando pro
+      // vazio — sem erro, sem spinner, nada — até dar F5 e ver que a resposta na verdade tinha sido
+      // gerada e salva no servidor (ela só nunca chegou a aparecer aqui). Garante que ele SEMPRE vê
+      // alguma coisa quando isso acontece, em vez de uma falha muda. Revela na hora, sem animação —
+      // o timer de revelação já foi encerrado nesse ponto, não faz sentido religar ele só pra isso.
+      if (!assistantPushed) {
+        fullTarget = '⚠️ A resposta não chegou até aqui — pode ter sido salva mesmo assim. Recarregue a página pra conferir, ou tente de novo.';
+        revealedLen = fullTarget.length;
+        applyReveal();
+      }
       this.setState({ jarvisLoading: false });
       if (dataChangedFlag) this._refreshData();
       // No modo ao vivo a fala já foi disparada por frase, direto do stream (liveFlushSentences)
@@ -3837,37 +3884,49 @@ class Component extends DCLogic {
         headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.access_token },
         body: JSON.stringify({ message: text, model: s.jarvisModel, conversation_id: s.jarvisConversationId }),
       });
+      // Sem isso, uma resposta de erro (ex: sessão expirada, 401) tenta ser lida como stream SSE —
+      // o corpo não bate com o formato "data: {...}" esperado, nenhum evento reconhece, e o Douglas
+      // ficava vendo o carregando sumir sem nenhuma mensagem, nem de erro nem de resposta.
+      if (!resp.ok) {
+        let msg = 'O servidor recusou a mensagem (código ' + resp.status + ').';
+        try { const errBody = await resp.json(); if (errBody?.error) msg = errBody.error; } catch (_eBody) {}
+        throw new Error(msg);
+      }
       const reader = resp.body.getReader();
       const decoder = new TextDecoder();
       let buffer = '';
+      const processEventBlock = (p) => {
+        const line = p.split('\n').find(l => l.startsWith('data:'));
+        if (!line) return;
+        let evt; try { evt = JSON.parse(line.slice(5).trim()); } catch (e2) { return; }
+        if (evt.type === 'start') {
+          if (!s.jarvisConversationId) this.setState({ jarvisConversationId: evt.conversationId });
+        } else if (evt.type === 'text') {
+          appendToLastAssistant(evt.text);
+        } else if (evt.type === 'done') {
+          dataChangedFlag = evt.dataChanged;
+          this.setState({ jarvisConversationId: evt.conversationId });
+        } else if (evt.type === 'error') {
+          appendToLastAssistant('\n\n⚠️ ' + evt.error);
+        }
+      };
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
         buffer += decoder.decode(value, { stream: true });
         const parts = buffer.split('\n\n');
         buffer = parts.pop();
-        for (const p of parts) {
-          const line = p.split('\n').find(l => l.startsWith('data:'));
-          if (!line) continue;
-          let evt; try { evt = JSON.parse(line.slice(5).trim()); } catch (e2) { continue; }
-          if (evt.type === 'start') {
-            if (!s.jarvisConversationId) this.setState({ jarvisConversationId: evt.conversationId });
-          } else if (evt.type === 'text') {
-            appendToLastAssistant(evt.text);
-          } else if (evt.type === 'done') {
-            dataChangedFlag = evt.dataChanged;
-            this.setState({ jarvisConversationId: evt.conversationId });
-          } else if (evt.type === 'error') {
-            appendToLastAssistant('\n\n⚠️ ' + evt.error);
-          }
-        }
+        parts.forEach(processEventBlock);
       }
+      // Se o último evento do stream não veio seguido de uma quebra dupla (a linha do meio some no
+      // "pop" acima e nunca chega a ser processada), ainda sobra em buffer — processa antes de seguir.
+      if (buffer.trim()) processEventBlock(buffer);
       streamDone = true;
       liveFlushSentences(true);
       if (fullTarget.length === 0) finishUp();
       else if (tickTimer === null) tickTimer = setInterval(tick, 18);
     } catch (e) {
-      appendToLastAssistant('\n\nNão consegui me conectar agora. Tente novamente em instantes.');
+      appendToLastAssistant('\n\n⚠️ ' + (e?.message || 'Não consegui me conectar agora. Tente novamente em instantes.'));
       streamDone = true;
       liveFlushSentences(true);
     }
@@ -5311,13 +5370,35 @@ class Component extends DCLogic {
     return q ? all.filter(en => en.label.toLowerCase().includes(q)) : all;
   }
 
-  _openSlashMenu = () => {
-    let pos = { top: 200, left: 40 };
+  // getBoundingClientRect() num cursor COLAPSADO (sem nada selecionado) é conhecido por retornar
+  // tudo zero em vários navegadores/posições — por isso o menu "/" sempre abria no mesmo canto fixo,
+  // não perto de onde o Douglas realmente digitou. Truque padrão pra medir a posição real de um
+  // cursor: insere um marcador invisível bem ali, mede ele, tira de novo e recoloca o cursor exatamente
+  // onde estava (o insertNode quebra o nó de texto em dois — inofensivo, o contenteditable lida bem
+  // com nós de texto adjacentes, só não é uma reunificação "perfeita" do DOM).
+  _getCaretRect = () => {
     const sel = window.getSelection();
-    if (sel && sel.rangeCount > 0) {
-      const rect = sel.getRangeAt(0).getBoundingClientRect();
-      if (rect && (rect.top || rect.left)) pos = { top: rect.bottom + 6, left: rect.left };
-    }
+    if (!sel || sel.rangeCount === 0) return null;
+    const range = sel.getRangeAt(0).cloneRange();
+    range.collapse(false);
+    const marker = document.createElement('span');
+    marker.appendChild(document.createTextNode('​'));
+    range.insertNode(marker);
+    const rect = marker.getBoundingClientRect();
+    const parent = marker.parentNode;
+    const index = Array.prototype.indexOf.call(parent.childNodes, marker);
+    parent.removeChild(marker);
+    const restoreRange = document.createRange();
+    restoreRange.setStart(parent, index);
+    restoreRange.collapse(true);
+    sel.removeAllRanges();
+    sel.addRange(restoreRange);
+    return (rect && (rect.top || rect.left || rect.width || rect.height)) ? rect : null;
+  }
+
+  _openSlashMenu = () => {
+    const rect = this._getCaretRect();
+    const pos = rect ? { top: rect.bottom + 6, left: rect.left } : { top: 200, left: 40 };
     this.setState({ slashMenuOpen: true, slashMenuQuery: '', slashMenuActiveIndex: 0, slashMenuPos: pos });
   }
 
@@ -6704,6 +6785,7 @@ class Component extends DCLogic {
     }));
     const slashMenuEmpty = slashMenuEntries.length === 0;
     const slashMenuStyle = { position: 'fixed', top: (s.slashMenuPos ? s.slashMenuPos.top : 0) + 'px', left: (s.slashMenuPos ? s.slashMenuPos.left : 0) + 'px', zIndex: 250 };
+    const selectionToolbarStyle = { position: 'fixed', top: (s.selectionToolbarPos ? s.selectionToolbarPos.top : 0) + 'px', left: (s.selectionToolbarPos ? s.selectionToolbarPos.left : 0) + 'px', zIndex: 250 };
 
     return {
       isLogin, isApp, isHome, isDashboard, isLancamentos, isPlanejamento, isCategorias, isFinanceSector, financeSubNavItems, isTarefas, isAgenda, isNotas, isNoticias, isConfiguracoes,
@@ -7225,6 +7307,7 @@ class Component extends DCLogic {
       noteInsertTable: this.noteInsertTable,
       noteEditorKeyDown: this.noteEditorKeyDown,
       slashMenuOpen: s.slashMenuOpen, slashMenuEntries, slashMenuEmpty, slashMenuStyle,
+      selectionToolbarOpen: s.selectionToolbarOpen, selectionToolbarStyle,
       noteEditorClick: this.noteEditorClick,
       noteJustifyLeft: () => this.noteExec('justifyLeft'),
       noteJustifyCenter: () => this.noteExec('justifyCenter'),

@@ -241,6 +241,12 @@
       .fade-in { padding-left: 12px !important; padding-right: 12px !important; }
     }
 
+    /* Configurações: painéis fluindo em colunas. break-inside impede que um painel seja cortado
+       ao meio na virada da coluna; a margem embaixo faz o papel do gap (multi-column não tem
+       row-gap entre os blocos de uma mesma coluna). */
+    .cfg-cols { column-width: 340px; column-gap: 12px; }
+    .cfg-cols > div { break-inside: avoid; -webkit-column-break-inside: avoid; page-break-inside: avoid; margin-bottom: 12px; }
+
     /* ═══ Hover tecnológico nos botões do app inteiro ═══
        Dois níveis, de propósito: os botões de AÇÃO (os que têm peso visual próprio — gradiente
        azul, .hud-btn-*, .hud-icon-btn) recebem uma linha neon que dá uma volta rápida no
@@ -1613,8 +1619,13 @@
 
         <!-- ═══ CONFIGURAÇÕES ═══ -->
         <sc-if value="{{ isConfiguracoes }}" hint-placeholder-val="{{ false }}">
-          <div class="fade-in" style="padding: 20px; display: flex; flex-direction: column; gap: 16px; max-width: 820px; margin: 0 auto; width: 100%; box-sizing: border-box;">
-            <div style="font-size: 20px; font-weight: 600; color: #E2E8F0; letter-spacing: -0.3px;">Configurações</div>
+          <div class="fade-in" style="padding: 20px; max-width: 1280px; margin: 0 auto; width: 100%; box-sizing: border-box;">
+            <div style="font-size: 20px; font-weight: 600; color: #E2E8F0; letter-spacing: -0.3px; margin-bottom: 14px;">Configurações</div>
+            <!-- Os painéis fluem em colunas (multi-column) em vez de uma coluna única empilhada:
+                 são 9 blocos de alturas bem diferentes, e em grade normal cada linha ficaria com
+                 o buraco da altura do bloco mais alto. Aqui eles se encaixam um embaixo do outro
+                 dentro de cada coluna, sem sobra. Em tela estreita vira uma coluna só sozinho. -->
+            <div class="cfg-cols">
             <!-- Profile -->
             <div style="background: #111118; border: 1px solid #151525; border-radius: 12px; padding: 20px; display: flex; flex-direction: column; gap: 14px;">
               <div style="font-size: 10px; font-weight: 600; color: #334155; text-transform: uppercase; letter-spacing: 1px;">Perfil</div>
@@ -1713,6 +1724,7 @@
               <button onClick="{{ handleLogout }}" style="display: flex; align-items: center; gap: 7px; padding: 9px 18px; background: transparent; border: 1px solid #1E2A45; border-radius: 8px; color: #64748B; font-size: 13px; font-weight: 500; cursor: pointer; font-family: inherit;">
                 <i class="ph ph-sign-out" style="font-size: 15px;"></i>Sair da conta
               </button>
+            </div>
             </div>
           </div>
         </sc-if>

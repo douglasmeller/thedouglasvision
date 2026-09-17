@@ -147,6 +147,142 @@
        do outline padrão — reforça a sensação de console em qualquer input. */
     input:focus, select:focus, textarea:focus { outline: 2px solid #38BDF888; outline-offset: -1px; }
     button:not(:disabled):focus-visible { outline: 2px solid #38BDF8; outline-offset: 2px; }
+
+    /* ═══ Superfícies e controles de HUD (Anotações) ═══
+       Cartão com mira nos cantos que ABRE no hover, varredura passando por dentro e brilho na
+       cor do tipo do item (âmbar = pasta, ciano = nota). Duas variantes de cor em vez de custom
+       property inline, pra não depender de como o motor de template repassa o atributo style. */
+    .hud-tile {
+      position: relative;
+      background: linear-gradient(158deg, #12121C 0%, #0D0D15 100%);
+      border: 1px solid #1B2438; border-radius: 12px;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+    }
+    .hud-tile::before, .hud-tile::after {
+      content: ''; position: absolute; width: 10px; height: 10px; pointer-events: none;
+      opacity: 0.45; transition: opacity 0.2s ease, width 0.2s ease, height 0.2s ease;
+    }
+    .hud-tile::before { top: -1px; left: -1px; border-top: 1.5px solid; border-left: 1.5px solid; border-top-left-radius: 12px; }
+    .hud-tile::after { bottom: -1px; right: -1px; border-bottom: 1.5px solid; border-right: 1.5px solid; border-bottom-right-radius: 12px; }
+    .hud-tile-cyan::before, .hud-tile-cyan::after { border-color: #38BDF8; }
+    .hud-tile-amber::before, .hud-tile-amber::after { border-color: #F5B841; }
+    .hud-tile-interactive { cursor: pointer; }
+    .hud-tile-interactive:hover { transform: translateY(-2px); }
+    .hud-tile-interactive:hover::before, .hud-tile-interactive:hover::after { opacity: 1; width: 17px; height: 17px; }
+    .hud-tile-cyan.hud-tile-interactive:hover { border-color: #38BDF855; box-shadow: 0 10px 28px #00000077, 0 0 20px #38BDF81A; }
+    .hud-tile-amber.hud-tile-interactive:hover { border-color: #F5B84155; box-shadow: 0 10px 28px #00000077, 0 0 20px #F5B8411A; }
+    /* Alvo de "solte aqui" ao arrastar uma nota pra cima de uma pasta/trilha. */
+    .hud-tile-drop, .hud-crumb-drop { border-color: #38BDF8 !important; box-shadow: 0 0 0 1px #38BDF866, 0 0 26px #38BDF833 !important; }
+    .hud-tile-dragging { opacity: 0.4; }
+
+    @keyframes hudTileSweep { 0% { transform: translateX(-110%); } 100% { transform: translateX(320%); } }
+    .hud-tile-sweep { position: absolute; inset: 0; border-radius: inherit; overflow: hidden; pointer-events: none; opacity: 0; transition: opacity 0.25s ease; }
+    .hud-tile-sweep::after { content: ''; position: absolute; top: 0; left: 0; width: 38%; height: 100%; background: linear-gradient(90deg, transparent, #38BDF814, transparent); animation: hudTileSweep 1.6s ease-in-out infinite; }
+    .hud-tile-amber .hud-tile-sweep::after { background: linear-gradient(90deg, transparent, #F5B84114, transparent); }
+    .hud-tile-interactive:hover .hud-tile-sweep { opacity: 1; }
+
+    /* Ações do cartão só aparecem no hover — em tela sem mouse (celular) ficam sempre visíveis,
+       senão não teria como alcançar elas. */
+    .hud-tile-actions { opacity: 0; transition: opacity 0.18s ease; }
+    .hud-tile-interactive:hover .hud-tile-actions, .hud-tile-interactive:focus-within .hud-tile-actions { opacity: 1; }
+    @media (hover: none) { .hud-tile-actions { opacity: 1; } }
+
+    .hud-icon-btn {
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+      background: #0D0D16; border: 1px solid #1B2438; border-radius: 7px;
+      color: #475569; cursor: pointer; font-family: inherit; line-height: 1;
+      transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+    }
+    .hud-icon-btn:hover { color: #38BDF8; border-color: #38BDF866; background: #101726; box-shadow: 0 0 12px #38BDF81F, inset 0 0 10px #38BDF80F; }
+    .hud-icon-btn-danger:hover { color: #F87171; border-color: #EF444466; background: #1A1013; box-shadow: 0 0 12px #EF44441F, inset 0 0 10px #EF44440F; }
+    .hud-icon-btn-on { color: #38BDF8; border-color: #38BDF866; background: #101726; }
+
+    .hud-btn-primary {
+      display: flex; align-items: center; gap: 6px; padding: 9px 16px; border: none; border-radius: 9px;
+      background: linear-gradient(135deg, #1D4ED8, #0891B2); color: #FFFFFF;
+      font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit;
+      box-shadow: 0 2px 14px #2563EB44; transition: box-shadow 0.18s ease, filter 0.18s ease;
+    }
+    .hud-btn-primary:hover { box-shadow: 0 4px 22px #2563EB77, 0 0 0 1px #38BDF866; filter: brightness(1.08); }
+    .hud-btn-ghost {
+      display: flex; align-items: center; gap: 6px; padding: 9px 14px; border-radius: 9px;
+      background: #0D0D16; border: 1px solid #1B2438; color: #94A3B8;
+      font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit;
+      transition: color 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+    }
+    .hud-btn-ghost:hover { color: #E2E8F0; border-color: #38BDF866; box-shadow: 0 0 16px #38BDF81F; }
+
+    /* Trilha de diretório estilo terminal. */
+    .hud-crumb {
+      background: none; border: 1px solid transparent; border-radius: 6px; padding: 3px 7px; cursor: pointer;
+      font-family: inherit; font-size: 12px; letter-spacing: 0.4px; color: #38BDF8;
+      transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+    }
+    .hud-crumb:hover { color: #7DD3FC; border-color: #38BDF844; background: #38BDF80F; }
+    .hud-crumb-current { color: #E2E8F0; cursor: default; }
+    .hud-crumb-current:hover { color: #E2E8F0; border-color: transparent; background: none; }
+
+    /* Linhas do menu de barra (/) e do seletor de pasta. */
+    .hud-menu-row { transition: background 0.12s ease, color 0.12s ease; }
+    .hud-menu-row:hover { background: #38BDF814; color: #E2E8F0; }
+
+    @media (prefers-reduced-motion: reduce) {
+      .hud-tile, .hud-tile-interactive:hover { transition: none; transform: none; }
+      .hud-tile-sweep::after { animation: none; }
+    }
+
+    /* ═══ Largura e densidade ═══
+       Nada pode ficar mais largo que a tela. A área de conteúdo já corta o overflow horizontal,
+       mas cortar é só esconder — essas regras fazem o conteúdo REALMENTE caber: mídia/tabela/
+       bloco de código nunca passam de 100%, e no celular a margem lateral cai de 20px pra 12px
+       (20px de cada lado comiam 11% de uma tela de 375px). */
+    img, video, table, pre { max-width: 100%; }
+    @media (max-width: 767px) {
+      .fade-in { padding-left: 12px !important; padding-right: 12px !important; }
+    }
+
+    /* ═══ Hover tecnológico nos botões do app inteiro ═══
+       Dois níveis, de propósito: os botões de AÇÃO (os que têm peso visual próprio — gradiente
+       azul, .hud-btn-*, .hud-icon-btn) recebem uma linha neon que dá uma volta rápida no
+       contorno; todo o resto recebe só a "piscada" de brilho. Se todos tivessem a volta neon a
+       tela viraria uma árvore de natal — a diferença é o que faz o efeito parecer intencional. */
+
+    /* A linha neon é um conic-gradient girando, recortado só na faixa da borda por um par de
+       máscaras (a de content-box "fura" o miolo). Precisa do @property pra um ângulo em graus
+       poder ser animado de verdade — custom property sem tipo registrado não interpola. */
+    @property --tdv-ang { syntax: '<angle>'; initial-value: 0deg; inherits: false; }
+    @keyframes tdvTrace { to { --tdv-ang: 360deg; } }
+    @keyframes tdvBlink { 0%, 100% { filter: brightness(1); } 30% { filter: brightness(1.5); } 65% { filter: brightness(0.97); } }
+
+    /* Piscada: qualquer botão que NÃO seja do grupo da linha neon (senão os dois efeitos
+       rodariam juntos no mesmo botão e a distinção entre os dois níveis se perderia). */
+    button:not(:disabled):not(.no-tech):not(.hud-btn-primary):not(.hud-btn-ghost):not(.hud-icon-btn):not([style*="linear-gradient(135deg, #2563EB"]):hover {
+      animation: tdvBlink 0.3s ease;
+    }
+
+    .hud-btn-primary, .hud-btn-ghost, .hud-icon-btn,
+    button[style*="linear-gradient(135deg, #2563EB"] { position: relative; isolation: isolate; }
+    .hud-btn-primary::after, .hud-btn-ghost::after, .hud-icon-btn::after,
+    button[style*="linear-gradient(135deg, #2563EB"]::after {
+      content: ''; position: absolute; inset: 0; border-radius: inherit; padding: 1.5px;
+      background: conic-gradient(from var(--tdv-ang), transparent 0deg, #38BDF8 45deg, #A5F3FC 70deg, transparent 105deg);
+      -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+      -webkit-mask-composite: xor;
+      mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+      mask-composite: exclude;
+      opacity: 0; transition: opacity 0.12s ease; pointer-events: none;
+    }
+    .hud-btn-primary:hover::after, .hud-btn-ghost:hover::after, .hud-icon-btn:hover::after,
+    button[style*="linear-gradient(135deg, #2563EB"]:hover::after {
+      opacity: 1; animation: tdvTrace 0.55s linear;
+    }
+    .hud-icon-btn-danger::after { background: conic-gradient(from var(--tdv-ang), transparent 0deg, #EF4444 45deg, #FCA5A5 70deg, transparent 105deg); }
+
+    @media (prefers-reduced-motion: reduce) {
+      button:not(:disabled):hover { animation: none; }
+      .hud-btn-primary:hover::after, .hud-btn-ghost:hover::after, .hud-icon-btn:hover::after,
+      button[style*="linear-gradient(135deg, #2563EB"]:hover::after { animation: none; opacity: 0.85; }
+    }
   </style>
 </helmet>
 
@@ -330,7 +466,7 @@
 
         <!-- ═══ HOME ═══ -->
         <sc-if value="{{ isHome }}" hint-placeholder-val="{{ false }}">
-          <div class="fade-in" style="padding: 20px 20px; display: flex; flex-direction: column; gap: 16px; max-width: 1040px; margin: 0 auto; width: 100%; box-sizing: border-box;">
+          <div class="fade-in" style="padding: 20px 20px; display: flex; flex-direction: column; gap: 16px; max-width: 1320px; margin: 0 auto; width: 100%; box-sizing: border-box;">
             <div style="font-size: 21px; font-weight: 600; color: #E2E8F0; letter-spacing: -0.3px;">{{ greeting }}, {{ firstName }} 👋</div>
 
             <!-- ações rápidas -->
@@ -566,7 +702,7 @@
 
         <!-- ═══ FINANCE (sub-nav) ═══ -->
         <sc-if value="{{ isFinanceSector }}" hint-placeholder-val="{{ true }}">
-          <div style="display: flex; gap: 4px; padding: 14px 20px 0; overflow-x: auto; max-width: 820px; margin: 0 auto; width: 100%; box-sizing: border-box;">
+          <div style="display: flex; gap: 4px; padding: 14px 20px 0; overflow-x: auto; max-width: 1280px; margin: 0 auto; width: 100%; box-sizing: border-box;">
             <sc-for list="{{ financeSubNavItems }}" as="fn" hint-placeholder-count="4">
               <button onClick="{{ fn.onClick }}" style="{{ fn.style }}">{{ fn.label }}</button>
             </sc-for>
@@ -575,7 +711,7 @@
 
         <!-- ═══ DASHBOARD ═══ -->
         <sc-if value="{{ isDashboard }}" hint-placeholder-val="{{ true }}">
-          <div class="fade-in" style="padding: 20px 20px; display: flex; flex-direction: column; gap: 18px; max-width: 820px; margin: 0 auto; width: 100%; box-sizing: border-box;">
+          <div class="fade-in" style="padding: 20px 20px; display: flex; flex-direction: column; gap: 18px; max-width: 1280px; margin: 0 auto; width: 100%; box-sizing: border-box;">
             <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;">
               <div>
                 <div style="font-size: 21px; font-weight: 600; color: #E2E8F0; letter-spacing: -0.3px;">{{ greeting }}, {{ firstName }} 👋</div>
@@ -1023,7 +1159,7 @@
 
         <!-- ═══ LANÇAMENTOS ═══ -->
         <sc-if value="{{ isLancamentos }}" hint-placeholder-val="{{ false }}">
-          <div class="fade-in" style="padding: 20px; display: flex; flex-direction: column; gap: 16px; max-width: 960px; margin: 0 auto; width: 100%; box-sizing: border-box;">
+          <div class="fade-in" style="padding: 20px; display: flex; flex-direction: column; gap: 16px; max-width: 1280px; margin: 0 auto; width: 100%; box-sizing: border-box;">
             <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
               <div style="font-size: 20px; font-weight: 600; color: #E2E8F0; letter-spacing: -0.3px;">Lançamentos</div>
             </div>
@@ -1179,7 +1315,7 @@
 
         <!-- ═══ PLANEJAMENTO ═══ -->
         <sc-if value="{{ isPlanejamento }}" hint-placeholder-val="{{ false }}">
-          <div class="fade-in" style="padding: 20px; display: flex; flex-direction: column; gap: 18px; max-width: 960px; margin: 0 auto; width: 100%; box-sizing: border-box;">
+          <div class="fade-in" style="padding: 20px; display: flex; flex-direction: column; gap: 18px; max-width: 1280px; margin: 0 auto; width: 100%; box-sizing: border-box;">
             <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
               <div style="font-size: 20px; font-weight: 600; color: #E2E8F0; letter-spacing: -0.3px;">Planejamento</div>
               <sc-if value="{{ isTabMetas }}" hint-placeholder-val="{{ false }}">
@@ -1427,7 +1563,7 @@
 
         <!-- ═══ CATEGORIAS ═══ -->
         <sc-if value="{{ isCategorias }}" hint-placeholder-val="{{ false }}">
-          <div class="fade-in" style="padding: 20px; display: flex; flex-direction: column; gap: 16px; max-width: 960px; margin: 0 auto; width: 100%; box-sizing: border-box;">
+          <div class="fade-in" style="padding: 20px; display: flex; flex-direction: column; gap: 16px; max-width: 1280px; margin: 0 auto; width: 100%; box-sizing: border-box;">
             <sc-if value="{{ hasBudgetAlert }}" hint-placeholder-val="{{ false }}">
               <div style="display: flex; align-items: center; gap: 10px; padding: 12px 16px; background: #EF444412; border: 1px solid #EF444430; border-radius: 10px;">
                 <i class="ph ph-warning" style="font-size: 16px; color: #EF4444; flex-shrink: 0;"></i>
@@ -1477,7 +1613,7 @@
 
         <!-- ═══ CONFIGURAÇÕES ═══ -->
         <sc-if value="{{ isConfiguracoes }}" hint-placeholder-val="{{ false }}">
-          <div class="fade-in" style="padding: 20px; display: flex; flex-direction: column; gap: 16px; max-width: 540px; margin: 0 auto; width: 100%; box-sizing: border-box;">
+          <div class="fade-in" style="padding: 20px; display: flex; flex-direction: column; gap: 16px; max-width: 820px; margin: 0 auto; width: 100%; box-sizing: border-box;">
             <div style="font-size: 20px; font-weight: 600; color: #E2E8F0; letter-spacing: -0.3px;">Configurações</div>
             <!-- Profile -->
             <div style="background: #111118; border: 1px solid #151525; border-radius: 12px; padding: 20px; display: flex; flex-direction: column; gap: 14px;">
@@ -1583,7 +1719,7 @@
 
         <!-- ═══ TAREFAS ═══ -->
         <sc-if value="{{ isTarefas }}" hint-placeholder-val="{{ false }}">
-          <div class="fade-in" style="padding: 20px; display: flex; flex-direction: column; gap: 16px; max-width: 720px; margin: 0 auto; width: 100%; box-sizing: border-box;">
+          <div class="fade-in" style="padding: 20px; display: flex; flex-direction: column; gap: 16px; max-width: 1100px; margin: 0 auto; width: 100%; box-sizing: border-box;">
             <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
               <div style="font-size: 20px; font-weight: 600; color: #E2E8F0; letter-spacing: -0.3px;">Tarefas</div>
               <button onClick="{{ openNewTask }}" style="display: flex; align-items: center; gap: 6px; padding: 9px 16px; background: linear-gradient(135deg, #2563EB, #06B6D4); border: none; border-radius: 9px; color: white; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; box-shadow: 0 2px 12px #2563EB33;">
@@ -1691,7 +1827,7 @@
 
         <!-- ═══ AGENDA ═══ -->
         <sc-if value="{{ isAgenda }}" hint-placeholder-val="{{ false }}">
-          <div class="fade-in" style="padding: 20px; display: flex; flex-direction: column; gap: 16px; max-width: 1040px; margin: 0 auto; width: 100%; box-sizing: border-box;">
+          <div class="fade-in" style="padding: 20px; display: flex; flex-direction: column; gap: 16px; max-width: 1320px; margin: 0 auto; width: 100%; box-sizing: border-box;">
             <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
               <div style="font-size: 20px; font-weight: 600; color: #E2E8F0; letter-spacing: -0.3px;">Agenda</div>
               <button onClick="{{ openNewEvent }}" style="display: flex; align-items: center; gap: 6px; padding: 9px 16px; background: linear-gradient(135deg, #2563EB, #06B6D4); border: none; border-radius: 9px; color: white; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; box-shadow: 0 2px 12px #2563EB33;">
@@ -1788,68 +1924,83 @@
         <!-- ═══ ANOTAÇÕES ═══ -->
         <sc-if value="{{ isNotas }}" hint-placeholder-val="{{ false }}">
           <sc-if value="{{ isNoteList }}" hint-placeholder-val="{{ true }}">
-            <div class="fade-in" style="padding: 20px; display: flex; flex-direction: column; gap: 16px; max-width: 820px; margin: 0 auto; width: 100%; box-sizing: border-box;">
-              <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
-                <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap; font-size: 13px;">
-                  <sc-for list="{{ breadcrumbItems }}" as="bc" hint-placeholder-count="2">
-                    <sc-if value="{{ bc.notFirst }}" hint-placeholder-val="{{ false }}"><span style="color: #1E2A3A;">/</span></sc-if>
-                    <button onClick="{{ bc.onClick }}" style="{{ bc.crumbStyle }}">{{ bc.name }}</button>
-                  </sc-for>
+            <div class="fade-in" style="padding: 20px; display: flex; flex-direction: column; gap: 12px; max-width: 1280px; margin: 0 auto; width: 100%; box-sizing: border-box;">
+              <!-- Barra de diretório: trilha à esquerda (também serve de alvo pra soltar nota),
+                   leitura do conteúdo da pasta e ações à direita. -->
+              <div class="hud-tile hud-tile-cyan" style="padding: 11px 14px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+                <div style="display: flex; align-items: center; gap: 9px; flex-wrap: wrap; min-width: 0;">
+                  <span class="hud-label" style="color: #38BDF8;">DIRETÓRIO</span>
+                  <div style="display: flex; align-items: center; gap: 1px; flex-wrap: wrap; min-width: 0;">
+                    <sc-for list="{{ breadcrumbItems }}" as="bc" hint-placeholder-count="2">
+                      <sc-if value="{{ bc.notFirst }}" hint-placeholder-val="{{ false }}"><span style="color: #1E2A3A; font-size: 12px;">/</span></sc-if>
+                      <button onClick="{{ bc.onClick }}" class="{{ bc.crumbClass }}" data-note-folder-drop="{{ bc.dropId }}">{{ bc.name }}</button>
+                    </sc-for>
+                  </div>
                 </div>
-                <div style="display: flex; align-items: center; gap: 8px;">
-                  <button onClick="{{ openNewFolderModal }}" style="display: flex; align-items: center; gap: 6px; padding: 9px 14px; background: transparent; border: 1px solid #1E2A45; border-radius: 9px; color: #94A3B8; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit;">
+                <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                  <span class="hud-label" style="white-space: nowrap;">{{ noteTotalLabel }}</span>
+                  <button onClick="{{ openNewFolderModal }}" class="hud-btn-ghost">
                     <i class="ph ph-folder-plus" style="font-size: 15px;"></i>Nova Pasta
                   </button>
-                  <button onClick="{{ newNote }}" style="display: flex; align-items: center; gap: 6px; padding: 9px 16px; background: linear-gradient(135deg, #2563EB, #06B6D4); border: none; border-radius: 9px; color: white; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; box-shadow: 0 2px 12px #2563EB33;">
+                  <button onClick="{{ newNote }}" class="hud-btn-primary">
                     <i class="ph ph-plus" style="font-size: 15px;"></i>Nova Nota
                   </button>
                 </div>
               </div>
               <sc-if value="{{ noNoteItems }}" hint-placeholder-val="{{ false }}">
-                <div class="hud-scan-wrap" style="background: #111118; border: 1px solid #151525; border-radius: 12px; padding: 48px 24px; display: flex; flex-direction: column; align-items: center; gap: 0; text-align: center;">
+                <div class="hud-tile hud-tile-cyan hud-scan-wrap" style="padding: 44px 24px; display: flex; flex-direction: column; align-items: center; text-align: center;">
                   <div class="hud-scan-line"></div>
-                  <div style="width: 56px; height: 56px; border-radius: 14px; background: #1A1A2A; display: flex; align-items: center; justify-content: center; margin-bottom: 14px;">
-                    <i class="ph ph-note-pencil" style="font-size: 26px; color: #2A3A55;"></i>
+                  <div style="width: 54px; height: 54px; border-radius: 14px; background: #38BDF80F; border: 1px solid #38BDF833; display: flex; align-items: center; justify-content: center; margin-bottom: 14px;">
+                    <i class="ph ph-note-pencil" style="font-size: 24px; color: #38BDF8;"></i>
                   </div>
-                  <div style="font-size: 15px; font-weight: 600; color: #334155; margin-bottom: 6px;">Nada por aqui ainda</div>
-                  <div style="font-size: 12px; color: #1E2A3A; line-height: 1.6; max-width: 260px; margin-bottom: 16px;">Cria uma nota e já começa a digitar — salva sozinho, sem precisar clicar em nada.</div>
-                  <button onClick="{{ newNote }}" style="padding: 9px 20px; background: linear-gradient(135deg, #2563EB, #06B6D4); border: none; border-radius: 9px; color: white; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit;">Criar primeira nota</button>
+                  <div class="hud-label" style="margin-bottom: 8px;">SEM REGISTROS NESTE DIRETÓRIO</div>
+                  <div style="font-size: 12px; color: #475569; line-height: 1.6; max-width: 300px; margin-bottom: 16px;">Cria uma nota e já começa a digitar — salva sozinho, sem precisar clicar em nada.</div>
+                  <button onClick="{{ newNote }}" class="hud-btn-primary"><i class="ph ph-plus" style="font-size: 15px;"></i>Criar primeira nota</button>
                 </div>
               </sc-if>
               <sc-if value="{{ hasFolderItems }}" hint-placeholder-val="{{ false }}">
-                <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px;">
+                <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(196px, 1fr)); gap: 9px;">
                   <sc-for list="{{ folderItems }}" as="fo" hint-placeholder-count="3">
-                    <div onClick="{{ fo.onOpen }}" style="text-align: left; background: #111118; border: 1px solid #151525; border-radius: 12px; padding: 14px 16px; cursor: pointer; font-family: inherit; display: flex; flex-direction: column; gap: 6px; box-sizing: border-box;">
-                      <div style="display: flex; align-items: center; gap: 8px;">
-                        <i class="ph ph-folder-simple" style="font-size: 17px; color: #EAB308; flex-shrink: 0;"></i>
-                        <div style="font-size: 13px; font-weight: 600; color: #E2E8F0; overflow-wrap: break-word; flex: 1;">{{ fo.name }}</div>
+                    <div onClick="{{ fo.onOpen }}" class="{{ fo.cardClass }}" data-note-folder-drop="{{ fo.id }}" style="padding: 12px 13px; display: flex; flex-direction: column; gap: 9px; box-sizing: border-box; text-align: left;">
+                      <div class="hud-tile-sweep"></div>
+                      <div style="display: flex; align-items: center; gap: 9px; position: relative; min-width: 0;">
+                        <div style="width: 30px; height: 30px; border-radius: 8px; background: #F5B8411A; border: 1px solid #F5B84133; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                          <i class="ph ph-folder-simple" style="font-size: 15px; color: #F5B841;"></i>
+                        </div>
+                        <div style="font-size: 13px; font-weight: 600; color: #E2E8F0; overflow-wrap: break-word; flex: 1; min-width: 0;">{{ fo.name }}</div>
                       </div>
-                      <div style="font-size: 11px; color: #334155;">{{ fo.countLabel }}</div>
-                      <div style="display: flex; gap: 12px; margin-top: 2px;">
-                        <button onClick="{{ fo.onRename }}" title="Renomear" style="background: none; border: none; color: #334155; cursor: pointer; padding: 0; font-size: 13px; display: flex; align-items: center;"><i class="ph ph-pencil-simple"></i></button>
-                        <button onClick="{{ fo.onMove }}" title="Mover para" style="background: none; border: none; color: #334155; cursor: pointer; padding: 0; font-size: 13px; display: flex; align-items: center;"><i class="ph ph-folder-open"></i></button>
-                        <button onClick="{{ fo.onDelete }}" title="Excluir pasta (mantém o conteúdo)" style="background: none; border: none; color: #EF444455; cursor: pointer; padding: 0; font-size: 13px; display: flex; align-items: center;"><i class="ph ph-trash"></i></button>
+                      <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; position: relative;">
+                        <span class="hud-label" style="letter-spacing: 1px;">{{ fo.countLabel }}</span>
+                        <div class="hud-tile-actions" style="display: flex; gap: 5px;">
+                          <button onClick="{{ fo.onRename }}" title="Renomear" class="hud-icon-btn" style="width: 24px; height: 24px; font-size: 12px;"><i class="ph ph-pencil-simple"></i></button>
+                          <button onClick="{{ fo.onMove }}" title="Mover para" class="hud-icon-btn" style="width: 24px; height: 24px; font-size: 12px;"><i class="ph ph-folder-open"></i></button>
+                          <button onClick="{{ fo.onDelete }}" title="Excluir pasta (mantém o conteúdo)" class="hud-icon-btn hud-icon-btn-danger" style="width: 24px; height: 24px; font-size: 12px;"><i class="ph ph-trash"></i></button>
+                        </div>
                       </div>
                     </div>
                   </sc-for>
                 </div>
               </sc-if>
               <sc-if value="{{ hasNoteItems }}" hint-placeholder-val="{{ false }}">
-                <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px;">
+                <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(196px, 1fr)); gap: 9px;">
                   <sc-for list="{{ noteItems }}" as="nt" hint-placeholder-count="4">
-                    <div onClick="{{ nt.onOpen }}" style="text-align: left; background: #111118; border: 1px solid #151525; border-radius: 12px; padding: 14px 16px; cursor: pointer; font-family: inherit; display: flex; flex-direction: column; gap: 6px; min-height: 90px; box-sizing: border-box;">
-                      <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 6px;">
-                        <div style="font-size: 13px; font-weight: 600; color: {{ nt.titleColor }}; overflow-wrap: break-word; flex: 1;">{{ nt.displayTitle }}</div>
-                        <div style="display: flex; gap: 8px; flex-shrink: 0;">
-                          <button onClick="{{ nt.onMove }}" title="Mover para" style="background: none; border: none; color: #334155; cursor: pointer; padding: 0; font-size: 13px; display: flex; align-items: center;"><i class="ph ph-folder-open"></i></button>
-                          <button onClick="{{ nt.onDelete }}" style="background: none; border: none; color: #EF444455; cursor: pointer; padding: 0; font-size: 13px; display: flex; align-items: center;">
-                            <sc-if value="{{ nt.isDeleting }}" hint-placeholder-val="{{ false }}"><span class="btn-spinner" style="border-color: #EF444455; border-top-color: #EF4444;"></span></sc-if>
+                    <div onClick="{{ nt.onOpen }}" onMouseDown="{{ nt.onDragStart }}" class="{{ nt.cardClass }}" title="Arraste para uma pasta ou para a trilha acima" style="padding: 12px 13px; display: flex; flex-direction: column; gap: 7px; min-height: 104px; box-sizing: border-box; text-align: left;">
+                      <div class="hud-tile-sweep"></div>
+                      <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 6px; position: relative; min-width: 0;">
+                        <div style="font-size: 13px; font-weight: 600; color: {{ nt.titleColor }}; overflow-wrap: break-word; flex: 1; min-width: 0;">{{ nt.displayTitle }}</div>
+                        <div class="hud-tile-actions" style="display: flex; gap: 5px; flex-shrink: 0;">
+                          <button onClick="{{ nt.onMove }}" title="Mover para" class="hud-icon-btn" style="width: 24px; height: 24px; font-size: 12px;"><i class="ph ph-folder-open"></i></button>
+                          <button onClick="{{ nt.onDelete }}" title="Excluir nota" class="hud-icon-btn hud-icon-btn-danger" style="width: 24px; height: 24px; font-size: 12px;">
+                            <sc-if value="{{ nt.isDeleting }}" hint-placeholder-val="{{ false }}"><span class="btn-spinner" style="border-color: #EF444455; border-top-color: #EF4444; width: 11px; height: 11px;"></span></sc-if>
                             <sc-if value="{{ nt.notDeleting }}" hint-placeholder-val="{{ true }}"><i class="ph ph-trash"></i></sc-if>
                           </button>
                         </div>
                       </div>
-                      <div style="font-size: 12px; color: #64748B; line-height: 1.5; flex: 1; overflow-wrap: break-word;">{{ nt.preview }}</div>
-                      <div style="font-size: 10px; color: #334155;">{{ nt.fmtUpdated }}</div>
+                      <div class="reading-font" style="font-size: 11.5px; color: #64748B; line-height: 1.55; flex: 1; overflow-wrap: break-word; position: relative;">{{ nt.preview }}</div>
+                      <div style="display: flex; align-items: center; gap: 6px; position: relative;">
+                        <span style="width: 4px; height: 4px; border-radius: 50%; background: #38BDF8; flex-shrink: 0;"></span>
+                        <span class="hud-label" style="letter-spacing: 1px;">{{ nt.fmtUpdated }}</span>
+                      </div>
                     </div>
                   </sc-for>
                 </div>
@@ -1860,13 +2011,19 @@
           <!-- ── Modal de pasta (criar/renomear) ── -->
           <sc-if value="{{ showFolderModal }}" hint-placeholder-val="{{ false }}">
             <div style="position: fixed; inset: 0; background: #00000099; z-index: 200; display: flex; align-items: center; justify-content: center; padding: 16px;">
-              <div class="modal-in" style="background: #111118; border: 1px solid #1E2A45; border-radius: 16px; padding: 24px; width: 100%; max-width: 340px;">
-                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px;">
-                  <div style="font-size: 16px; font-weight: 600; color: #E2E8F0;">{{ folderModalTitle }}</div>
-                  <button onClick="{{ closeFolderModal }}" style="background: none; border: none; color: #334155; cursor: pointer; font-size: 22px; line-height: 1; padding: 0; display: flex;">×</button>
+              <div class="modal-in hud-tile hud-tile-amber" style="padding: 22px; width: 100%; max-width: 340px; box-shadow: 0 20px 60px #000000AA;">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+                  <div style="display: flex; align-items: center; gap: 9px;">
+                    <div style="width: 28px; height: 28px; border-radius: 8px; background: #F5B8411A; border: 1px solid #F5B84133; display: flex; align-items: center; justify-content: center;">
+                      <i class="ph ph-folder-simple" style="font-size: 14px; color: #F5B841;"></i>
+                    </div>
+                    <div style="font-size: 15px; font-weight: 600; color: #E2E8F0;">{{ folderModalTitle }}</div>
+                  </div>
+                  <button onClick="{{ closeFolderModal }}" class="hud-icon-btn" style="width: 26px; height: 26px; font-size: 16px;">×</button>
                 </div>
-                <input type="text" autofocus value="{{ folderName }}" onInput="{{ setFolderName }}" placeholder="Nome da pasta" style="width: 100%; box-sizing: border-box; background: #0D0D1A; border: 1px solid #1E2A45; border-radius: 8px; padding: 11px 14px; color: #E2E8F0; font-size: 14px; font-family: inherit; margin-bottom: 16px;">
-                <button onClick="{{ saveFolder }}" style="width: 100%; padding: 12px; background: linear-gradient(135deg, #2563EB, #06B6D4); border: none; border-radius: 9px; color: white; font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit;">Salvar</button>
+                <div class="hud-label" style="margin-bottom: 7px;">NOME</div>
+                <input type="text" autofocus value="{{ folderName }}" onInput="{{ setFolderName }}" placeholder="Nome da pasta" style="width: 100%; box-sizing: border-box; background: #0D0D16; border: 1px solid #1B2438; border-radius: 8px; padding: 11px 14px; color: #E2E8F0; font-size: 14px; font-family: inherit; margin-bottom: 16px;">
+                <button onClick="{{ saveFolder }}" class="hud-btn-primary" style="width: 100%; justify-content: center; padding: 12px;">Salvar</button>
               </div>
             </div>
           </sc-if>
@@ -1874,15 +2031,16 @@
           <!-- ── Modal de mover ── -->
           <sc-if value="{{ showMoveModal }}" hint-placeholder-val="{{ false }}">
             <div style="position: fixed; inset: 0; background: #00000099; z-index: 200; display: flex; align-items: center; justify-content: center; padding: 16px;">
-              <div class="modal-in" style="background: #111118; border: 1px solid #1E2A45; border-radius: 16px; padding: 24px; width: 100%; max-width: 340px; max-height: 80vh; overflow-y: auto;">
-                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px;">
-                  <div style="font-size: 16px; font-weight: 600; color: #E2E8F0;">Mover para</div>
-                  <button onClick="{{ closeMoveModal }}" style="background: none; border: none; color: #334155; cursor: pointer; font-size: 22px; line-height: 1; padding: 0; display: flex;">×</button>
+              <div class="modal-in hud-tile hud-tile-cyan" style="padding: 22px; width: 100%; max-width: 340px; max-height: 80vh; overflow-y: auto; box-shadow: 0 20px 60px #000000AA;">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;">
+                  <div style="font-size: 15px; font-weight: 600; color: #E2E8F0;">Mover para</div>
+                  <button onClick="{{ closeMoveModal }}" class="hud-icon-btn" style="width: 26px; height: 26px; font-size: 16px;">×</button>
                 </div>
-                <div style="display: flex; flex-direction: column; gap: 4px;">
+                <div class="hud-label" style="margin-bottom: 8px;">DESTINO</div>
+                <div style="display: flex; flex-direction: column; gap: 3px;">
                   <sc-for list="{{ moveFolderOptions }}" as="mo" hint-placeholder-count="4">
-                    <button onClick="{{ mo.onClick }}" style="display: flex; align-items: center; gap: 8px; padding: 10px 12px; background: transparent; border: none; border-radius: 8px; color: #CBD5E1; font-size: 13px; cursor: pointer; font-family: inherit; text-align: left;">
-                      <i class="ph ph-folder-simple" style="font-size: 15px; color: #EAB308;"></i>{{ mo.label }}
+                    <button onClick="{{ mo.onClick }}" class="hud-menu-row" style="display: flex; align-items: center; gap: 9px; padding: 10px 12px; background: transparent; border: none; border-radius: 8px; color: #CBD5E1; font-size: 13px; cursor: pointer; font-family: inherit; text-align: left;">
+                      <i class="ph ph-folder-simple" style="font-size: 15px; color: #F5B841; flex-shrink: 0;"></i>{{ mo.label }}
                     </button>
                   </sc-for>
                 </div>
@@ -1892,53 +2050,71 @@
 
           <!-- ── Editor de nota ── -->
           <sc-if value="{{ isNoteEditor }}" hint-placeholder-val="{{ false }}">
-            <div class="fade-in" style="padding: 20px; display: flex; flex-direction: column; gap: 12px; max-width: 820px; margin: 0 auto; width: 100%; box-sizing: border-box;">
+            <div class="fade-in" style="padding: 20px; max-width: 1280px; margin: 0 auto; width: 100%; box-sizing: border-box;">
+              <!-- O id fica AQUI dentro, e não no div de cima, de propósito: o motor de template
+                   descarta id/title/data-* do elemento que é filho RAIZ de um bloco sc-if (tratado
+                   como host). Lá em cima o getElementById voltaria null e o menu do "/" cairia no
+                   canto superior esquerdo — que era exatamente o sintoma relatado. -->
+              <div id="note-editor-wrap" style="position: relative; display: flex; flex-direction: column; gap: 10px; width: 100%;">
               <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px;">
-                <button onClick="{{ closeNoteEditor }}" style="display: flex; align-items: center; gap: 6px; background: none; border: none; color: #64748B; cursor: pointer; font-size: 13px; font-family: inherit; padding: 0;">
-                  <i class="ph ph-arrow-left" style="font-size: 15px;"></i>Anotações
+                <button onClick="{{ closeNoteEditor }}" class="hud-btn-ghost" style="padding: 7px 12px; font-size: 12px;">
+                  <i class="ph ph-arrow-left" style="font-size: 14px;"></i>Anotações
                 </button>
                 <div style="display: flex; align-items: center; gap: 10px;">
-                  <span style="font-size: 11px; color: #334155;">{{ noteSaveLabel }}</span>
-                  <button onClick="{{ deleteCurrentNote }}" style="background: none; border: 1px solid #1A1A28; border-radius: 6px; color: #EF444488; cursor: pointer; padding: 6px 8px; font-size: 13px; display: flex; align-items: center; line-height: 1;"><i class="ph ph-trash"></i></button>
+                  <div style="display: flex; align-items: center; gap: 6px;">
+                    <span class="hud-status-dot" style="background: {{ noteSaveDotColor }}; box-shadow: 0 0 6px {{ noteSaveDotColor }};"></span>
+                    <span class="hud-label">{{ noteSaveLabel }}</span>
+                  </div>
+                  <button onClick="{{ deleteCurrentNote }}" title="Excluir nota" class="hud-icon-btn hud-icon-btn-danger" style="width: 30px; height: 30px; font-size: 14px;"><i class="ph ph-trash"></i></button>
                 </div>
               </div>
-              <input id="note-title-input" type="text" value="{{ noteTitle }}" onInput="{{ setNoteTitle }}" placeholder="Sem título" style="width: 100%; box-sizing: border-box; background: transparent; border: none; color: #E2E8F0; font-size: 20px; font-weight: 600; font-family: inherit; padding: 0;">
-              <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 6px; background: #111118; border: 1px solid #151525; border-radius: 10px; padding: 8px;">
-                <button onMouseDown="{{ preventFocusLoss }}" onClick="{{ noteBold }}" title="Negrito" style="width: 30px; height: 30px; border-radius: 6px; background: transparent; border: 1px solid #1E2A45; color: #94A3B8; cursor: pointer; font-weight: 700; font-size: 13px; display: flex; align-items: center; justify-content: center;">B</button>
-                <select onMouseDown="{{ preventFocusLoss }}" onChange="{{ noteExecFontSize }}" style="height: 30px; border-radius: 6px; background: #0D0D1A; border: 1px solid #1E2A45; color: #94A3B8; cursor: pointer; font-size: 12px; font-family: inherit; padding: 0 6px;">
-                  <option value="">Tamanho</option>
-                  <option value="12">Pequeno</option>
-                  <option value="14">Normal</option>
-                  <option value="20">Grande</option>
-                  <option value="28">Título</option>
-                </select>
-                <button onMouseDown="{{ preventFocusLoss }}" onClick="{{ noteOrderedList }}" title="Lista numerada" style="width: 30px; height: 30px; border-radius: 6px; background: transparent; border: 1px solid #1E2A45; color: #94A3B8; cursor: pointer; display: flex; align-items: center; justify-content: center;"><i class="ph ph-list-numbers" style="font-size: 14px;"></i></button>
-                <button onMouseDown="{{ preventFocusLoss }}" onClick="{{ noteUnorderedList }}" title="Lista com marcadores" style="width: 30px; height: 30px; border-radius: 6px; background: transparent; border: 1px solid #1E2A45; color: #94A3B8; cursor: pointer; display: flex; align-items: center; justify-content: center;"><i class="ph ph-list-bullets" style="font-size: 14px;"></i></button>
-                <button onMouseDown="{{ preventFocusLoss }}" onClick="{{ noteInsertChecklist }}" title="Checklist" style="width: 30px; height: 30px; border-radius: 6px; background: transparent; border: 1px solid #1E2A45; color: #94A3B8; cursor: pointer; display: flex; align-items: center; justify-content: center;"><i class="ph ph-check-square" style="font-size: 14px;"></i></button>
-                <button onMouseDown="{{ preventFocusLoss }}" onClick="{{ noteInsertTable }}" title="Tabela" style="width: 30px; height: 30px; border-radius: 6px; background: transparent; border: 1px solid #1E2A45; color: #94A3B8; cursor: pointer; display: flex; align-items: center; justify-content: center;"><i class="ph ph-table" style="font-size: 14px;"></i></button>
-                <button onMouseDown="{{ preventFocusLoss }}" onClick="{{ noteInsertLink }}" title="Link" style="width: 30px; height: 30px; border-radius: 6px; background: transparent; border: 1px solid #1E2A45; color: #94A3B8; cursor: pointer; display: flex; align-items: center; justify-content: center;"><i class="ph ph-link" style="font-size: 14px;"></i></button>
-                <div style="width: 1px; height: 20px; background: #1E2A45; margin: 0 2px;"></div>
-                <button onMouseDown="{{ preventFocusLoss }}" onClick="{{ noteJustifyLeft }}" title="Alinhar à esquerda" style="width: 30px; height: 30px; border-radius: 6px; background: transparent; border: 1px solid #1E2A45; color: #94A3B8; cursor: pointer; display: flex; align-items: center; justify-content: center;"><i class="ph ph-text-align-left" style="font-size: 14px;"></i></button>
-                <button onMouseDown="{{ preventFocusLoss }}" onClick="{{ noteJustifyCenter }}" title="Centralizar" style="width: 30px; height: 30px; border-radius: 6px; background: transparent; border: 1px solid #1E2A45; color: #94A3B8; cursor: pointer; display: flex; align-items: center; justify-content: center;"><i class="ph ph-text-align-center" style="font-size: 14px;"></i></button>
-                <button onMouseDown="{{ preventFocusLoss }}" onClick="{{ noteJustifyRight }}" title="Alinhar à direita" style="width: 30px; height: 30px; border-radius: 6px; background: transparent; border: 1px solid #1E2A45; color: #94A3B8; cursor: pointer; display: flex; align-items: center; justify-content: center;"><i class="ph ph-text-align-right" style="font-size: 14px;"></i></button>
-                <div style="width: 1px; height: 20px; background: #1E2A45; margin: 0 2px;"></div>
-                <sc-for list="{{ noteColorOptions }}" as="co" hint-placeholder-count="7">
-                  <button onMouseDown="{{ preventFocusLoss }}" onClick="{{ co.onClick }}" title="Cor do texto" style="{{ co.swatchStyle }}">A</button>
-                </sc-for>
-                <div style="width: 1px; height: 20px; background: #1E2A45; margin: 0 2px;"></div>
-                <sc-for list="{{ noteHighlightOptions }}" as="ho" hint-placeholder-count="5">
-                  <button onMouseDown="{{ preventFocusLoss }}" onClick="{{ ho.onClick }}" title="Marca-texto" style="{{ ho.swatchStyle }}">A</button>
-                </sc-for>
+              <!-- Título, barra de ferramentas e corpo dentro de UM painel só: antes eram três
+                   caixas soltas com borda própria e espaço entre elas. A barra rola na horizontal
+                   em vez de quebrar em duas linhas (era o que acontecia até em tela larga). -->
+              <div class="hud-tile hud-tile-cyan" style="display: flex; flex-direction: column; overflow: hidden; min-height: 68vh;">
+                <div style="display: flex; align-items: center; gap: 9px; padding: 13px 16px 11px; border-bottom: 1px solid #1B2438;">
+                  <span style="color: #38BDF8; font-size: 16px; line-height: 1; flex-shrink: 0;">▌</span>
+                  <input id="note-title-input" type="text" value="{{ noteTitle }}" onInput="{{ setNoteTitle }}" placeholder="Sem título" style="flex: 1; min-width: 0; box-sizing: border-box; background: transparent; border: none; color: #E2E8F0; font-size: 19px; font-weight: 600; font-family: inherit; padding: 0;">
+                </div>
+                <div style="display: flex; align-items: center; gap: 5px; padding: 8px 12px; border-bottom: 1px solid #1B2438; overflow-x: auto; overflow-y: hidden;">
+                  <button onMouseDown="{{ preventFocusLoss }}" onClick="{{ noteBold }}" title="Negrito" class="hud-icon-btn" style="width: 29px; height: 29px; font-weight: 700; font-size: 13px;">B</button>
+                  <select onMouseDown="{{ preventFocusLoss }}" onChange="{{ noteExecFontSize }}" style="height: 29px; flex-shrink: 0; border-radius: 7px; background: #0D0D16; border: 1px solid #1B2438; color: #94A3B8; cursor: pointer; font-size: 12px; font-family: inherit; padding: 0 6px;">
+                    <option value="">Tamanho</option>
+                    <option value="12">Pequeno</option>
+                    <option value="14">Normal</option>
+                    <option value="20">Grande</option>
+                    <option value="28">Título</option>
+                  </select>
+                  <div style="width: 1px; height: 18px; background: #1B2438; margin: 0 3px; flex-shrink: 0;"></div>
+                  <button onMouseDown="{{ preventFocusLoss }}" onClick="{{ noteOrderedList }}" title="Lista numerada" class="hud-icon-btn" style="width: 29px; height: 29px;"><i class="ph ph-list-numbers" style="font-size: 14px;"></i></button>
+                  <button onMouseDown="{{ preventFocusLoss }}" onClick="{{ noteUnorderedList }}" title="Lista com marcadores" class="hud-icon-btn" style="width: 29px; height: 29px;"><i class="ph ph-list-bullets" style="font-size: 14px;"></i></button>
+                  <button onMouseDown="{{ preventFocusLoss }}" onClick="{{ noteInsertChecklist }}" title="Checklist" class="hud-icon-btn" style="width: 29px; height: 29px;"><i class="ph ph-check-square" style="font-size: 14px;"></i></button>
+                  <button onMouseDown="{{ preventFocusLoss }}" onClick="{{ noteInsertTable }}" title="Tabela" class="hud-icon-btn" style="width: 29px; height: 29px;"><i class="ph ph-table" style="font-size: 14px;"></i></button>
+                  <button onMouseDown="{{ preventFocusLoss }}" onClick="{{ noteInsertLink }}" title="Link" class="hud-icon-btn" style="width: 29px; height: 29px;"><i class="ph ph-link" style="font-size: 14px;"></i></button>
+                  <div style="width: 1px; height: 18px; background: #1B2438; margin: 0 3px; flex-shrink: 0;"></div>
+                  <button onMouseDown="{{ preventFocusLoss }}" onClick="{{ noteJustifyLeft }}" title="Alinhar à esquerda" class="hud-icon-btn" style="width: 29px; height: 29px;"><i class="ph ph-text-align-left" style="font-size: 14px;"></i></button>
+                  <button onMouseDown="{{ preventFocusLoss }}" onClick="{{ noteJustifyCenter }}" title="Centralizar" class="hud-icon-btn" style="width: 29px; height: 29px;"><i class="ph ph-text-align-center" style="font-size: 14px;"></i></button>
+                  <button onMouseDown="{{ preventFocusLoss }}" onClick="{{ noteJustifyRight }}" title="Alinhar à direita" class="hud-icon-btn" style="width: 29px; height: 29px;"><i class="ph ph-text-align-right" style="font-size: 14px;"></i></button>
+                  <div style="width: 1px; height: 18px; background: #1B2438; margin: 0 3px; flex-shrink: 0;"></div>
+                  <sc-for list="{{ noteColorOptions }}" as="co" hint-placeholder-count="7">
+                    <button onMouseDown="{{ preventFocusLoss }}" onClick="{{ co.onClick }}" title="Cor do texto" style="{{ co.swatchStyle }}">A</button>
+                  </sc-for>
+                  <div style="width: 1px; height: 18px; background: #1B2438; margin: 0 3px; flex-shrink: 0;"></div>
+                  <sc-for list="{{ noteHighlightOptions }}" as="ho" hint-placeholder-count="5">
+                    <button onMouseDown="{{ preventFocusLoss }}" onClick="{{ ho.onClick }}" title="Marca-texto" style="{{ ho.swatchStyle }}">A</button>
+                  </sc-for>
+                </div>
+                <div id="note-editor-el" class="reading-font" contenteditable="true" onInput="{{ handleNoteInput }}" onKeyDown="{{ noteEditorKeyDown }}" onClick="{{ noteEditorClick }}" style="flex: 1; padding: 18px 20px; color: #E2E8F0; font-size: 14px; line-height: 1.7; outline: none; overflow-wrap: break-word; overflow-y: auto; overflow-x: auto;"></div>
               </div>
-              <div id="note-editor-el" class="reading-font" contenteditable="true" onInput="{{ handleNoteInput }}" onKeyDown="{{ noteEditorKeyDown }}" onClick="{{ noteEditorClick }}" style="flex: 1; min-height: 320px; background: #111118; border: 1px solid #151525; border-radius: 10px; padding: 18px; color: #E2E8F0; font-size: 14px; line-height: 1.7; outline: none; overflow-wrap: break-word;"></div>
               <sc-if value="{{ slashMenuOpen }}" hint-placeholder-val="{{ false }}">
                 <div style="{{ slashMenuStyle }}">
-                  <div class="modal-in" style="background: #111118; border: 1px solid #1E2A45; border-radius: 10px; width: 220px; max-height: 320px; overflow-y: auto; padding: 6px; box-shadow: 0 16px 48px #00000088;">
+                  <div class="modal-in hud-tile hud-tile-cyan" style="width: 220px; max-height: 320px; overflow-y: auto; padding: 6px; box-shadow: 0 18px 50px #000000AA, 0 0 22px #38BDF81A;">
+                    <div class="hud-label" style="padding: 5px 8px 6px; color: #38BDF8;">BLOCOS</div>
                     <sc-if value="{{ slashMenuEmpty }}" hint-placeholder-val="{{ false }}">
                       <div style="padding: 14px; text-align: center; font-size: 12px; color: #334155;">Nada encontrado.</div>
                     </sc-if>
                     <sc-for list="{{ slashMenuEntries }}" as="en" hint-placeholder-count="8">
-                      <div onClick="{{ en.onClick }}" style="{{ en.rowStyle }}">
+                      <div onClick="{{ en.onClick }}" class="hud-menu-row" style="{{ en.rowStyle }}">
                         <i class="{{ en.icon }}" style="font-size: 14px; flex-shrink: 0;"></i>
                         <span style="font-size: 13px;">{{ en.label }}</span>
                       </div>
@@ -1950,10 +2126,10 @@
                    clique, arrastar, Shift+seta), igual Notion/Google Docs. -->
               <sc-if value="{{ selectionToolbarOpen }}" hint-placeholder-val="{{ false }}">
                 <div style="{{ selectionToolbarStyle }}">
-                  <div class="modal-in" style="display: flex; flex-wrap: wrap; align-items: center; gap: 6px; background: #111118; border: 1px solid #1E2A45; border-radius: 10px; padding: 6px; box-shadow: 0 16px 48px #00000088;">
-                    <button onMouseDown="{{ preventFocusLoss }}" onClick="{{ noteBold }}" title="Negrito" style="width: 28px; height: 28px; border-radius: 6px; background: transparent; border: 1px solid #1E2A45; color: #94A3B8; cursor: pointer; font-weight: 700; font-size: 12px; display: flex; align-items: center; justify-content: center;">B</button>
-                    <button onMouseDown="{{ preventFocusLoss }}" onClick="{{ noteInsertLink }}" title="Link" style="width: 28px; height: 28px; border-radius: 6px; background: transparent; border: 1px solid #1E2A45; color: #94A3B8; cursor: pointer; display: flex; align-items: center; justify-content: center;"><i class="ph ph-link" style="font-size: 13px;"></i></button>
-                    <div style="width: 1px; height: 18px; background: #1E2A45; margin: 0 2px;"></div>
+                  <div class="modal-in hud-tile hud-tile-cyan" style="display: flex; flex-wrap: wrap; align-items: center; gap: 5px; padding: 6px; max-width: 330px; box-shadow: 0 18px 50px #000000AA, 0 0 22px #38BDF81A;">
+                    <button onMouseDown="{{ preventFocusLoss }}" onClick="{{ noteBold }}" title="Negrito" class="hud-icon-btn" style="width: 28px; height: 28px; font-weight: 700; font-size: 12px;">B</button>
+                    <button onMouseDown="{{ preventFocusLoss }}" onClick="{{ noteInsertLink }}" title="Link" class="hud-icon-btn" style="width: 28px; height: 28px;"><i class="ph ph-link" style="font-size: 13px;"></i></button>
+                    <div style="width: 1px; height: 18px; background: #1B2438; margin: 0 2px;"></div>
                     <sc-for list="{{ noteColorOptions }}" as="co" hint-placeholder-count="7">
                       <button onMouseDown="{{ preventFocusLoss }}" onClick="{{ co.onClick }}" title="Cor do texto" style="{{ co.swatchStyle }}">A</button>
                     </sc-for>
@@ -1964,13 +2140,14 @@
                   </div>
                 </div>
               </sc-if>
+              </div>
             </div>
           </sc-if>
         </sc-if>
 
         <!-- ═══ NOTÍCIAS ═══ -->
         <sc-if value="{{ isNoticias }}" hint-placeholder-val="{{ false }}">
-          <div class="fade-in" style="padding: 20px; display: flex; flex-direction: column; gap: 16px; max-width: 820px; margin: 0 auto; width: 100%; box-sizing: border-box;">
+          <div class="fade-in" style="padding: 20px; display: flex; flex-direction: column; gap: 16px; max-width: 1280px; margin: 0 auto; width: 100%; box-sizing: border-box;">
             <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
               <div style="font-size: 20px; font-weight: 600; color: #E2E8F0; letter-spacing: -0.3px;">Notícias</div>
               <button onClick="{{ refreshNews }}" style="display: flex; align-items: center; gap: 6px; padding: 9px 16px; background: transparent; border: 1px solid #1E2A45; border-radius: 9px; color: #94A3B8; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit;">
@@ -2884,6 +3061,8 @@ class Component extends DCLogic {
     showMoveModal: false,
     moveItemType: null,
     moveItemId: null,
+    draggingNoteId: null,
+    noteDropTargetId: null,
     jarvisLiveMode: false,
     jarvisLiveTranscript: '',
     jarvisLiveStatus: 'listening', // 'listening' | 'thinking' | 'speaking'
@@ -3149,6 +3328,9 @@ class Component extends DCLogic {
     // mesmo espírito dos outros listeners globais desta função.
     document.addEventListener('mousemove', this._onAgendaDragMove);
     document.addEventListener('mouseup', this._onAgendaDragEnd);
+    // Idem pro arrastar nota -> pasta em Anotações (ver startNoteDrag).
+    document.addEventListener('mousemove', this._onNoteDragMove);
+    document.addEventListener('mouseup', this._onNoteDragEnd);
     document.addEventListener('selectionchange', this._onSelectionChange = () => {
       const el = document.getElementById('note-editor-el');
       const sel = window.getSelection();
@@ -3159,7 +3341,7 @@ class Component extends DCLogic {
       }
       const rect = sel.getRangeAt(0).getBoundingClientRect();
       if (!rect || (!rect.top && !rect.left && !rect.width)) return;
-      this.setState({ selectionToolbarOpen: true, selectionToolbarPos: { top: rect.top - 46, left: rect.left } });
+      this.setState({ selectionToolbarOpen: true, selectionToolbarPos: this._noteMenuPos(rect, 330, true) });
     });
     window.addEventListener('keydown', this._hotkey = (e) => {
       // Ctrl/Cmd+K precisa abrir mesmo com foco em outro campo de texto (padrão universal de
@@ -3280,6 +3462,8 @@ class Component extends DCLogic {
     document.removeEventListener('selectionchange', this._onSelectionChange);
     document.removeEventListener('mousemove', this._onAgendaDragMove);
     document.removeEventListener('mouseup', this._onAgendaDragEnd);
+    document.removeEventListener('mousemove', this._onNoteDragMove);
+    document.removeEventListener('mouseup', this._onNoteDragEnd);
     this._stopHudClock();
   }
 
@@ -5312,6 +5496,66 @@ class Component extends DCLogic {
     this._toast('Movido.');
   }
 
+  // Arrastar uma nota pra dentro de uma pasta (ou pra um nível acima, soltando na trilha).
+  // Mesma mecânica manual do arrastar da Agenda — mousedown/mousemove/mouseup com ouvintes
+  // globais — porque o motor de template não reconhece o evento "drop" do HTML5.
+  // Só nota arrasta: pasta continua sendo movida pelo modal, que já cuida de não deixar
+  // enfiar uma pasta dentro dela mesma (ciclo).
+  startNoteDrag = (noteId, e) => {
+    // Os botões de ação do cartão (mover/excluir) ficam DENTRO da área arrastável — sem isso,
+    // apertar um deles começava a arrastar a nota em vez de acionar o botão.
+    if (e.target && e.target.closest && e.target.closest('button')) return;
+    e.preventDefault();
+    this._noteDrag = { noteId, moved: false, startX: e.clientX, startY: e.clientY };
+  }
+
+  _noteDropFromPoint = (x, y) => {
+    const el = document.elementFromPoint(x, y);
+    const target = el && el.closest ? el.closest('[data-note-folder-drop]') : null;
+    return target ? target.getAttribute('data-note-folder-drop') : null;
+  }
+
+  _onNoteDragMove = (e) => {
+    const drag = this._noteDrag;
+    if (!drag) return;
+    if (!drag.moved) {
+      if (Math.abs(e.clientX - drag.startX) < 4 && Math.abs(e.clientY - drag.startY) < 4) return;
+      drag.moved = true;
+    }
+    // Só mexe no state quando o alvo sob o cursor muda de verdade — mousemove dispara dezenas de
+    // vezes por segundo e cada setState recalcula o renderVals() inteiro.
+    const target = this._noteDropFromPoint(e.clientX, e.clientY);
+    if (target !== this.state.noteDropTargetId || this.state.draggingNoteId !== drag.noteId) {
+      this.setState({ noteDropTargetId: target, draggingNoteId: drag.noteId });
+    }
+  }
+
+  _onNoteDragEnd = (e) => {
+    const drag = this._noteDrag;
+    if (!drag) return;
+    this._noteDrag = null;
+    const target = drag.moved ? this._noteDropFromPoint(e.clientX, e.clientY) : null;
+    // O cartão recebe o click nativo logo depois do mouseup — sem essa trava, todo arrasto
+    // também abria a nota. setTimeout(0) libera depois que esse click já passou.
+    if (drag.moved) { this._noteJustDragged = true; setTimeout(() => { this._noteJustDragged = false; }, 0); }
+    this.setState({ noteDropTargetId: null, draggingNoteId: null });
+    if (target) this.moveNoteToFolder(drag.noteId, target === 'root' ? null : target);
+  }
+
+  moveNoteToFolder = async (noteId, folderId) => {
+    const note = this.state.notes.find(n => n.id === noteId);
+    if (!note || (note.folderId || null) === folderId) return;
+    this.setState({ notes: this.state.notes.map(n => n.id === noteId ? { ...n, folderId } : n) });
+    const { error } = await window._sb.from('notes').update({ folder_id: folderId }).eq('id', noteId);
+    if (error) {
+      this.setState({ notes: this.state.notes.map(n => n.id === noteId ? note : n) });
+      this._toast('Não foi possível mover a nota. Tente novamente.');
+      return;
+    }
+    const dest = folderId ? (this.state.noteFolders.find(f => f.id === folderId) || {}).name : 'Anotações';
+    this._toast('Nota movida para ' + (dest || 'a pasta') + '.');
+  }
+
   noteExec = (cmd, value) => {
     const el = document.getElementById('note-editor-el');
     if (el) el.focus();
@@ -5595,9 +5839,37 @@ class Component extends DCLogic {
     return (rect && (rect.top || rect.left || rect.width || rect.height)) ? rect : null;
   }
 
+  // Converte um retângulo em coordenada de VIEWPORT (cursor ou seleção) pra coordenada
+  // ABSOLUTA dentro do container do editor.
+  //
+  // Por que não dá pra simplesmente usar position:fixed com a coordenada da viewport: o
+  // container do editor tem a classe .fade-in, cuja animação roda com fill-mode "both" — o
+  // transform do último keyframe (translateY(0)) fica grudado no elemento pra sempre. E
+  // qualquer transform diferente de "none" faz o elemento virar o BLOCO DE CONTENÇÃO dos
+  // position:fixed que estão dentro dele. Resultado: o menu era posicionado em relação ao
+  // container, não à tela, e aparecia deslocado exatamente pela distância da borda esquerda
+  // do container (medido: pedindo left:600 o elemento ia parar em left:840 num container que
+  // começava em 240). Posicionando por absolute em relação ao próprio container, o transform
+  // deixa de importar. Também prende dentro da largura do container, pra nunca vazar pro lado.
+  _noteMenuPos = (rect, menuWidth, placeAbove) => {
+    const wrap = document.getElementById('note-editor-wrap');
+    if (!wrap || !rect) return { top: 0, left: 0 };
+    const wr = wrap.getBoundingClientRect();
+    const maxLeft = Math.max(0, wr.width - menuWidth - 8);
+    const rawTop = placeAbove ? (rect.top - wr.top - 46) : (rect.bottom - wr.top + 6);
+    return {
+      top: Math.round(Math.max(0, rawTop)),
+      left: Math.round(Math.min(Math.max(0, rect.left - wr.left), maxLeft)),
+    };
+  }
+
   _openSlashMenu = () => {
-    const rect = this._getCaretRect();
-    const pos = rect ? { top: rect.bottom + 6, left: rect.left } : { top: 200, left: 40 };
+    // Sem retângulo do cursor (navegador devolveu tudo zero), ancora no próprio editor em vez
+    // de num ponto fixo inventado — o antigo fallback era um "left: 40" cru, que é justamente
+    // o que fazia o menu nascer colado na esquerda quando a medição falhava.
+    const el = document.getElementById('note-editor-el');
+    const rect = this._getCaretRect() || (el ? el.getBoundingClientRect() : null);
+    const pos = this._noteMenuPos(rect, 220, false);
     this.setState({ slashMenuOpen: true, slashMenuQuery: '', slashMenuActiveIndex: 0, slashMenuPos: pos });
   }
 
@@ -6337,22 +6609,31 @@ class Component extends DCLogic {
     // estilo explorador de arquivos: entra na pasta, a trilha no topo volta.
     const noteItems = s.notes.filter(n => (n.folderId || null) === s.currentFolderId)
       .slice().sort((a, b) => (b.updatedAt || '').localeCompare(a.updatedAt || '')).map(n => {
-        const preview = (n.content || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 100);
+        const preview = (n.content || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 120);
         return {
           ...n, preview: preview || 'Nota em branco',
           displayTitle: n.title || 'Sem título', titleColor: n.title ? '#E2E8F0' : '#475569',
           fmtUpdated: n.updatedAt ? this.fmtDate(n.updatedAt.split('T')[0]) : '',
           isDeleting: s.deletingId === n.id, notDeleting: s.deletingId !== n.id,
-          onOpen: () => this.openNote(n),
+          cardClass: 'hud-tile hud-tile-cyan hud-tile-interactive' + (s.draggingNoteId === n.id ? ' hud-tile-dragging' : ''),
+          onOpen: () => { if (this._noteJustDragged) return; this.openNote(n); },
+          onDragStart: (e) => this.startNoteDrag(n.id, e),
           onMove: (e) => { if (e && e.stopPropagation) e.stopPropagation(); this.openMoveModal('note', n.id); },
           onDelete: (e) => { if (e && e.stopPropagation) e.stopPropagation(); this.deleteNote(n.id); },
         };
       });
 
-    const folderItems = s.noteFolders.filter(f => (f.parentFolderId || null) === s.currentFolderId).map(f => {
-      const itemCount = s.notes.filter(n => (n.folderId || null) === f.id).length + s.noteFolders.filter(sf => (sf.parentFolderId || null) === f.id).length;
+    const folderItems = s.noteFolders.filter(f => (f.parentFolderId || null) === s.currentFolderId)
+      .slice().sort((a, b) => (a.name || '').localeCompare(b.name || '', 'pt-BR')).map(f => {
+      const noteCount = s.notes.filter(n => (n.folderId || null) === f.id).length;
+      const subCount = s.noteFolders.filter(sf => (sf.parentFolderId || null) === f.id).length;
+      // Contagem separada (3 NOTAS · 1 PASTA) diz mais que um "4 itens" genérico.
+      const parts = [];
+      if (noteCount) parts.push(noteCount + (noteCount === 1 ? ' NOTA' : ' NOTAS'));
+      if (subCount) parts.push(subCount + (subCount === 1 ? ' PASTA' : ' PASTAS'));
       return {
-        ...f, countLabel: itemCount === 0 ? 'Vazia' : itemCount + (itemCount === 1 ? ' item' : ' itens'),
+        ...f, countLabel: parts.length ? parts.join(' · ') : 'VAZIA',
+        cardClass: 'hud-tile hud-tile-amber hud-tile-interactive' + (s.draggingNoteId && s.noteDropTargetId === f.id ? ' hud-tile-drop' : ''),
         onOpen: () => this.openFolder(f.id),
         onRename: (e) => { if (e && e.stopPropagation) e.stopPropagation(); this.openRenameFolderModal(f); },
         onMove: (e) => { if (e && e.stopPropagation) e.stopPropagation(); this.openMoveModal('folder', f.id); },
@@ -6360,17 +6641,20 @@ class Component extends DCLogic {
       };
     });
 
+    const noteTotalLabel = (folderItems.length + noteItems.length) === 0
+      ? 'VAZIO'
+      : [folderItems.length ? folderItems.length + (folderItems.length === 1 ? ' PASTA' : ' PASTAS') : '', noteItems.length ? noteItems.length + (noteItems.length === 1 ? ' NOTA' : ' NOTAS') : ''].filter(Boolean).join(' · ');
+
     const folderPath = this._folderPath(s.currentFolderId);
     const breadcrumbRaw = [{ id: null, name: 'Anotações' }, ...folderPath.map(f => ({ id: f.id, name: f.name }))];
     const breadcrumbItems = breadcrumbRaw.map((b, i) => {
       const isLast = i === breadcrumbRaw.length - 1;
+      // A trilha também aceita soltar uma nota — é assim que dá pra tirar a nota de uma pasta
+      // e mandar ela pra um nível acima (ou pra raiz) sem abrir modal nenhum.
+      const dropId = b.id === null ? 'root' : b.id;
       return {
-        ...b, isLast, notFirst: i > 0, onClick: () => this.openFolder(b.id),
-        crumbStyle: {
-          background: 'none', border: 'none', padding: 0, cursor: isLast ? 'default' : 'pointer',
-          fontFamily: 'inherit', fontSize: '13px', fontWeight: isLast ? '600' : '400',
-          color: isLast ? '#E2E8F0' : '#3B82F6',
-        },
+        ...b, isLast, notFirst: i > 0, dropId, onClick: () => this.openFolder(b.id),
+        crumbClass: 'hud-crumb' + (isLast ? ' hud-crumb-current' : '') + (s.draggingNoteId && s.noteDropTargetId === dropId ? ' hud-crumb-drop' : ''),
       };
     });
 
@@ -7038,8 +7322,9 @@ class Component extends DCLogic {
       onClick: () => this._runSlashMenuEntry(en),
     }));
     const slashMenuEmpty = slashMenuEntries.length === 0;
-    const slashMenuStyle = { position: 'fixed', top: (s.slashMenuPos ? s.slashMenuPos.top : 0) + 'px', left: (s.slashMenuPos ? s.slashMenuPos.left : 0) + 'px', zIndex: 250 };
-    const selectionToolbarStyle = { position: 'fixed', top: (s.selectionToolbarPos ? s.selectionToolbarPos.top : 0) + 'px', left: (s.selectionToolbarPos ? s.selectionToolbarPos.left : 0) + 'px', zIndex: 250 };
+    // absolute (não fixed) e relativo a #note-editor-wrap — ver _noteMenuPos pro porquê.
+    const slashMenuStyle = { position: 'absolute', top: (s.slashMenuPos ? s.slashMenuPos.top : 0) + 'px', left: (s.slashMenuPos ? s.slashMenuPos.left : 0) + 'px', zIndex: 250 };
+    const selectionToolbarStyle = { position: 'absolute', top: (s.selectionToolbarPos ? s.selectionToolbarPos.top : 0) + 'px', left: (s.selectionToolbarPos ? s.selectionToolbarPos.left : 0) + 'px', zIndex: 250 };
 
     return {
       isLogin, isApp, isHome, isDashboard, isLancamentos, isPlanejamento, isCategorias, isFinanceSector, financeSubNavItems, isTarefas, isAgenda, isNotas, isNoticias, isConfiguracoes,
@@ -7535,7 +7820,7 @@ class Component extends DCLogic {
       noteItems, hasNoteItems: noteItems.length > 0,
       folderItems, hasFolderItems: folderItems.length > 0,
       noNoteItems: noteItems.length === 0 && folderItems.length === 0,
-      breadcrumbItems,
+      breadcrumbItems, noteTotalLabel,
       openNewFolderModal: this.openNewFolderModal,
       showFolderModal: s.showFolderModal, closeFolderModal: this.closeFolderModal,
       folderModalTitle: s.editFolderId ? 'Renomear pasta' : 'Nova pasta',
@@ -7550,7 +7835,8 @@ class Component extends DCLogic {
       handleNoteInput: this.handleNoteInput,
       closeNoteEditor: this.closeNoteEditor,
       deleteCurrentNote: () => this.deleteNote(s.editingNoteId),
-      noteSaveLabel: s.noteSaveStatus === 'saving' ? 'Salvando…' : s.noteSaveStatus === 'saved' ? ('Salvo às ' + s.savedNoteAt) : '',
+      noteSaveLabel: s.noteSaveStatus === 'saving' ? 'SALVANDO…' : s.noteSaveStatus === 'saved' ? ('SALVO ' + s.savedNoteAt) : 'PRONTO',
+      noteSaveDotColor: s.noteSaveStatus === 'saving' ? '#F5B841' : '#22C55E',
       preventFocusLoss: this.preventFocusLoss,
       noteBold: () => this.noteExec('bold'),
       noteOrderedList: () => this.noteExec('insertOrderedList'),

@@ -1691,36 +1691,40 @@
 
         <!-- ═══ AGENDA ═══ -->
         <sc-if value="{{ isAgenda }}" hint-placeholder-val="{{ false }}">
-          <div class="fade-in" style="padding: 20px; display: flex; flex-direction: column; gap: 16px; max-width: 820px; margin: 0 auto; width: 100%; box-sizing: border-box;">
+          <div class="fade-in" style="padding: 20px; display: flex; flex-direction: column; gap: 16px; max-width: 1040px; margin: 0 auto; width: 100%; box-sizing: border-box;">
             <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
               <div style="font-size: 20px; font-weight: 600; color: #E2E8F0; letter-spacing: -0.3px;">Agenda</div>
               <button onClick="{{ openNewEvent }}" style="display: flex; align-items: center; gap: 6px; padding: 9px 16px; background: linear-gradient(135deg, #2563EB, #06B6D4); border: none; border-radius: 9px; color: white; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; box-shadow: 0 2px 12px #2563EB33;">
                 <i class="ph ph-plus" style="font-size: 15px;"></i>Novo Evento
               </button>
             </div>
-            <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px;">
-              <button onClick="{{ prevAgendaMonth }}" style="background: none; border: 1px solid #1E2A45; border-radius: 7px; color: #64748B; cursor: pointer; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-                <i class="ph ph-caret-left" style="font-size: 14px;"></i>
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;">
+              <button onClick="{{ prevAgendaMonth }}" style="background: none; border: 1px solid #1E2A45; border-radius: 7px; color: #64748B; cursor: pointer; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                <i class="ph ph-caret-left" style="font-size: 15px;"></i>
               </button>
               <div style="display: flex; align-items: center; gap: 8px;">
-                <div style="font-size: 14px; font-weight: 600; color: #E2E8F0; text-transform: capitalize;">{{ agendaMonthLabel }}</div>
+                <div style="font-size: 15px; font-weight: 600; color: #E2E8F0; text-transform: capitalize;">{{ agendaMonthLabel }}</div>
                 <sc-if value="{{ agendaNotCurrentMonth }}" hint-placeholder-val="{{ false }}">
                   <button onClick="{{ resetAgendaMonth }}" style="font-size: 11px; color: #3B82F6; background: none; border: none; cursor: pointer; font-family: inherit; white-space: nowrap; padding: 0; font-weight: 600;">Hoje</button>
                 </sc-if>
               </div>
-              <button onClick="{{ nextAgendaMonth }}" style="background: none; border: 1px solid #1E2A45; border-radius: 7px; color: #64748B; cursor: pointer; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-                <i class="ph ph-caret-right" style="font-size: 14px;"></i>
+              <button onClick="{{ nextAgendaMonth }}" style="background: none; border: 1px solid #1E2A45; border-radius: 7px; color: #64748B; cursor: pointer; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                <i class="ph ph-caret-right" style="font-size: 15px;"></i>
               </button>
+              <div style="display: flex; align-items: center; gap: 14px; font-size: 11px; color: #64748B; margin-left: auto;">
+                <div style="display: flex; align-items: center; gap: 5px;"><span style="width: 8px; height: 8px; border-radius: 2px; background: #60A5FA;"></span>Eventos</div>
+                <div style="display: flex; align-items: center; gap: 5px;"><span style="width: 8px; height: 8px; border-radius: 2px; background: #FBBF24;"></span>Tarefas</div>
+              </div>
             </div>
-            <div style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; font-size: 10px; color: #334155; text-transform: uppercase; text-align: center; font-weight: 600;">
+            <div style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; font-size: 11px; color: #334155; text-transform: uppercase; text-align: center; font-weight: 600;">
               <div>Dom</div><div>Seg</div><div>Ter</div><div>Qua</div><div>Qui</div><div>Sex</div><div>Sáb</div>
             </div>
             <div style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px;">
               <sc-for list="{{ agendaDays }}" as="d" hint-placeholder-count="35">
-                <button onClick="{{ d.onClick }}" style="{{ d.cellStyle }}">
-                  <span style="font-size: 11px; font-weight: 600; color: {{ d.dayNumColor }};">{{ d.dayNum }}</span>
-                  <sc-for list="{{ d.eventDots }}" as="ev" hint-placeholder-count="2">
-                    <span style="font-size: 9px; color: #60A5FA; background: #2563EB1A; border-radius: 4px; padding: 1px 4px; margin-top: 2px; width: 100%; box-sizing: border-box; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ ev.title }}</span>
+                <button onClick="{{ d.onClick }}" data-agenda-date="{{ d.dateKey }}" style="{{ d.cellStyle }}">
+                  <span style="font-size: {{ d.dayNumSize }}; font-weight: 600; color: {{ d.dayNumColor }};">{{ d.dayNum }}</span>
+                  <sc-for list="{{ d.dayItems }}" as="item" hint-placeholder-count="2">
+                    <span onMouseDown="{{ item.onDragStart }}" style="{{ item.pillStyle }}">{{ item.title }}</span>
                   </sc-for>
                   <sc-if value="{{ d.hasExtra }}" hint-placeholder-val="{{ false }}">
                     <span style="font-size: 9px; color: #475569; margin-top: 2px;">+{{ d.extraCount }}</span>
@@ -2909,6 +2913,8 @@ class Component extends DCLogic {
     // Agenda
     agendaEvents: [],
     agendaMonthOffset: 0,
+    agendaDragOverDate: null,
+    draggingEventId: null,
     showEventModal: false,
     eventModalDate: '',
     editEventId: null,
@@ -3138,6 +3144,11 @@ class Component extends DCLogic {
     // texto não vazia (duplo clique, arrastar o mouse, Shift+seta), igual Notion/Google Docs.
     // 'selectionchange' é global (dispara pra seleção em qualquer lugar da página), por isso
     // confere se ela está mesmo dentro do editor antes de mostrar qualquer coisa.
+    // Arrastar evento na Agenda — ver startAgendaDrag/_onAgendaDragMove/_onAgendaDragEnd. Ficam
+    // sempre ouvindo (custo desprezível: saem na hora quando this._agendaDrag não existe), no
+    // mesmo espírito dos outros listeners globais desta função.
+    document.addEventListener('mousemove', this._onAgendaDragMove);
+    document.addEventListener('mouseup', this._onAgendaDragEnd);
     document.addEventListener('selectionchange', this._onSelectionChange = () => {
       const el = document.getElementById('note-editor-el');
       const sel = window.getSelection();
@@ -3267,6 +3278,8 @@ class Component extends DCLogic {
     window.removeEventListener('keydown', this._hotkey);
     window.removeEventListener('popstate', this._onPopState);
     document.removeEventListener('selectionchange', this._onSelectionChange);
+    document.removeEventListener('mousemove', this._onAgendaDragMove);
+    document.removeEventListener('mouseup', this._onAgendaDragEnd);
     this._stopHudClock();
   }
 
@@ -5045,6 +5058,67 @@ class Component extends DCLogic {
   nextAgendaMonth = () => this.setState(st => ({ agendaMonthOffset: st.agendaMonthOffset + 1 }));
   resetAgendaMonth = () => this.setState({ agendaMonthOffset: 0 });
 
+  // Arrastar um evento de um dia pra outro na grade do mês. Feito na mão com mousedown/mousemove/
+  // mouseup (ouvidos globais registrados uma vez no componentDidMount, ver _onAgendaDragMove/
+  // _onAgendaDragEnd) em vez do drag-and-drop nativo do navegador — o motor de template deste app
+  // não reconhece o evento "drop" (só ondragstart/ondragend/ondragenter/ondragleave/ondragover),
+  // então o HTML5 DnD nunca chegaria a soltar em lugar nenhum.
+  _agendaCellFromPoint = (x, y) => {
+    const el = document.elementFromPoint(x, y);
+    const cell = el && el.closest ? el.closest('[data-agenda-date]') : null;
+    return cell ? cell.getAttribute('data-agenda-date') : null;
+  }
+
+  startAgendaDrag = (eventId, originDate, e) => {
+    e.stopPropagation();
+    e.preventDefault();
+    this._agendaDrag = { eventId, originDate, moved: false, startX: e.clientX, startY: e.clientY };
+  }
+
+  _onAgendaDragMove = (e) => {
+    const drag = this._agendaDrag;
+    if (!drag) return;
+    if (!drag.moved) {
+      const dx = e.clientX - drag.startX, dy = e.clientY - drag.startY;
+      if (Math.abs(dx) < 4 && Math.abs(dy) < 4) return;
+      drag.moved = true;
+    }
+    const overDate = this._agendaCellFromPoint(e.clientX, e.clientY);
+    // Só atualiza o state quando a célula sob o cursor realmente muda — mousemove dispara dezenas
+    // de vezes por segundo, e cada setState aqui recalcula o renderVals() inteiro do app; sem essa
+    // checagem, arrastar o mouse por cima da grade travava a UI de tanto re-render.
+    if (overDate !== this.state.agendaDragOverDate || this.state.draggingEventId !== drag.eventId) {
+      this.setState({ agendaDragOverDate: overDate, draggingEventId: drag.eventId });
+    }
+  }
+
+  _onAgendaDragEnd = (e) => {
+    const drag = this._agendaDrag;
+    if (!drag) return;
+    this._agendaDrag = null;
+    const overDate = drag.moved ? this._agendaCellFromPoint(e.clientX, e.clientY) : null;
+    if (drag.moved) {
+      // A célula solta ainda recebe o click nativo do navegador logo em seguida (mesmo com
+      // stopPropagation/preventDefault no mousedown) — sem essa trava, todo drag também abria o
+      // modal do dia como se tivesse sido um clique comum. setTimeout(0) libera de novo só depois
+      // desse click síncrono já ter sido processado (ou ignorado).
+      this._agendaJustDragged = true;
+      setTimeout(() => { this._agendaJustDragged = false; }, 0);
+    }
+    this.setState({ agendaDragOverDate: null, draggingEventId: null });
+    if (overDate && overDate !== drag.originDate) this.moveEventToDate(drag.eventId, overDate);
+  }
+
+  moveEventToDate = async (eventId, newDate) => {
+    const ev = this.state.agendaEvents.find(e => e.id === eventId);
+    if (!ev || ev.date === newDate) return;
+    const agendaEvents = this.state.agendaEvents.map(e => e.id === eventId ? { ...e, date: newDate } : e);
+    this.setState({ agendaEvents });
+    const { error } = await window._sb.from('agenda_events').update({ date: newDate }).eq('id', eventId);
+    if (error) { this.setState({ agendaEvents: this.state.agendaEvents.map(e => e.id === eventId ? ev : e) }); this._toast('Não foi possível mover o evento. Tente novamente.'); return; }
+    this._toast('Evento movido para ' + this.fmtDate(newDate) + '!');
+  }
+
   // ─── Anotações — autosave o tempo todo, sem botão de salvar (espírito dontpad) ─
 
   preventFocusLoss = (e) => e.preventDefault();
@@ -6194,30 +6268,59 @@ class Component extends DCLogic {
     const agendaTodayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' });
     const agendaEventsByDate = {};
     s.agendaEvents.forEach(ev => { (agendaEventsByDate[ev.date] = agendaEventsByDate[ev.date] || []).push(ev); });
+    // Tarefas com prazo entram na mesma grade, com cor própria (âmbar) pra não se confundir com
+    // os eventos (azul) — só as ainda pendentes, mesmo critério do "próximos vencimentos" da Home.
+    const agendaTasksByDate = {};
+    s.tasks.forEach(t => { if (t.dueDate && !t.done) (agendaTasksByDate[t.dueDate] = agendaTasksByDate[t.dueDate] || []).push(t); });
     const agendaTotalCells = Math.ceil((agendaFirstDow + agendaDaysInMonth) / 7) * 7;
+    const agendaMaxVisibleItems = s.isMobile ? 2 : 4;
+    const agendaItemFontSize = s.isMobile ? '8px' : '10px';
     const agendaDays = [];
     for (let i = 0; i < agendaTotalCells; i++) {
       const cellDate = new Date(agendaYear, agendaMonthIdx, i - agendaFirstDow + 1);
       const dateKey = cellDate.getFullYear() + '-' + String(cellDate.getMonth() + 1).padStart(2, '0') + '-' + String(cellDate.getDate()).padStart(2, '0');
       const dayEvents = (agendaEventsByDate[dateKey] || []).slice().sort((a, b) => (a.time || '99:99').localeCompare(b.time || '99:99'));
+      const dayTasks = agendaTasksByDate[dateKey] || [];
       const isToday = dateKey === agendaTodayStr;
+      const isDragOver = s.draggingEventId && s.agendaDragOverDate === dateKey;
+      const dayItemsAll = [
+        ...dayEvents.map(ev => ({
+          key: 'e' + ev.id, title: ev.title,
+          pillStyle: {
+            fontSize: agendaItemFontSize, color: '#60A5FA', background: '#2563EB1A', borderRadius: '4px',
+            padding: '1px 4px', marginTop: '2px', width: '100%', boxSizing: 'border-box', overflow: 'hidden',
+            textOverflow: 'ellipsis', whiteSpace: 'nowrap', cursor: 'grab', opacity: s.draggingEventId === ev.id ? 0.35 : 1,
+          },
+          onDragStart: (e) => this.startAgendaDrag(ev.id, dateKey, e),
+        })),
+        ...dayTasks.map(t => ({
+          key: 't' + t.id, title: t.title,
+          pillStyle: {
+            fontSize: agendaItemFontSize, color: '#FBBF24', background: '#F59E0B1F', borderRadius: '4px',
+            padding: '1px 4px', marginTop: '2px', width: '100%', boxSizing: 'border-box', overflow: 'hidden',
+            textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+          },
+          onDragStart: () => {},
+        })),
+      ];
       agendaDays.push({
         dateKey, dayNum: cellDate.getDate(),
         isCurrentMonth: cellDate.getMonth() === agendaMonthIdx,
         isToday,
         cellStyle: {
-          minHeight: '64px', padding: '5px', borderRadius: '8px', cursor: 'pointer',
-          background: isToday ? '#2563EB14' : 'transparent',
-          border: isToday ? '1px solid #2563EB55' : '1px solid #151525',
+          aspectRatio: '1', padding: '6px', borderRadius: '10px', cursor: 'pointer',
+          background: isDragOver ? '#2563EB22' : (isToday ? '#2563EB14' : 'transparent'),
+          border: isDragOver ? '2px dashed #3B82F6' : (isToday ? '1px solid #2563EB55' : '1px solid #151525'),
           opacity: cellDate.getMonth() === agendaMonthIdx ? 1 : 0.35,
           display: 'flex', flexDirection: 'column', alignItems: 'flex-start', textAlign: 'left',
-          fontFamily: 'inherit', width: '100%', boxSizing: 'border-box',
+          fontFamily: 'inherit', width: '100%', boxSizing: 'border-box', overflow: 'hidden',
         },
         dayNumColor: isToday ? '#60A5FA' : '#64748B',
-        eventDots: dayEvents.slice(0, 3).map(ev => ({ id: ev.id, title: ev.title })),
-        hasExtra: dayEvents.length > 3,
-        extraCount: dayEvents.length - 3,
-        onClick: () => this.openEventModal(dateKey, null),
+        dayNumSize: s.isMobile ? '11px' : '13px',
+        dayItems: dayItemsAll.slice(0, agendaMaxVisibleItems),
+        hasExtra: dayItemsAll.length > agendaMaxVisibleItems,
+        extraCount: dayItemsAll.length - agendaMaxVisibleItems,
+        onClick: () => { if (this._agendaJustDragged) return; this.openEventModal(dateKey, null); },
       });
     }
     const agendaDayEvents = (agendaEventsByDate[s.eventModalDate] || []).slice()

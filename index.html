@@ -257,7 +257,15 @@
        máscaras (a de content-box "fura" o miolo). Precisa do @property pra um ângulo em graus
        poder ser animado de verdade — custom property sem tipo registrado não interpola. */
     @property --tdv-ang { syntax: '<angle>'; initial-value: 0deg; inherits: false; }
-    @keyframes tdvTrace { to { --tdv-ang: 360deg; } }
+    /* A opacidade faz parte da PRÓPRIA animação de propósito: se ela ficasse presa em 1 pela
+       regra de :hover, a linha dava a volta e depois congelava acesa num pedaço do contorno
+       enquanto o mouse estivesse em cima. Assim ela entra, dá a volta e some sozinha. */
+    @keyframes tdvTrace {
+      0%   { --tdv-ang: 0deg;   opacity: 0; }
+      12%  { opacity: 1; }
+      78%  { opacity: 1; }
+      100% { --tdv-ang: 360deg; opacity: 0; }
+    }
     @keyframes tdvBlink { 0%, 100% { filter: brightness(1); } 30% { filter: brightness(1.5); } 65% { filter: brightness(0.97); } }
 
     /* Piscada: qualquer botão que NÃO seja do grupo da linha neon (senão os dois efeitos
@@ -276,18 +284,18 @@
       -webkit-mask-composite: xor;
       mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
       mask-composite: exclude;
-      opacity: 0; transition: opacity 0.12s ease; pointer-events: none;
+      opacity: 0; pointer-events: none;
     }
     .hud-btn-primary:hover::after, .hud-btn-ghost:hover::after, .hud-icon-btn:hover::after,
     button[style*="linear-gradient(135deg, #2563EB"]:hover::after {
-      opacity: 1; animation: tdvTrace 0.55s linear;
+      animation: tdvTrace 0.55s linear;
     }
     .hud-icon-btn-danger::after { background: conic-gradient(from var(--tdv-ang), transparent 0deg, #EF4444 45deg, #FCA5A5 70deg, transparent 105deg); }
 
     @media (prefers-reduced-motion: reduce) {
       button:not(:disabled):hover { animation: none; }
       .hud-btn-primary:hover::after, .hud-btn-ghost:hover::after, .hud-icon-btn:hover::after,
-      button[style*="linear-gradient(135deg, #2563EB"]:hover::after { animation: none; opacity: 0.85; }
+      button[style*="linear-gradient(135deg, #2563EB"]:hover::after { animation: none; opacity: 0; }
     }
   </style>
 </helmet>
@@ -2111,10 +2119,12 @@
                   <sc-for list="{{ noteColorOptions }}" as="co" hint-placeholder-count="7">
                     <button onMouseDown="{{ preventFocusLoss }}" onClick="{{ co.onClick }}" title="Cor do texto" style="{{ co.swatchStyle }}">A</button>
                   </sc-for>
+                  <button onMouseDown="{{ preventFocusLoss }}" onClick="{{ noteClearTextColor }}" title="Voltar à cor padrão do texto" class="hud-icon-btn" style="width: 26px; height: 26px;"><i class="ph ph-text-a-underline" style="font-size: 13px;"></i></button>
                   <div style="width: 1px; height: 18px; background: #1B2438; margin: 0 3px; flex-shrink: 0;"></div>
                   <sc-for list="{{ noteHighlightOptions }}" as="ho" hint-placeholder-count="5">
                     <button onMouseDown="{{ preventFocusLoss }}" onClick="{{ ho.onClick }}" title="Marca-texto" style="{{ ho.swatchStyle }}">A</button>
                   </sc-for>
+                  <button onMouseDown="{{ preventFocusLoss }}" onClick="{{ noteClearHighlight }}" title="Tirar o marca-texto" class="hud-icon-btn" style="width: 26px; height: 26px;"><i class="ph ph-eraser" style="font-size: 13px;"></i></button>
                 </div>
                 <div id="note-editor-el" class="reading-font" contenteditable="true" onInput="{{ handleNoteInput }}" onKeyDown="{{ noteEditorKeyDown }}" onClick="{{ noteEditorClick }}" style="flex: 1; padding: 18px 20px; color: #E2E8F0; font-size: 14px; line-height: 1.7; outline: none; overflow-wrap: break-word; overflow-y: auto; overflow-x: auto;"></div>
               </div>
@@ -2138,17 +2148,19 @@
                    clique, arrastar, Shift+seta), igual Notion/Google Docs. -->
               <sc-if value="{{ selectionToolbarOpen }}" hint-placeholder-val="{{ false }}">
                 <div style="{{ selectionToolbarStyle }}">
-                  <div class="modal-in hud-tile hud-tile-cyan" style="display: flex; flex-wrap: wrap; align-items: center; gap: 5px; padding: 6px; max-width: 330px; box-shadow: 0 18px 50px #000000AA, 0 0 22px #38BDF81A;">
+                  <div id="note-sel-toolbar" class="modal-in hud-tile hud-tile-cyan" style="display: flex; flex-wrap: wrap; align-items: center; gap: 5px; padding: 6px; max-width: 330px; box-shadow: 0 18px 50px #000000AA, 0 0 22px #38BDF81A;">
                     <button onMouseDown="{{ preventFocusLoss }}" onClick="{{ noteBold }}" title="Negrito" class="hud-icon-btn" style="width: 28px; height: 28px; font-weight: 700; font-size: 12px;">B</button>
                     <button onMouseDown="{{ preventFocusLoss }}" onClick="{{ noteInsertLink }}" title="Link" class="hud-icon-btn" style="width: 28px; height: 28px;"><i class="ph ph-link" style="font-size: 13px;"></i></button>
                     <div style="width: 1px; height: 18px; background: #1B2438; margin: 0 2px;"></div>
                     <sc-for list="{{ noteColorOptions }}" as="co" hint-placeholder-count="7">
                       <button onMouseDown="{{ preventFocusLoss }}" onClick="{{ co.onClick }}" title="Cor do texto" style="{{ co.swatchStyle }}">A</button>
                     </sc-for>
-                    <div style="width: 1px; height: 18px; background: #1E2A45; margin: 0 2px;"></div>
+                    <button onMouseDown="{{ preventFocusLoss }}" onClick="{{ noteClearTextColor }}" title="Voltar à cor padrão do texto" class="hud-icon-btn" style="width: 26px; height: 26px;"><i class="ph ph-text-a-underline" style="font-size: 13px;"></i></button>
+                    <div style="width: 1px; height: 18px; background: #1B2438; margin: 0 2px;"></div>
                     <sc-for list="{{ noteHighlightOptions }}" as="ho" hint-placeholder-count="5">
                       <button onMouseDown="{{ preventFocusLoss }}" onClick="{{ ho.onClick }}" title="Marca-texto" style="{{ ho.swatchStyle }}">A</button>
                     </sc-for>
+                    <button onMouseDown="{{ preventFocusLoss }}" onClick="{{ noteClearHighlight }}" title="Tirar o marca-texto" class="hud-icon-btn" style="width: 26px; height: 26px;"><i class="ph ph-eraser" style="font-size: 13px;"></i></button>
                   </div>
                 </div>
               </sc-if>
@@ -3293,6 +3305,27 @@ class Component extends DCLogic {
     if (prevState.screen !== 'home' && this.state.screen === 'home' && this.state.jarvisLoaded) {
       this._scrollJarvisToBottom();
     }
+    // Mede a altura real da barra de seleção na primeira vez que ela aparece e, se for diferente
+    // do palpite usado pra posicionar, reposiciona com o valor certo. A checagem de igualdade é o
+    // que impede isso de virar um laço de render: a altura só muda uma vez.
+    if (this.state.selectionToolbarOpen) {
+      const bar = document.getElementById('note-sel-toolbar');
+      if (bar) {
+        const h = Math.round(bar.getBoundingClientRect().height);
+        if (h && h !== this._selToolbarH) {
+          this._selToolbarH = h;
+          const sel = window.getSelection();
+          if (sel && sel.rangeCount > 0 && !sel.isCollapsed) {
+            const r = sel.getRangeAt(0).getBoundingClientRect();
+            if (r && (r.top || r.left || r.width)) {
+              const pos = this._noteMenuPos(r, 330, true, h);
+              const cur = this.state.selectionToolbarPos;
+              if (!cur || cur.top !== pos.top || cur.left !== pos.left) this.setState({ selectionToolbarPos: pos });
+            }
+          }
+        }
+      }
+    }
     this._syncUrlToScreen();
   }
 
@@ -3353,7 +3386,7 @@ class Component extends DCLogic {
       }
       const rect = sel.getRangeAt(0).getBoundingClientRect();
       if (!rect || (!rect.top && !rect.left && !rect.width)) return;
-      this.setState({ selectionToolbarOpen: true, selectionToolbarPos: this._noteMenuPos(rect, 330, true) });
+      this.setState({ selectionToolbarOpen: true, selectionToolbarPos: this._noteMenuPos(rect, 330, true, this._selToolbarH) });
     });
     window.addEventListener('keydown', this._hotkey = (e) => {
       // Ctrl/Cmd+K precisa abrir mesmo com foco em outro campo de texto (padrão universal de
@@ -5606,6 +5639,14 @@ class Component extends DCLogic {
         if (node.style[styleProp] && range.intersectsNode(node)) node.style[styleProp] = '';
       });
     }
+    // Valor vazio = só TIRAR a formatação (ex: remover o marca-texto). Os dois laços acima já
+    // limparam a propriedade em tudo que a seleção toca, então envolver num span novo aqui só
+    // deixaria um <span style=""> vazio como lixo no HTML da nota a cada clique.
+    if (!value) {
+      el.focus();
+      this.handleNoteInput({ target: el });
+      return;
+    }
     const span = document.createElement('span');
     span.style[styleProp] = value;
     try {
@@ -5863,16 +5904,28 @@ class Component extends DCLogic {
   // do container (medido: pedindo left:600 o elemento ia parar em left:840 num container que
   // começava em 240). Posicionando por absolute em relação ao próprio container, o transform
   // deixa de importar. Também prende dentro da largura do container, pra nunca vazar pro lado.
-  _noteMenuPos = (rect, menuWidth, placeAbove) => {
+  _noteMenuPos = (rect, menuWidth, placeAbove, menuHeight) => {
     const wrap = document.getElementById('note-editor-wrap');
     if (!wrap || !rect) return { top: 0, left: 0 };
     const wr = wrap.getBoundingClientRect();
     const maxLeft = Math.max(0, wr.width - menuWidth - 8);
-    const rawTop = placeAbove ? (rect.top - wr.top - 46) : (rect.bottom - wr.top + 6);
-    return {
-      top: Math.round(Math.max(0, rawTop)),
-      left: Math.round(Math.min(Math.max(0, rect.left - wr.left), maxLeft)),
-    };
+    const left = Math.round(Math.min(Math.max(0, rect.left - wr.left), maxLeft));
+    let top;
+    if (placeAbove) {
+      // A barra de seleção quebra em mais de uma linha (são 14 botões), então a altura dela NÃO
+      // é fixa — com um recuo fixo chutado ela descia por cima do próprio texto selecionado.
+      // A altura real é medida depois do primeiro render e guardada em _selToolbarH (ver
+      // componentDidUpdate); 84 é só o palpite inicial, alto de propósito: errar pra cima deixa
+      // a barra um pouco afastada, errar pra baixo tampa o texto.
+      const h = menuHeight || 84;
+      const above = rect.top - wr.top - h - 8;
+      // Seleção colada no topo do editor: não cabe acima, então vai pra baixo dela em vez de
+      // ser espremida por cima do texto.
+      top = above >= 0 ? above : (rect.bottom - wr.top + 8);
+    } else {
+      top = rect.bottom - wr.top + 6;
+    }
+    return { top: Math.round(Math.max(0, top)), left };
   }
 
   _openSlashMenu = () => {
@@ -7871,6 +7924,8 @@ class Component extends DCLogic {
         color: c, onClick: () => this._wrapSelectionStyle('color', c),
         swatchStyle: { width: '26px', height: '26px', borderRadius: '7px', background: '#0D0D1A', border: '1px solid #1E2A45', cursor: 'pointer', padding: 0, flexShrink: 0, color: c, fontWeight: '700', fontSize: '13px', fontFamily: 'inherit', display: 'flex', alignItems: 'center', justifyContent: 'center' },
       })),
+      noteClearHighlight: () => this._wrapSelectionStyle('backgroundColor', ''),
+      noteClearTextColor: () => this._wrapSelectionStyle('color', ''),
       noteHighlightOptions: ['#FDE047', '#86EFAC', '#93C5FD', '#FCA5A5', '#D8B4FE'].map(c => ({
         color: c, onClick: () => this._wrapSelectionStyle('backgroundColor', c),
         swatchStyle: { width: '26px', height: '26px', borderRadius: '7px', background: c, border: '1px solid #1E2A45', cursor: 'pointer', padding: 0, flexShrink: 0, color: '#0D0D1A', fontWeight: '700', fontSize: '13px', fontFamily: 'inherit', display: 'flex', alignItems: 'center', justifyContent: 'center' },

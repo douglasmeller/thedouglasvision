@@ -1967,6 +1967,68 @@
                   </button>
                 </div>
               </div>
+              <!-- Ferramentas: busca (em todas as pastas), ordenação e lixeira. -->
+              <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                <sc-if value="{{ notInNoteTrash }}" hint-placeholder-val="{{ true }}">
+                  <div style="flex: 1; min-width: 200px; display: flex; align-items: center; gap: 8px; background: #0D0D16; border: 1px solid #1B2438; border-radius: 9px; padding: 0 10px; box-sizing: border-box;">
+                    <i class="ph ph-magnifying-glass" style="font-size: 15px; color: #38BDF8; flex-shrink: 0;"></i>
+                    <input type="text" value="{{ noteSearch }}" onInput="{{ setNoteSearch }}" placeholder="Buscar em todas as notas e pastas…" style="flex: 1; min-width: 0; background: transparent; border: none; outline: none; color: #E2E8F0; font-size: 13px; font-family: inherit; padding: 10px 0;">
+                    <sc-if value="{{ hasNoteSearch }}" hint-placeholder-val="{{ false }}">
+                      <button onClick="{{ clearNoteSearch }}" title="Limpar busca" class="hud-icon-btn" style="width: 24px; height: 24px; font-size: 13px;"><i class="ph ph-x"></i></button>
+                    </sc-if>
+                  </div>
+                  <select value="{{ noteSort }}" onChange="{{ setNoteSort }}" title="Ordem das notas" style="height: 38px; background: #0D0D16; border: 1px solid #1B2438; border-radius: 9px; color: #94A3B8; cursor: pointer; font-size: 12px; font-family: inherit; padding: 0 10px;">
+                    <option value="recent">Editadas recentemente</option>
+                    <option value="created">Criadas recentemente</option>
+                    <option value="name">Nome (A–Z)</option>
+                  </select>
+                </sc-if>
+                <button onClick="{{ toggleNoteTrash }}" class="hud-btn-ghost" style="height: 38px; box-sizing: border-box;">
+                  <i class="{{ noteTrashIcon }}" style="font-size: 15px;"></i>{{ noteTrashLabel }}
+                </button>
+              </div>
+
+              <!-- ── Lixeira ── -->
+              <sc-if value="{{ showNoteTrash }}" hint-placeholder-val="{{ false }}">
+                <div style="display: flex; flex-direction: column; gap: 10px;">
+                  <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;">
+                    <div style="font-size: 12px; color: #64748B; line-height: 1.5;">Notas excluídas ficam aqui por {{ noteTrashDays }} dias e depois são apagadas de vez.</div>
+                    <sc-if value="{{ hasTrashItems }}" hint-placeholder-val="{{ false }}">
+                      <button onClick="{{ emptyNoteTrash }}" class="hud-btn-ghost" style="color: #F87171; border-color: #EF444444;">
+                        <i class="ph ph-trash" style="font-size: 15px;"></i>Esvaziar lixeira
+                      </button>
+                    </sc-if>
+                  </div>
+                  <sc-if value="{{ noTrashItems }}" hint-placeholder-val="{{ false }}">
+                    <div class="hud-tile hud-tile-cyan" style="padding: 36px 24px; text-align: center;">
+                      <div class="hud-label">LIXEIRA VAZIA</div>
+                    </div>
+                  </sc-if>
+                  <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 9px;">
+                    <sc-for list="{{ trashItems }}" as="tr" hint-placeholder-count="2">
+                      <div class="hud-tile hud-tile-cyan" style="padding: 12px 13px; display: flex; flex-direction: column; gap: 7px; box-sizing: border-box; opacity: 0.85;">
+                        <div style="font-size: 13px; font-weight: 600; color: {{ tr.titleColor }}; overflow-wrap: break-word;">{{ tr.displayTitle }}</div>
+                        <div class="reading-font" style="font-size: 11.5px; color: #475569; line-height: 1.5; overflow-wrap: break-word;">{{ tr.preview }}</div>
+                        <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 2px;">
+                          <span class="hud-label" style="letter-spacing: 1px; color: {{ tr.daysColor }};">{{ tr.daysLabel }}</span>
+                          <div style="display: flex; gap: 5px;">
+                            <button onClick="{{ tr.onRestore }}" title="Restaurar" class="hud-icon-btn" style="height: 26px; padding: 0 9px; font-size: 12px; gap: 5px;"><i class="ph ph-arrow-counter-clockwise"></i>Restaurar</button>
+                            <button onClick="{{ tr.onPurge }}" title="Apagar de vez" class="hud-icon-btn hud-icon-btn-danger" style="width: 26px; height: 26px; font-size: 12px;"><i class="ph ph-x"></i></button>
+                          </div>
+                        </div>
+                      </div>
+                    </sc-for>
+                  </div>
+                </div>
+              </sc-if>
+
+              <sc-if value="{{ noteSearchEmpty }}" hint-placeholder-val="{{ false }}">
+                <div class="hud-tile hud-tile-cyan" style="padding: 36px 24px; display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center;">
+                  <i class="ph ph-magnifying-glass" style="font-size: 22px; color: #38BDF8;"></i>
+                  <div class="hud-label">NADA ENCONTRADO</div>
+                  <div style="font-size: 12px; color: #475569;">Nenhuma nota ou pasta com "{{ noteSearch }}".</div>
+                </div>
+              </sc-if>
               <sc-if value="{{ noNoteItems }}" hint-placeholder-val="{{ false }}">
                 <div class="hud-tile hud-tile-cyan hud-scan-wrap" style="padding: 44px 24px; display: flex; flex-direction: column; align-items: center; text-align: center;">
                   <div class="hud-scan-line"></div>
@@ -2007,8 +2069,11 @@
                     <div onClick="{{ nt.onOpen }}" onMouseDown="{{ nt.onDragStart }}" class="{{ nt.cardClass }}" title="Arraste para uma pasta ou para a trilha acima" style="padding: 12px 13px; display: flex; flex-direction: column; gap: 7px; min-height: 104px; box-sizing: border-box; text-align: left;">
                       <div class="hud-tile-sweep"></div>
                       <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 6px; position: relative; min-width: 0;">
-                        <div style="font-size: 13px; font-weight: 600; color: {{ nt.titleColor }}; overflow-wrap: break-word; flex: 1; min-width: 0;">{{ nt.displayTitle }}</div>
+                        <div style="font-size: 13px; font-weight: 600; color: {{ nt.titleColor }}; overflow-wrap: break-word; flex: 1; min-width: 0;">
+                          <sc-if value="{{ nt.isPinned }}" hint-placeholder-val="{{ false }}"><i class="ph ph-push-pin" title="Fixada" style="color: #F5B841; font-size: 12px; margin-right: 4px;"></i></sc-if>{{ nt.displayTitle }}
+                        </div>
                         <div class="hud-tile-actions" style="display: flex; gap: 5px; flex-shrink: 0;">
+                          <button onClick="{{ nt.onPin }}" title="{{ nt.pinTitle }}" class="hud-icon-btn" style="width: 24px; height: 24px; font-size: 12px;"><i class="{{ nt.pinIcon }}"></i></button>
                           <button onClick="{{ nt.onMove }}" title="Mover para" class="hud-icon-btn" style="width: 24px; height: 24px; font-size: 12px;"><i class="ph ph-folder-open"></i></button>
                           <button onClick="{{ nt.onDelete }}" title="Excluir nota" class="hud-icon-btn hud-icon-btn-danger" style="width: 24px; height: 24px; font-size: 12px;">
                             <sc-if value="{{ nt.isDeleting }}" hint-placeholder-val="{{ false }}"><span class="btn-spinner" style="border-color: #EF444455; border-top-color: #EF4444; width: 11px; height: 11px;"></span></sc-if>
@@ -2020,6 +2085,9 @@
                       <div style="display: flex; align-items: center; gap: 6px; position: relative;">
                         <span style="width: 4px; height: 4px; border-radius: 50%; background: #38BDF8; flex-shrink: 0;"></span>
                         <span class="hud-label" style="letter-spacing: 1px;">{{ nt.fmtUpdated }}</span>
+                        <sc-if value="{{ nt.hasFolderLabel }}" hint-placeholder-val="{{ false }}">
+                          <span class="hud-label" style="letter-spacing: 1px; color: #F5B841; margin-left: auto; display: flex; align-items: center; gap: 4px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"><i class="ph ph-folder-simple"></i>{{ nt.folderLabel }}</span>
+                        </sc-if>
                       </div>
                     </div>
                   </sc-for>
@@ -2085,7 +2153,19 @@
                     <span class="hud-status-dot" style="background: {{ noteSaveDotColor }}; box-shadow: 0 0 6px {{ noteSaveDotColor }};"></span>
                     <span class="hud-label">{{ noteSaveLabel }}</span>
                   </div>
-                  <button onClick="{{ deleteCurrentNote }}" title="Excluir nota" class="hud-icon-btn hud-icon-btn-danger" style="width: 30px; height: 30px; font-size: 14px;"><i class="ph ph-trash"></i></button>
+                  <button onClick="{{ toggleCurrentNotePin }}" title="{{ currentNotePinTitle }}" class="hud-icon-btn" style="width: 30px; height: 30px; font-size: 14px;"><i class="{{ currentNotePinIcon }}"></i></button>
+                  <div style="position: relative;">
+                    <button onClick="{{ toggleNoteExport }}" title="Exportar nota" class="hud-icon-btn" style="width: 30px; height: 30px; font-size: 14px;"><i class="ph ph-export"></i></button>
+                    <sc-if value="{{ noteExportOpen }}" hint-placeholder-val="{{ false }}">
+                      <div class="modal-in hud-tile hud-tile-cyan" style="position: absolute; top: 36px; right: 0; z-index: 260; width: 210px; padding: 6px; box-shadow: 0 18px 50px #000000AA;">
+                        <div class="hud-label" style="padding: 5px 8px 6px; color: #38BDF8;">EXPORTAR</div>
+                        <div onClick="{{ exportNoteMd }}" class="hud-menu-row" style="display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 7px; cursor: pointer; color: #94A3B8; font-size: 13px;"><i class="ph ph-markdown-logo" style="font-size: 15px;"></i>Markdown (.md)</div>
+                        <div onClick="{{ exportNoteTxt }}" class="hud-menu-row" style="display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 7px; cursor: pointer; color: #94A3B8; font-size: 13px;"><i class="ph ph-file-text" style="font-size: 15px;"></i>Texto (.txt)</div>
+                        <div onClick="{{ exportNotePdf }}" class="hud-menu-row" style="display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 7px; cursor: pointer; color: #94A3B8; font-size: 13px;"><i class="ph ph-file-pdf" style="font-size: 15px;"></i>PDF (imprimir)</div>
+                      </div>
+                    </sc-if>
+                  </div>
+                  <button onClick="{{ deleteCurrentNote }}" title="Mover pra lixeira" class="hud-icon-btn hud-icon-btn-danger" style="width: 30px; height: 30px; font-size: 14px;"><i class="ph ph-trash"></i></button>
                 </div>
               </div>
               <!-- Título, barra de ferramentas e corpo dentro de UM painel só: antes eram três
@@ -2131,9 +2211,9 @@
               <sc-if value="{{ slashMenuOpen }}" hint-placeholder-val="{{ false }}">
                 <div style="{{ slashMenuStyle }}">
                   <div class="modal-in hud-tile hud-tile-cyan" style="width: 220px; max-height: 320px; overflow-y: auto; padding: 6px; box-shadow: 0 18px 50px #000000AA, 0 0 22px #38BDF81A;">
-                    <div class="hud-label" style="padding: 5px 8px 6px; color: #38BDF8;">BLOCOS</div>
+                    <div class="hud-label" style="padding: 5px 8px 6px; color: #38BDF8;">{{ slashMenuHeader }}</div>
                     <sc-if value="{{ slashMenuEmpty }}" hint-placeholder-val="{{ false }}">
-                      <div style="padding: 14px; text-align: center; font-size: 12px; color: #334155;">Nada encontrado.</div>
+                      <div style="padding: 14px; text-align: center; font-size: 12px; color: #334155;">{{ slashMenuEmptyLabel }}</div>
                     </sc-if>
                     <sc-for list="{{ slashMenuEntries }}" as="en" hint-placeholder-count="8">
                       <div onClick="{{ en.onClick }}" class="hud-menu-row" style="{{ en.rowStyle }}">
@@ -3094,6 +3174,12 @@ class Component extends DCLogic {
     moveItemId: null,
     draggingNoteId: null,
     noteDropTargetId: null,
+    notesTrash: [],
+    showNoteTrash: false,
+    noteSearch: '',
+    noteSort: 'recent', // 'recent' | 'name' | 'created' — lembrado por dispositivo (localStorage)
+    noteExportOpen: false,
+    slashMenuMode: 'blocks', // 'blocks' (digitou "/") | 'link' (digitou "[[")
     jarvisLiveMode: false,
     jarvisLiveTranscript: '',
     jarvisLiveStatus: 'listening', // 'listening' | 'thinking' | 'speaking'
@@ -3297,11 +3383,18 @@ class Component extends DCLogic {
     if (window.location.pathname !== path) window.history.pushState({ screen: s.screen }, '', path);
   }
 
-  componentDidUpdate(prevProps, prevState) {
+  componentDidUpdate() {
+    // O framework (support.js) chama componentDidUpdate(prevProps) — SÓ as props, nunca o estado
+    // anterior. Esta função já foi escrita como (prevProps, prevState): prevState vinha sempre
+    // undefined, "prevState.screen" estourava na primeira linha a cada atualização, o framework
+    // engolia o erro (console.error) e nada daqui pra baixo rodava — nem a sincronia da URL com a
+    // aba. Por isso a tela anterior é guardada aqui mesmo, no fim de cada passada.
+    const prevScreen = this._prevScreen;
+    this._prevScreen = this.state.screen;
     // Sair da aba Anotações com uma nota aberta (pelo menu lateral, command palette, ação rápida
     // da Home etc.) não limpava editingNoteId — voltar pra Anotações depois caía direto na mesma
     // nota em vez da lista, em vez de "esquecer" que ela tava aberta (achado numa auditoria).
-    if (prevState.screen === 'notas' && this.state.screen !== 'notas' && this.state.editingNoteId) {
+    if (prevScreen === 'notas' && this.state.screen !== 'notas' && this.state.editingNoteId) {
       this._flushNoteSave();
       this.setState({ editingNoteId: null });
     }
@@ -3310,7 +3403,7 @@ class Component extends DCLogic {
     // trás) — o container nasce de novo com scrollTop 0, ou seja, no topo do histórico inteiro
     // (o "primeiro dia da conversa"). Só rola pro fim sozinho na primeira carga (loadJarvisHistory).
     // Isso cobre toda vez que a Home é revisitada depois.
-    if (prevState.screen !== 'home' && this.state.screen === 'home' && this.state.jarvisLoaded) {
+    if (prevScreen !== 'home' && this.state.screen === 'home' && this.state.jarvisLoaded) {
       this._scrollJarvisToBottom();
     }
     // Mede a altura real da barra de seleção na primeira vez que ela aparece e, se for diferente
@@ -3342,6 +3435,7 @@ class Component extends DCLogic {
     this.setState({
       isMobile: window.innerWidth < 768,
       filterMonth: this.mKey(new Date()),
+      noteSort: ['recent', 'name', 'created'].includes(this._load('noteSort')) ? this._load('noteSort') : 'recent',
       txnDate: today,
       loading: true,
       loadingMsg: 'Verificando sessão...',
@@ -3416,6 +3510,7 @@ class Component extends DCLogic {
       if (e.key === 'Escape') {
         if (s.commandPaletteOpen) this.closeCommandPalette();
         else if (s.slashMenuOpen) this._closeSlashMenu();
+        else if (s.noteExportOpen) this.setState({ noteExportOpen: false });
         else if (s.showMoveModal) this.closeMoveModal();
         else if (s.selectionToolbarOpen) this.setState({ selectionToolbarOpen: false });
         else if (s.showTxnModal) this.setState({ showTxnModal: false, editTxnId: null });
@@ -3748,7 +3843,7 @@ class Component extends DCLogic {
       screen: this._screenFromPath(window.location.pathname) || this._load('defaultScreen') || 'home',
       cfgDefaultScreen: this._load('defaultScreen') || 'home', loading: false, loginError: '',
       lastSyncAt: Date.now(),
-    }, () => { this._autoRecurring(); this._autoRecurringExpenses(); if (stockList.length > 0) this.fetchStockQuotes(); this.loadJarvisHistory(); });
+    }, () => { this._autoRecurring(); this._autoRecurringExpenses(); if (stockList.length > 0) this.fetchStockQuotes(); this.loadJarvisHistory(); this._loadNoteTrash(); });
   }
 
   _txnRowIn = (t) => ({
@@ -3805,6 +3900,20 @@ class Component extends DCLogic {
       patch.currentFolderId = null;
     }
     this.setState(patch);
+    this._loadNoteTrash();
+  }
+
+  // Lixeira das notas (tabela notes_trash — ver trash_note/restore_note no banco). Quem está lá há
+  // mais de 30 dias é apagado de vez aqui mesmo, na carga: não existe rotina agendada pra isso, e
+  // não precisa — só o próprio dono enxerga a lixeira, então limpar quando ele abre o app basta.
+  NOTE_TRASH_DAYS = 30;
+  _loadNoteTrash = async () => {
+    const uid = this.state.user?.id;
+    if (!uid) return;
+    const cutoff = new Date(Date.now() - this.NOTE_TRASH_DAYS * 86400000).toISOString();
+    await window._sb.from('notes_trash').delete().eq('user_id', uid).lt('deleted_at', cutoff);
+    const { data, error } = await window._sb.from('notes_trash').select('*').eq('user_id', uid).order('deleted_at', { ascending: false });
+    if (!error) this.setState({ notesTrash: (data || []).map(n => this._trashRowIn(n)) });
   }
 
   _taskRowIn = (t) => ({
@@ -3827,7 +3936,12 @@ class Component extends DCLogic {
   })
 
   _noteRowIn = (n) => ({
-    id: n.id, title: n.title || '', content: n.content || '', updatedAt: n.updated_at, folderId: n.folder_id || null,
+    id: n.id, title: n.title || '', content: n.content || '', updatedAt: n.updated_at, createdAt: n.created_at,
+    folderId: n.folder_id || null, pinned: !!n.pinned,
+  })
+
+  _trashRowIn = (n) => ({
+    id: n.id, title: n.title || '', content: n.content || '', folderId: n.folder_id || null, deletedAt: n.deleted_at,
   })
 
   _noteRowOut = (n, uid) => ({
@@ -3914,7 +4028,7 @@ class Component extends DCLogic {
   handleLogout = async () => {
     await window._sb.auth.signOut();
     window.history.pushState(null, '', '/');
-    this.setState({ user: null, screen: 'login', loginEmail: '', loginPassword: '', sidebarOpen: false, transactions: [], categories: [], goals: [], recurringExpenses: [], tasks: [], agendaEvents: [], notes: [], editingNoteId: null, jarvisMessages: [], jarvisLoaded: false, jarvisConversationId: null });
+    this.setState({ user: null, screen: 'login', loginEmail: '', loginPassword: '', sidebarOpen: false, transactions: [], categories: [], goals: [], recurringExpenses: [], tasks: [], agendaEvents: [], notes: [], notesTrash: [], editingNoteId: null, jarvisMessages: [], jarvisLoaded: false, jarvisConversationId: null });
   }
 
   // Abre o IronHand (processo local, python main.py) via um protocolo
@@ -5372,7 +5486,7 @@ class Component extends DCLogic {
     // (ex: saiu sem apertar Escape), ele reaparecia flutuando por cima da nota nova, apontando
     // pra um texto que nem existe mais nela (achados numa auditoria).
     window.history.pushState({ noteEditor: true }, '', window.location.pathname);
-    this.setState({ editingNoteId: note.id, noteTitle: note.title, noteContent: note.content, noteSaveStatus: 'idle', slashMenuOpen: false, selectionToolbarOpen: false }, () => {
+    this.setState({ editingNoteId: note.id, noteTitle: note.title, noteContent: note.content, noteSaveStatus: 'idle', slashMenuOpen: false, selectionToolbarOpen: false, noteExportOpen: false }, () => {
       const el = document.getElementById('note-editor-el');
       if (el) { el.innerHTML = note.content || ''; this._migrateOldChecklistRows(el); }
     });
@@ -5380,7 +5494,8 @@ class Component extends DCLogic {
 
   newNote = async () => {
     const s = this.state;
-    const note = { id: 'nt' + Date.now(), title: '', content: '', updatedAt: new Date().toISOString(), folderId: s.currentFolderId };
+    const nowIso = new Date().toISOString();
+    const note = { id: 'nt' + Date.now(), title: '', content: '', updatedAt: nowIso, createdAt: nowIso, folderId: s.currentFolderId, pinned: false };
     window.history.pushState({ noteEditor: true }, '', window.location.pathname);
     this.setState({ notes: [note, ...s.notes], editingNoteId: note.id, noteTitle: '', noteContent: '', noteSaveStatus: 'idle', slashMenuOpen: false, selectionToolbarOpen: false }, () => {
       const el = document.getElementById('note-editor-el');
@@ -5394,7 +5509,7 @@ class Component extends DCLogic {
 
   closeNoteEditor = () => {
     this._flushNoteSave();
-    this.setState({ editingNoteId: null, slashMenuOpen: false, selectionToolbarOpen: false });
+    this.setState({ editingNoteId: null, slashMenuOpen: false, selectionToolbarOpen: false, noteExportOpen: false });
   }
 
   setNoteTitle = (e) => {
@@ -5424,17 +5539,28 @@ class Component extends DCLogic {
       if (offset > 0 && text[offset - 1] === '/' && !node.previousSibling && text.slice(0, offset - 1).trim() === '') {
         this._slashAnchorNode = node;
         this._slashAnchorOffset = offset - 1;
-        this._openSlashMenu();
+        this._openSlashMenu('blocks');
+      } else if (offset > 1 && text.slice(offset - 2, offset) === '[[') {
+        // "[[" em qualquer lugar da linha abre o mesmo menu, só que listando as notas pra linkar.
+        this._slashAnchorNode = node;
+        this._slashAnchorOffset = offset - 2;
+        this._openSlashMenu('link');
       }
       return;
     }
 
-    if (this._slashAnchorNode !== node || offset < this._slashAnchorOffset || text[this._slashAnchorOffset] !== '/') {
+    const isLink = this.state.slashMenuMode === 'link';
+    const trigger = isLink ? '[[' : '/';
+    if (this._slashAnchorNode !== node || offset < this._slashAnchorOffset + trigger.length
+        || text.slice(this._slashAnchorOffset, this._slashAnchorOffset + trigger.length) !== trigger) {
       this._closeSlashMenu();
       return;
     }
-    const query = text.slice(this._slashAnchorOffset + 1, offset);
-    if (/\s/.test(query)) { this._closeSlashMenu(); return; }
+    const query = text.slice(this._slashAnchorOffset + trigger.length, offset);
+    // No "/" um espaço fecha (é o mesmo do Notion); no "[[" não, porque título de nota tem espaço.
+    // Lá quem fecha é o "]]" digitado na mão.
+    if (!isLink && /\s/.test(query)) { this._closeSlashMenu(); return; }
+    if (isLink && query.includes(']]')) { this._closeSlashMenu(); return; }
     this.setState({ slashMenuQuery: query, slashMenuActiveIndex: 0 });
   }
 
@@ -5459,7 +5585,10 @@ class Component extends DCLogic {
     if (!id) return;
     this._noteSavePending = false;
     this.setState({ noteSaveStatus: 'saving' });
-    const note = { id, title: s.noteTitle, content: s.noteContent };
+    // A pasta TEM que ir junto: _noteRowOut sempre manda folder_id, e sem ela aqui ia null — todo
+    // autosave de uma nota que estava dentro de uma pasta jogava ela de volta pra raiz.
+    const current = s.notes.find(n => n.id === id);
+    const note = { id, title: s.noteTitle, content: s.noteContent, folderId: current ? current.folderId : null };
     const { error } = await window._sb.from('notes').upsert(this._noteRowOut(note, s.user.id));
     if (error) { this.setState({ noteSaveStatus: 'idle' }); this._toast('Não foi possível salvar a nota.'); return; }
     const now = new Date();
@@ -5470,14 +5599,190 @@ class Component extends DCLogic {
     }));
   }
 
+  // "Excluir" manda pra lixeira (trash_note no banco move a linha de notes pra notes_trash numa
+  // transação só). Apagar de verdade só acontece dentro da lixeira, ou sozinho depois de 30 dias.
   deleteNote = async (id) => {
+    if (this.state.editingNoteId === id) this._flushNoteSave();
     this.setState({ deletingId: id });
-    const { error } = await window._sb.from('notes').delete().eq('id', id);
-    if (error) { this.setState({ deletingId: null }); this._toast('Não foi possível excluir. Tente novamente.'); return; }
+    const { error } = await window._sb.rpc('trash_note', { p_id: id });
+    if (error) { this.setState({ deletingId: null }); this._toast('Não foi possível mover pra lixeira. Tente novamente.'); return; }
+    const note = this.state.notes.find(n => n.id === id);
     const editingNoteId = this.state.editingNoteId === id ? null : this.state.editingNoteId;
-    this.setState({ notes: this.state.notes.filter(n => n.id !== id), deletingId: null, editingNoteId });
-    this._toast('Nota excluída.');
+    this.setState(st => ({
+      notes: st.notes.filter(n => n.id !== id), deletingId: null, editingNoteId,
+      notesTrash: note ? [{ id, title: note.title, content: note.content, folderId: note.folderId, deletedAt: new Date().toISOString() }, ...st.notesTrash] : st.notesTrash,
+    }));
+    this._toast('Nota movida pra lixeira — dá pra restaurar por ' + this.NOTE_TRASH_DAYS + ' dias.');
   }
+
+  restoreNote = async (id) => {
+    const { error } = await window._sb.rpc('restore_note', { p_id: id });
+    if (error) { this._toast('Não foi possível restaurar. Tente novamente.'); return; }
+    const t = this.state.notesTrash.find(n => n.id === id);
+    // A pasta de onde ela saiu pode ter sido apagada nesse meio-tempo — aí volta pra raiz, senão
+    // ela ficaria "restaurada" mas invisível, presa numa pasta que não existe mais.
+    let folderId = t ? t.folderId : null;
+    if (folderId && !this.state.noteFolders.some(f => f.id === folderId)) {
+      folderId = null;
+      await window._sb.from('notes').update({ folder_id: null }).eq('id', id);
+    }
+    const { data } = await window._sb.from('notes').select('*').eq('id', id).maybeSingle();
+    const restored = data ? { ...this._noteRowIn(data), folderId } : null;
+    this.setState(st => ({
+      notesTrash: st.notesTrash.filter(n => n.id !== id),
+      notes: restored ? [restored, ...st.notes] : st.notes,
+    }));
+    this._toast(folderId === null && t && t.folderId ? 'Nota restaurada na raiz (a pasta dela não existe mais).' : 'Nota restaurada.');
+  }
+
+  purgeNote = async (id) => {
+    if (!window.confirm('Apagar esta nota de vez? Não tem como desfazer.')) return;
+    if (!(await this._dbCheck(window._sb.from('notes_trash').delete().eq('id', id), 'Não foi possível apagar. Tente novamente.'))) return;
+    this.setState(st => ({ notesTrash: st.notesTrash.filter(n => n.id !== id) }));
+  }
+
+  emptyNoteTrash = async () => {
+    const n = this.state.notesTrash.length;
+    if (!n || !window.confirm('Apagar de vez as ' + n + ' nota(s) da lixeira? Não tem como desfazer.')) return;
+    if (!(await this._dbCheck(window._sb.from('notes_trash').delete().eq('user_id', this.state.user.id), 'Não foi possível esvaziar a lixeira. Tente novamente.'))) return;
+    this.setState({ notesTrash: [] });
+    this._toast('Lixeira esvaziada.');
+  }
+
+  toggleNoteTrash = () => this.setState(st => ({ showNoteTrash: !st.showNoteTrash, noteSearch: '' }))
+
+  toggleNotePin = async (id) => {
+    const note = this.state.notes.find(n => n.id === id);
+    if (!note) return;
+    const pinned = !note.pinned;
+    this.setState(st => ({ notes: st.notes.map(n => n.id === id ? { ...n, pinned } : n) }));
+    const ok = await this._dbCheck(window._sb.from('notes').update({ pinned }).eq('id', id), 'Não foi possível ' + (pinned ? 'fixar' : 'desafixar') + ' a nota.');
+    if (!ok) this.setState(st => ({ notes: st.notes.map(n => n.id === id ? { ...n, pinned: !pinned } : n) }));
+  }
+
+  // ─── Exportar nota ───
+  toggleNoteExport = () => this.setState(st => ({ noteExportOpen: !st.noteExportOpen }))
+
+  // Converte o HTML do editor em Markdown (ou texto puro, com plain=true) percorrendo os blocos que o
+  // próprio editor gera (.tdv-h1/2/3, .tdv-check-row, .tdv-quote, .tdv-callout, .tdv-toggle, .tdv-code,
+  // .tdv-divider, .tdv-note-link, listas e tabelas). Não é um conversor genérico de HTML — é o avesso
+  // exato do que o editor produz.
+  _noteHtmlToMarkdown = (html, plain) => {
+    const root = document.createElement('div');
+    root.innerHTML = html || '';
+    const clean = (t) => t.replace(/​/g, '').replace(/ /g, ' ');
+    const inline = (node) => {
+      let out = '';
+      node.childNodes.forEach(ch => {
+        if (ch.nodeType === 3) { out += clean(ch.textContent); return; }
+        if (ch.nodeType !== 1) return;
+        const tag = ch.tagName;
+        const inner = inline(ch);
+        if (tag === 'BR') out += '\n';
+        else if (tag === 'INPUT') return;
+        else if (ch.classList.contains('tdv-note-link')) out += plain ? inner : '[[' + inner + ']]';
+        else if (tag === 'A') out += plain ? inner : '[' + inner + '](' + (ch.getAttribute('href') || '') + ')';
+        else if ((tag === 'B' || tag === 'STRONG' || ch.style.fontWeight === 'bold' || ch.style.fontWeight >= 600) && inner.trim()) out += plain ? inner : '**' + inner + '**';
+        else if ((tag === 'I' || tag === 'EM') && inner.trim()) out += plain ? inner : '*' + inner + '*';
+        else if ((tag === 'S' || tag === 'STRIKE') && inner.trim()) out += plain ? inner : '~~' + inner + '~~';
+        else out += inner;
+      });
+      return out;
+    };
+    const blocks = [];
+    const listIdx = new Set(); // posições que são item de lista — itens seguidos ficam colados
+    const pushItem = (t) => { blocks.push(t); listIdx.add(blocks.length - 1); };
+    const walk = (node, depth) => {
+      node.childNodes.forEach(ch => {
+        if (ch.nodeType === 3) { const t = clean(ch.textContent); if (t.trim()) blocks.push(t.trim()); return; }
+        if (ch.nodeType !== 1) return;
+        const cls = ch.classList, tag = ch.tagName;
+        const pad = '  '.repeat(depth);
+        if (cls.contains('tdv-h1') || tag === 'H1') blocks.push((plain ? '' : '# ') + inline(ch).trim());
+        else if (cls.contains('tdv-h2') || tag === 'H2') blocks.push((plain ? '' : '## ') + inline(ch).trim());
+        else if (cls.contains('tdv-h3') || tag === 'H3') blocks.push((plain ? '' : '### ') + inline(ch).trim());
+        else if (cls.contains('tdv-check-row')) {
+          const cb = ch.querySelector('input[type="checkbox"]');
+          const done = cb && cb.checked;
+          pushItem(pad + (plain ? (done ? '[x] ' : '[ ] ') : (done ? '- [x] ' : '- [ ] ')) + inline(ch).trim());
+        } else if (cls.contains('tdv-quote') || tag === 'BLOCKQUOTE') blocks.push(inline(ch).trim().split('\n').map(l => (plain ? '' : '> ') + l).join('\n'));
+        else if (cls.contains('tdv-callout')) blocks.push((plain ? '' : '> ') + inline(ch).trim());
+        else if (cls.contains('tdv-code') || tag === 'PRE') blocks.push(plain ? clean(ch.textContent) : '```\n' + clean(ch.textContent).replace(/\n$/, '') + '\n```');
+        else if (cls.contains('tdv-divider') || tag === 'HR') blocks.push(plain ? '----------' : '---');
+        else if (tag === 'DETAILS') {
+          const sum = ch.querySelector('summary');
+          pushItem(pad + (plain ? '▸ ' : '- ') + (sum ? inline(sum).trim() : ''));
+          const body = ch.querySelector('.tdv-toggle-body') || ch;
+          body.childNodes.forEach(b => { if (b !== sum) { const tmp = document.createElement('div'); tmp.appendChild(b.cloneNode(true)); walk(tmp, depth + 1); } });
+        } else if (tag === 'UL' || tag === 'OL') {
+          let i = 1;
+          ch.querySelectorAll(':scope > li').forEach(li => { pushItem(pad + (tag === 'OL' ? (i++) + '. ' : (plain ? '• ' : '- ')) + inline(li).trim()); });
+        } else if (tag === 'TABLE') {
+          const rows = [...ch.querySelectorAll('tr')].map(tr => [...tr.children].map(td => inline(td).trim().replace(/\|/g, '\\|')));
+          if (rows.length) {
+            if (plain) blocks.push(rows.map(r => r.join('\t')).join('\n'));
+            else {
+              const cols = Math.max(...rows.map(r => r.length));
+              const line = (r) => '| ' + Array.from({ length: cols }, (_, k) => r[k] || '').join(' | ') + ' |';
+              blocks.push([line(rows[0]), '| ' + Array(cols).fill('---').join(' | ') + ' |', ...rows.slice(1).map(line)].join('\n'));
+            }
+          }
+        } else if (['DIV', 'P', 'SECTION'].includes(tag) && [...ch.children].some(k => ['DIV', 'P', 'UL', 'OL', 'TABLE', 'PRE', 'DETAILS', 'HR', 'BLOCKQUOTE'].includes(k.tagName))) {
+          walk(ch, depth);
+        } else {
+          const t = inline(ch).trim();
+          if (t) blocks.push(pad + t);
+        }
+      });
+    };
+    walk(root, 0);
+    return blocks.map((b, i) => (i === 0 ? '' : (listIdx.has(i) && listIdx.has(i - 1) ? '\n' : '\n\n')) + b)
+      .join('').replace(/\n{3,}/g, '\n\n').trim() + '\n';
+  }
+
+  _noteFileName = (title, ext) => ((title || 'nota').replace(/[\\/:*?"<>|]+/g, ' ').trim().slice(0, 80) || 'nota') + '.' + ext
+
+  exportNote = (fmt) => {
+    this._flushNoteSave();
+    this.setState({ noteExportOpen: false });
+    const s = this.state;
+    const el = document.getElementById('note-editor-el');
+    const html = el ? el.innerHTML : s.noteContent;
+    const title = s.noteTitle || 'Sem título';
+    if (fmt === 'pdf') {
+      // Abre uma janela limpa, em tema claro de papel, só com o título e o conteúdo, e manda
+      // imprimir — "Salvar como PDF" no diálogo de impressão gera o arquivo. Os blocos do editor
+      // carregam o estilo embutido em cada elemento, então a aparência vem junto.
+      const w = window.open('', '_blank');
+      if (!w) { this._toast('O navegador bloqueou a janela de impressão. Permita pop-ups pra este site.'); return; }
+      const esc = (t) => t.replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+      w.document.write('<!DOCTYPE html><html><head><meta charset="utf-8"><title>' + esc(title) + '</title><style>'
+        + 'body{font-family:Inter,Segoe UI,Arial,sans-serif;color:#111;background:#fff;max-width:760px;margin:32px auto;padding:0 24px;line-height:1.6;font-size:14px}'
+        + 'h1.t{font-size:26px;margin:0 0 20px;border-bottom:2px solid #111;padding-bottom:8px}'
+        + '*{color:#111 !important;background:transparent !important;border-color:#bbb !important}'
+        + 'mark,[style*="background"]{background:#fff3a3 !important}'
+        + 'table{border-collapse:collapse}td,th{border:1px solid #bbb;padding:4px 8px}pre{white-space:pre-wrap}'
+        + '</style></head><body><h1 class="t">' + esc(title) + '</h1>' + html + '</body></html>');
+      w.document.close();
+      w.focus();
+      setTimeout(() => { w.print(); }, 250);
+      return;
+    }
+    const plain = fmt === 'txt';
+    const body = this._noteHtmlToMarkdown(html, plain);
+    const text = (plain ? title + '\n' + '='.repeat(Math.min(title.length, 60)) + '\n\n' : '# ' + title + '\n\n') + body;
+    const blob = new Blob([text], { type: plain ? 'text/plain;charset=utf-8' : 'text/markdown;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = this._noteFileName(title, plain ? 'txt' : 'md');
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    this._toast('Nota exportada.');
+  }
+
+  setNoteSearch = (e) => this.setState({ noteSearch: e.target.value })
+  clearNoteSearch = () => this.setState({ noteSearch: '' })
+  setNoteSort = (e) => { const v = e.target.value; this._save('noteSort', v); this.setState({ noteSort: v }); }
 
   // ─── Pastas de anotações — árvore aninhada, navegação estilo explorador de arquivos: clica
   // numa pasta e entra nela, a trilha no topo volta. ───
@@ -5887,10 +6192,22 @@ class Component extends DCLogic {
   ];
 
   _slashMenuFilteredEntries = () => {
-    const q = (this.state.slashMenuQuery || '').trim().toLowerCase();
+    const q = this._foldText((this.state.slashMenuQuery || '').trim());
+    if (this.state.slashMenuMode === 'link') {
+      const s = this.state;
+      return s.notes
+        .filter(n => n.id !== s.editingNoteId && (!q || this._foldText(n.title || 'Sem título').includes(q)))
+        .sort((a, b) => (b.updatedAt || '').localeCompare(a.updatedAt || ''))
+        .slice(0, 8)
+        .map(n => ({ id: 'link-' + n.id, label: n.title || 'Sem título', icon: 'ph ph-note', type: 'link', noteId: n.id }));
+    }
     const all = this._slashMenuAllEntries();
-    return q ? all.filter(en => en.label.toLowerCase().includes(q)) : all;
+    return q ? all.filter(en => this._foldText(en.label).includes(q)) : all;
   }
+
+  // Minúsculas e sem acento — "codigo" acha "Código", "reuniao" acha "Reunião". Usado na busca de
+  // notas e nos menus.
+  _foldText = (t) => String(t || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
 
   // getBoundingClientRect() num cursor COLAPSADO (sem nada selecionado) é conhecido por retornar
   // tudo zero em vários navegadores/posições — por isso o menu "/" sempre abria no mesmo canto fixo,
@@ -5954,14 +6271,14 @@ class Component extends DCLogic {
     return { top: Math.round(Math.max(0, top)), left };
   }
 
-  _openSlashMenu = () => {
+  _openSlashMenu = (mode) => {
     // Sem retângulo do cursor (navegador devolveu tudo zero), ancora no próprio editor em vez
     // de num ponto fixo inventado — o antigo fallback era um "left: 40" cru, que é justamente
     // o que fazia o menu nascer colado na esquerda quando a medição falhava.
     const el = document.getElementById('note-editor-el');
     const rect = this._getCaretRect() || (el ? el.getBoundingClientRect() : null);
     const pos = this._noteMenuPos(rect, 220, false);
-    this.setState({ slashMenuOpen: true, slashMenuQuery: '', slashMenuActiveIndex: 0, slashMenuPos: pos });
+    this.setState({ slashMenuOpen: true, slashMenuMode: mode || 'blocks', slashMenuQuery: '', slashMenuActiveIndex: 0, slashMenuPos: pos });
   }
 
   _closeSlashMenu = () => {
@@ -5970,7 +6287,7 @@ class Component extends DCLogic {
   }
 
   _runSlashMenuEntry = (entry) => {
-    // Remove a "/query" digitada antes de inserir o bloco escolhido.
+    // Remove a "/query" (ou "[[query") digitada antes de inserir o bloco/link escolhido.
     const sel = window.getSelection();
     const node = this._slashAnchorNode;
     if (sel && node && node.nodeType === 3) {
@@ -5983,7 +6300,35 @@ class Component extends DCLogic {
       sel.addRange(range);
     }
     this._closeSlashMenu();
+    if (entry.type === 'link') { this._insertNoteLink(entry.noteId, entry.label); return; }
     this._insertOrConvertBlock(entry.type);
+  }
+
+  // Link pra outra nota: um <a> que não é editável por dentro (se fosse, dava pra apagar metade do
+  // título e o link ficava com um nome que não corresponde a nota nenhuma). Guarda o ID, não o
+  // título — renomear a nota de destino não quebra o link. Estilo embutido, igual os outros blocos,
+  // pra aparência ir junto na exportação em PDF.
+  _insertNoteLink = (noteId, title) => {
+    const el = document.getElementById('note-editor-el');
+    const sel = window.getSelection();
+    if (!el || !sel || sel.rangeCount === 0) return;
+    const a = document.createElement('a');
+    a.className = 'tdv-note-link';
+    a.setAttribute('data-note-id', noteId);
+    a.contentEditable = 'false';
+    a.textContent = title;
+    a.style.cssText = 'color:#38BDF8;text-decoration:none;border-bottom:1px dashed #38BDF877;cursor:pointer;padding:0 2px;border-radius:3px;background:#38BDF810;';
+    const range = sel.getRangeAt(0);
+    range.deleteContents();
+    range.insertNode(a);
+    const space = document.createTextNode(' ');
+    a.after(space);
+    const after = document.createRange();
+    after.setStartAfter(space);
+    after.collapse(true);
+    sel.removeAllRanges();
+    sel.addRange(after);
+    this.handleNoteInput({ target: el });
   }
 
   // Ponto único de entrada — chamado tanto pelo slash menu quanto pelos atalhos de markdown.
@@ -6108,6 +6453,15 @@ class Component extends DCLogic {
   // container (não em cada checkbox individualmente) pra cobrir tanto linhas novas quanto as que
   // acabaram de ser migradas de notas antigas.
   noteEditorClick = (e) => {
+    const link = e.target.closest && e.target.closest('.tdv-note-link');
+    if (link) {
+      e.preventDefault();
+      const target = this.state.notes.find(n => n.id === link.getAttribute('data-note-id'));
+      if (!target) { this._toast('Essa nota não existe mais — pode estar na lixeira.'); return; }
+      this._flushNoteSave(); // salva a nota atual antes de trocar pra outra
+      this.openNote(target);
+      return;
+    }
     if (e.target.tagName !== 'INPUT' || e.target.type !== 'checkbox') return;
     const row = e.target.closest('.tdv-check-row');
     const textSpan = row && row.querySelector('.tdv-check-text');
@@ -6697,11 +7051,39 @@ class Component extends DCLogic {
     // Anotações — lista + editor (contenteditable fora do binding de template, ver openNote/newNote).
     // Anotações — só mostra o conteúdo da pasta atual (currentFolderId null = raiz). Navegação
     // estilo explorador de arquivos: entra na pasta, a trilha no topo volta.
-    const noteItems = s.notes.filter(n => (n.folderId || null) === s.currentFolderId)
-      .slice().sort((a, b) => (b.updatedAt || '').localeCompare(a.updatedAt || '')).map(n => {
-        const preview = (n.content || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 120);
+    // Busca: com algo digitado, procura em TODAS as pastas (título e texto, sem ligar pra acento
+    // nem maiúscula) em vez de só na pasta aberta. Fixadas vêm sempre primeiro, depois a ordem
+    // escolhida.
+    const noteQuery = this._foldText((s.noteSearch || '').trim());
+    const isNoteSearching = !!noteQuery && !s.showNoteTrash;
+    const notePlainText = (html) => (html || '').replace(/<[^>]*>/g, ' ').replace(/&nbsp;/g, ' ').replace(/​/g, '').replace(/\s+/g, ' ').trim();
+    const folderNameById = Object.fromEntries(s.noteFolders.map(f => [f.id, f.name]));
+    const noteSorters = {
+      recent: (a, b) => (b.updatedAt || '').localeCompare(a.updatedAt || ''),
+      created: (a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''),
+      name: (a, b) => (a.title || 'Sem título').localeCompare(b.title || 'Sem título', 'pt-BR', { sensitivity: 'base' }),
+    };
+    const noteSorter = noteSorters[s.noteSort] || noteSorters.recent;
+    const noteBase = isNoteSearching
+      ? s.notes.filter(n => this._foldText(n.title).includes(noteQuery) || this._foldText(notePlainText(n.content)).includes(noteQuery))
+      : s.notes.filter(n => (n.folderId || null) === s.currentFolderId);
+    const noteItems = noteBase
+      .slice().sort((a, b) => ((b.pinned ? 1 : 0) - (a.pinned ? 1 : 0)) || noteSorter(a, b)).map(n => {
+        const text = notePlainText(n.content);
+        // Na busca, a prévia mostra o trecho em volta de onde o termo aparece, não o começo da nota.
+        let preview = text.slice(0, 120);
+        if (isNoteSearching) {
+          const hit = this._foldText(text).indexOf(noteQuery);
+          if (hit > 40) preview = '…' + text.slice(hit - 40, hit + 90);
+        }
         return {
           ...n, preview: preview || 'Nota em branco',
+          isPinned: !!n.pinned,
+          pinIcon: n.pinned ? 'ph ph-push-pin-slash' : 'ph ph-push-pin',
+          pinTitle: n.pinned ? 'Desafixar' : 'Fixar no topo',
+          hasFolderLabel: isNoteSearching,
+          folderLabel: (n.folderId && folderNameById[n.folderId]) || 'Anotações',
+          onPin: (e) => { if (e && e.stopPropagation) e.stopPropagation(); this.toggleNotePin(n.id); },
           displayTitle: n.title || 'Sem título', titleColor: n.title ? '#E2E8F0' : '#475569',
           fmtUpdated: n.updatedAt ? this.fmtDate(new Date(n.updatedAt).toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' })) : '',
           isDeleting: s.deletingId === n.id, notDeleting: s.deletingId !== n.id,
@@ -6713,7 +7095,11 @@ class Component extends DCLogic {
         };
       });
 
-    const folderItems = s.noteFolders.filter(f => (f.parentFolderId || null) === s.currentFolderId)
+    // Na busca, entram as pastas de qualquer nível cujo nome bate com o termo (e não as da pasta aberta).
+    const folderBase = isNoteSearching
+      ? s.noteFolders.filter(f => this._foldText(f.name).includes(noteQuery))
+      : s.noteFolders.filter(f => (f.parentFolderId || null) === s.currentFolderId);
+    const folderItems = folderBase
       .slice().sort((a, b) => (a.name || '').localeCompare(b.name || '', 'pt-BR')).map(f => {
       const noteCount = s.notes.filter(n => (n.folderId || null) === f.id).length;
       const subCount = s.noteFolders.filter(sf => (sf.parentFolderId || null) === f.id).length;
@@ -6724,7 +7110,7 @@ class Component extends DCLogic {
       return {
         ...f, countLabel: parts.length ? parts.join(' · ') : 'VAZIA',
         cardClass: 'hud-tile hud-tile-amber hud-tile-interactive' + (s.draggingNoteId && s.noteDropTargetId === f.id ? ' hud-tile-drop' : ''),
-        onOpen: () => this.openFolder(f.id),
+        onOpen: () => { if (isNoteSearching) this.setState({ noteSearch: '' }); this.openFolder(f.id); },
         onRename: (e) => { if (e && e.stopPropagation) e.stopPropagation(); this.openRenameFolderModal(f); },
         onMove: (e) => { if (e && e.stopPropagation) e.stopPropagation(); this.openMoveModal('folder', f.id); },
         onDelete: (e) => { if (e && e.stopPropagation) e.stopPropagation(); this.deleteFolder(f.id); },
@@ -6732,8 +7118,21 @@ class Component extends DCLogic {
     });
 
     const noteTotalLabel = (folderItems.length + noteItems.length) === 0
-      ? 'VAZIO'
-      : [folderItems.length ? folderItems.length + (folderItems.length === 1 ? ' PASTA' : ' PASTAS') : '', noteItems.length ? noteItems.length + (noteItems.length === 1 ? ' NOTA' : ' NOTAS') : ''].filter(Boolean).join(' · ');
+      ? (isNoteSearching ? 'NADA ENCONTRADO' : 'VAZIO')
+      : [folderItems.length ? folderItems.length + (folderItems.length === 1 ? ' PASTA' : ' PASTAS') : '', noteItems.length ? noteItems.length + (noteItems.length === 1 ? ' NOTA' : ' NOTAS') : ''].filter(Boolean).join(' · ')
+        + (isNoteSearching ? ' ENCONTRADA' + ((folderItems.length + noteItems.length) === 1 ? '' : 'S') : '');
+
+    const trashItems = s.notesTrash.map(t => {
+      const daysLeft = Math.max(0, this.NOTE_TRASH_DAYS - Math.floor((Date.now() - new Date(t.deletedAt).getTime()) / 86400000));
+      return {
+        id: t.id, displayTitle: t.title || 'Sem título', titleColor: t.title ? '#E2E8F0' : '#475569',
+        preview: notePlainText(t.content).slice(0, 110) || 'Nota em branco',
+        daysLabel: daysLeft <= 0 ? 'APAGA HOJE' : daysLeft === 1 ? 'APAGA AMANHÃ' : 'APAGA EM ' + daysLeft + ' DIAS',
+        daysColor: daysLeft <= 3 ? '#F87171' : '#475569',
+        onRestore: () => this.restoreNote(t.id),
+        onPurge: () => this.purgeNote(t.id),
+      };
+    });
 
     const folderPath = this._folderPath(s.currentFolderId);
     const breadcrumbRaw = [{ id: null, name: 'Anotações' }, ...folderPath.map(f => ({ id: f.id, name: f.name }))];
@@ -7907,10 +8306,30 @@ class Component extends DCLogic {
       saveEventLabel: s.savingEvent ? 'Salvando…' : (s.editEventId ? 'Salvar' : 'Adicionar'),
       saveEventBtnStyle: { ..._actionBtn(s.savingEvent, GRAD_BLUE, '#2563EB33'), marginTop: '4px' },
       // anotações
-      noteItems, hasNoteItems: noteItems.length > 0,
-      folderItems, hasFolderItems: folderItems.length > 0,
-      noNoteItems: noteItems.length === 0 && folderItems.length === 0,
+      noteItems, hasNoteItems: !s.showNoteTrash && noteItems.length > 0,
+      folderItems, hasFolderItems: !s.showNoteTrash && folderItems.length > 0,
+      noNoteItems: !s.showNoteTrash && !isNoteSearching && noteItems.length === 0 && folderItems.length === 0,
+      noteSearchEmpty: isNoteSearching && noteItems.length === 0 && folderItems.length === 0,
       breadcrumbItems, noteTotalLabel,
+      // busca / ordenação / lixeira
+      noteSearch: s.noteSearch, setNoteSearch: this.setNoteSearch, clearNoteSearch: this.clearNoteSearch,
+      hasNoteSearch: !!s.noteSearch, isNoteSearching, notNoteSearching: !isNoteSearching,
+      noteSort: s.noteSort, setNoteSort: this.setNoteSort,
+      showNoteTrash: s.showNoteTrash, notInNoteTrash: !s.showNoteTrash, toggleNoteTrash: this.toggleNoteTrash,
+      noteTrashLabel: s.showNoteTrash ? 'Voltar às notas' : 'Lixeira' + (s.notesTrash.length ? ' (' + s.notesTrash.length + ')' : ''),
+      noteTrashIcon: s.showNoteTrash ? 'ph ph-arrow-left' : 'ph ph-trash',
+      trashItems, hasTrashItems: trashItems.length > 0, noTrashItems: trashItems.length === 0,
+      emptyNoteTrash: this.emptyNoteTrash,
+      noteTrashDays: this.NOTE_TRASH_DAYS,
+      // editor: fixar e exportar
+      currentNotePinIcon: (s.notes.find(n => n.id === s.editingNoteId) || {}).pinned ? 'ph ph-push-pin-slash' : 'ph ph-push-pin',
+      currentNotePinned: !!(s.notes.find(n => n.id === s.editingNoteId) || {}).pinned,
+      currentNotePinTitle: (s.notes.find(n => n.id === s.editingNoteId) || {}).pinned ? 'Desafixar' : 'Fixar no topo',
+      toggleCurrentNotePin: () => this.toggleNotePin(s.editingNoteId),
+      noteExportOpen: s.noteExportOpen, toggleNoteExport: this.toggleNoteExport,
+      exportNoteMd: () => this.exportNote('md'), exportNoteTxt: () => this.exportNote('txt'), exportNotePdf: () => this.exportNote('pdf'),
+      slashMenuHeader: s.slashMenuMode === 'link' ? 'LINKAR NOTA' : 'BLOCOS',
+      slashMenuEmptyLabel: s.slashMenuMode === 'link' ? 'Nenhuma nota com esse nome.' : 'Nada encontrado.',
       openNewFolderModal: this.openNewFolderModal,
       showFolderModal: s.showFolderModal, closeFolderModal: this.closeFolderModal,
       folderModalTitle: s.editFolderId ? 'Renomear pasta' : 'Nova pasta',

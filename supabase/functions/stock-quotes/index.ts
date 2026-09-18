@@ -16,6 +16,10 @@ const CORS_HEADERS = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
+// App de usuário único. O cadastro de contas no Supabase está aberto, então "estar logado" não
+// basta — sem essa trava qualquer conta nova gastaria a cota do brapi.dev.
+const OWNER_USER_ID = "c1f1f1f8-ba26-4e66-8c86-c645dc9cbb1d";
+
 const VALID_RANGES = ["1d", "2d", "5d", "7d", "1mo", "3mo", "6mo", "1y", "2y", "5y", "10y", "ytd", "max"];
 const VALID_INTERVALS = ["1m", "2m", "5m", "15m", "30m", "60m", "90m", "1h", "1d", "5d", "1wk", "1mo", "3mo"];
 
@@ -39,6 +43,7 @@ Deno.serve(async (req: Request) => {
     });
     const { data: { user }, error: userErr } = await sb.auth.getUser();
     if (userErr || !user) return json({ error: "Sessão inválida." }, 401);
+    if (user.id !== OWNER_USER_ID) return json({ error: "Acesso negado." }, 403);
 
     const body = await req.json().catch(() => ({}));
 
@@ -51,7 +56,12 @@ Deno.serve(async (req: Request) => {
         `https://brapi.dev/api/quote/${encodeURIComponent(ticker)}?range=${range}&interval=${interval}`,
         { headers: { Authorization: `Bearer ${brapiToken}` } },
       );
-      if (!resp.ok) return json({ error: `brapi.dev respondeu ${resp.status}` }, 502);
+      // Repassa o motivo que a brapi deu (ex: recurso fora do plano) em vez de só o código — o
+      // gráfico falhou em produção e só o número 4xx não dizia se era o ticker, o período ou o plano.
+      if (!resp.ok) {
+        const why = await resp.json().then((j: any) => j?.message).catch(() => null);
+        return json({ error: why ? `brapi.dev: ${String(why).slice(0, 160)}` : `brapi.dev respondeu ${resp.status}` }, 502);
+      }
       const data = await resp.json();
       const result = (data.results || [])[0];
       if (!result) return json({ error: "Ticker não encontrado." }, 404);

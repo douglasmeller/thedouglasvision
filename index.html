@@ -3302,6 +3302,7 @@ class Component extends DCLogic {
     // da Home etc.) não limpava editingNoteId — voltar pra Anotações depois caía direto na mesma
     // nota em vez da lista, em vez de "esquecer" que ela tava aberta (achado numa auditoria).
     if (prevState.screen === 'notas' && this.state.screen !== 'notas' && this.state.editingNoteId) {
+      this._flushNoteSave();
       this.setState({ editingNoteId: null });
     }
     // O mini-chat do Jarvis na Home é desmontado/remontado toda vez que sai e volta pra essa
@@ -3365,6 +3366,7 @@ class Component extends DCLogic {
       // acabou de sair (sem essa marca no state recém-restaurado) e uma nota ainda tava aberta,
       // só fecha a nota (achado numa auditoria).
       if (this.state.editingNoteId && !(e.state && e.state.noteEditor)) {
+        this._flushNoteSave();
         this.setState({ editingNoteId: null });
         return;
       }
@@ -3436,6 +3438,9 @@ class Component extends DCLogic {
     // intervalo mínimo pra não disparar fetch toda vez que a tela pisca.
     this._lastVisRefresh = 0;
     document.addEventListener('visibilitychange', this._onVisible = () => {
+      // Indo pro fundo (trocar de app no celular, minimizar, fechar a aba): salva a nota aberta
+      // na hora em vez de esperar o 1,2s do autosave, que pode nunca chegar a rodar.
+      if (document.visibilityState === 'hidden') { this._flushNoteSave(); return; }
       if (document.visibilityState !== 'visible' || !this.state.user) return;
       const now = Date.now();
       if (now - this._lastVisRefresh < 15000) return;
@@ -3561,7 +3566,15 @@ class Component extends DCLogic {
     if (toCreate.length === 0) return;
     this.setState({ transactions: [...transactions, ...toCreate] });
     if (user?.id) {
-      await window._sb.from('transactions').insert(toCreate.map(t => this._txnRow(t, user.id)));
+      // O mês já foi marcado como "gerado" lá em cima (autoMonth) — se a gravação falhar e isso
+      // não for desmarcado, os recorrentes deste mês nunca mais seriam criados. Desfaz e desmarca
+      // pra tentar de novo na próxima abertura do app.
+      const { error } = await window._sb.from('transactions').insert(toCreate.map(t => this._txnRow(t, user.id)));
+      if (error) {
+        this._save('autoMonth', null);
+        const ids = new Set(toCreate.map(t => t.id));
+        this.setState({ transactions: this.state.transactions.filter(t => !ids.has(t.id)) });
+      }
     }
   }
 
@@ -3578,6 +3591,16 @@ class Component extends DCLogic {
     if (this._toastTimer) clearTimeout(this._toastTimer);
     this.setState({ toastMsg: msg, toastTs: Date.now() });
     this._toastTimer = setTimeout(() => this.setState({ toastTs: 0 }), 2800);
+  }
+
+  // Para gravações que a tela já mostrou como feitas (atualização otimista): confere a resposta do
+  // banco e avisa se ele recusou. Antes o erro era engolido — a mudança sumia sozinha no próximo F5
+  // ou sincronização e o Sr. Douglas nunca ficava sabendo que não tinha sido salva (rede ruim no
+  // celular é o caso típico). Devolve true/false pra quem precisa desfazer ou segurar o "salvo!".
+  _dbCheck = async (query, failMsg) => {
+    const { error } = await query;
+    if (error) { console.warn(failMsg, error); this._toast(failMsg); return false; }
+    return true;
   }
 
   mKey(d) {
@@ -4844,7 +4867,7 @@ class Component extends DCLogic {
   // série — sem isso, o gerador mensal automático (_autoRecurring) usa qualquer instância antiga
   // com recurring=true como modelo e recria o lançamento do zero, fazendo ele "voltar sozinho".
   _commitDelete = async (txn) => {
-    await window._sb.from('transactions').delete().eq('id', txn.id);
+    if (!(await this._dbCheck(window._sb.from('transactions').delete().eq('id', txn.id), 'Não foi possível excluir o lançamento — ele vai voltar a aparecer.'))) return;
     if (!txn.recurring) return;
     const siblingIds = this.state.transactions
       .filter(t => t.recurring && t.description === txn.description && t.categoryId === txn.categoryId && t.type === txn.type)
@@ -4870,13 +4893,14 @@ class Component extends DCLogic {
       invoicePaid: false,
     };
     this.setState({ transactions: [...this.state.transactions, newTxn] });
-    await window._sb.from('transactions').insert(this._txnRow(newTxn, this.state.user.id));
+    const ok = await this._dbCheck(window._sb.from('transactions').insert(this._txnRow(newTxn, this.state.user.id)), 'Não foi possível duplicar o lançamento. Tente novamente.');
+    if (!ok) this.setState({ transactions: this.state.transactions.filter(t => t.id !== newTxn.id) });
   }
 
   realizeTxn = async (id) => {
     const transactions = this.state.transactions.map(t => t.id === id ? { ...t, planned: false } : t);
     this.setState({ transactions });
-    await window._sb.from('transactions').update({ planned: false }).eq('id', id);
+    await this._dbCheck(window._sb.from('transactions').update({ planned: false }).eq('id', id), 'Não foi possível confirmar o lançamento. Tente novamente.');
   }
 
   dismissOnboarding = () => {
@@ -4928,7 +4952,8 @@ class Component extends DCLogic {
     const goals = this.state.goals.map(g => g.id === id ? { ...g, current: Math.min(g.current + amount, g.target) } : g);
     const updated = goals.find(g => g.id === id);
     this.setState({ goals });
-    await window._sb.from('goals').update({ current: updated.current }).eq('id', id);
+    const ok = await this._dbCheck(window._sb.from('goals').update({ current: updated.current }).eq('id', id), 'Não foi possível registrar o aporte. Tente novamente.');
+    if (!ok) { this.setState({ goals: this.state.goals.map(g => g.id === id ? before : g) }); return; }
     // Se o aporte passava da meta, o excedente era descartado em silêncio (a meta só ia até o
     // teto) e o toast dizia "registrado" como se o valor inteiro tivesse entrado — sem aviso,
     // parecia que o dinheiro tinha sumido (achado numa auditoria).
@@ -5105,10 +5130,18 @@ class Component extends DCLogic {
     if (toCreate.length === 0) return;
     const updatedExpenses = recurringExpenses.map(e => stampedExpenseIds.includes(e.id) ? { ...e, lastGeneratedMonth: curKey } : e);
     this.setState({ transactions: [...this.state.transactions, ...toCreate], recurringExpenses: updatedExpenses });
-    await Promise.all([
-      window._sb.from('transactions').insert(toCreate.map(t => this._txnRow(t, user.id))),
-      window._sb.from('recurring_expenses').update({ last_generated_month: curKey }).in('id', stampedExpenseIds),
-    ]);
+    // Em sequência, não em paralelo: a marca "este mês já foi gerado" só pode ir pro banco DEPOIS
+    // que a parcela foi aceita. Em paralelo, se a parcela falhasse e a marca passasse, a parcela do
+    // mês nunca mais seria criada (o servidor diria que já foi). Se a parcela falhar, desfaz na tela
+    // e desmarca a trava local pra tentar de novo na próxima abertura.
+    const { error: insErr } = await window._sb.from('transactions').insert(toCreate.map(t => this._txnRow(t, user.id)));
+    if (insErr) {
+      this._save('autoExpenseMonth', null);
+      const ids = new Set(toCreate.map(t => t.id));
+      this.setState({ transactions: this.state.transactions.filter(t => !ids.has(t.id)), recurringExpenses });
+      return;
+    }
+    await window._sb.from('recurring_expenses').update({ last_generated_month: curKey }).in('id', stampedExpenseIds);
   }
 
   // ─── Cartão de crédito ──────────────────────────────────────────────────
@@ -5215,7 +5248,8 @@ class Component extends DCLogic {
     if (!task) return;
     const updated = { ...task, done: !task.done };
     this.setState({ tasks: this.state.tasks.map(t => t.id === id ? updated : t) });
-    await window._sb.from('tasks').update({ done: updated.done, completed_at: updated.done ? new Date().toISOString() : null }).eq('id', id);
+    const ok = await this._dbCheck(window._sb.from('tasks').update({ done: updated.done, completed_at: updated.done ? new Date().toISOString() : null }).eq('id', id), 'Não foi possível atualizar a tarefa. Tente novamente.');
+    if (!ok) this.setState({ tasks: this.state.tasks.map(t => t.id === id ? task : t) });
   }
 
   // ─── Agenda ──────────────────────────────────────────────────────────────
@@ -5359,8 +5393,7 @@ class Component extends DCLogic {
   }
 
   closeNoteEditor = () => {
-    clearTimeout(this._noteSaveTimer);
-    if (this._noteSavePending) this.saveNoteContent();
+    this._flushNoteSave();
     this.setState({ editingNoteId: null, slashMenuOpen: false, selectionToolbarOpen: false });
   }
 
@@ -5409,6 +5442,15 @@ class Component extends DCLogic {
     this._noteSavePending = true;
     clearTimeout(this._noteSaveTimer);
     this._noteSaveTimer = setTimeout(() => this.saveNoteContent(), 1200);
+  }
+
+  // Salva AGORA o que estiver pendente do autosave. Tem que rodar ANTES de qualquer coisa que
+  // zere editingNoteId: saveNoteContent lê a nota aberta do state, e se ela já foi fechada ele
+  // desiste sem salvar — era o que fazia sumir o que foi digitado no último 1,2s antes de trocar
+  // de aba ou apertar Voltar (as duas saídas fechavam a nota sem passar por aqui).
+  _flushNoteSave = () => {
+    clearTimeout(this._noteSaveTimer);
+    if (this._noteSavePending) this.saveNoteContent();
   }
 
   saveNoteContent = async () => {
@@ -5479,11 +5521,12 @@ class Component extends DCLogic {
     if (!name) return;
     if (s.editFolderId) {
       this.setState({ noteFolders: s.noteFolders.map(f => f.id === s.editFolderId ? { ...f, name } : f), showFolderModal: false });
-      await window._sb.from('note_folders').update({ name }).eq('id', s.editFolderId);
+      await this._dbCheck(window._sb.from('note_folders').update({ name }).eq('id', s.editFolderId), 'Não foi possível renomear a pasta. Tente novamente.');
     } else {
       const folder = { id: 'nf' + Date.now(), name, parentFolderId: s.folderModalParentId };
       this.setState({ noteFolders: [...s.noteFolders, folder], showFolderModal: false });
-      await window._sb.from('note_folders').insert(this._folderRowOut(folder, s.user.id));
+      const ok = await this._dbCheck(window._sb.from('note_folders').insert(this._folderRowOut(folder, s.user.id)), 'Não foi possível criar a pasta. Tente novamente.');
+      if (!ok) this.setState({ noteFolders: this.state.noteFolders.filter(f => f.id !== folder.id) });
     }
   }
 
@@ -5497,9 +5540,13 @@ class Component extends DCLogic {
     const notes = s.notes.map(n => n.folderId === id ? { ...n, folderId: parentId } : n);
     const noteFolders = s.noteFolders.filter(f => f.id !== id).map(f => f.parentFolderId === id ? { ...f, parentFolderId: parentId } : f);
     this.setState({ notes, noteFolders, currentFolderId: s.currentFolderId === id ? parentId : s.currentFolderId });
-    await window._sb.from('notes').update({ folder_id: parentId }).eq('folder_id', id);
-    await window._sb.from('note_folders').update({ parent_folder_id: parentId }).eq('parent_folder_id', id);
-    await window._sb.from('note_folders').delete().eq('id', id);
+    // Para no primeiro passo que falhar: apagar a pasta antes de ter subido o conteúdo dela
+    // deixaria notas apontando pra uma pasta que não existe mais. A tela se corrige sozinha na
+    // próxima sincronização.
+    const fail = 'Não foi possível excluir a pasta. Tente novamente.';
+    if (!(await this._dbCheck(window._sb.from('notes').update({ folder_id: parentId }).eq('folder_id', id), fail))) return;
+    if (!(await this._dbCheck(window._sb.from('note_folders').update({ parent_folder_id: parentId }).eq('parent_folder_id', id), fail))) return;
+    if (!(await this._dbCheck(window._sb.from('note_folders').delete().eq('id', id), fail))) return;
     this._toast('Pasta excluída — o conteúdo subiu pro nível anterior.');
   }
 
@@ -5512,10 +5559,10 @@ class Component extends DCLogic {
     this.setState({ showMoveModal: false });
     if (moveItemType === 'note') {
       this.setState({ notes: s.notes.map(n => n.id === moveItemId ? { ...n, folderId: targetFolderId } : n) });
-      await window._sb.from('notes').update({ folder_id: targetFolderId }).eq('id', moveItemId);
+      if (!(await this._dbCheck(window._sb.from('notes').update({ folder_id: targetFolderId }).eq('id', moveItemId), 'Não foi possível mover. Tente novamente.'))) return;
     } else {
       this.setState({ noteFolders: s.noteFolders.map(f => f.id === moveItemId ? { ...f, parentFolderId: targetFolderId } : f) });
-      await window._sb.from('note_folders').update({ parent_folder_id: targetFolderId }).eq('id', moveItemId);
+      if (!(await this._dbCheck(window._sb.from('note_folders').update({ parent_folder_id: targetFolderId }).eq('id', moveItemId), 'Não foi possível mover. Tente novamente.'))) return;
     }
     this._toast('Movido.');
   }
@@ -6121,7 +6168,7 @@ class Component extends DCLogic {
   }
 
   removeStockTicker = async (id) => {
-    await window._sb.from('stock_watchlist').delete().eq('id', id);
+    if (!(await this._dbCheck(window._sb.from('stock_watchlist').delete().eq('id', id), 'Não foi possível remover a ação. Tente novamente.'))) return;
     this.setState({ stockWatchlist: this.state.stockWatchlist.filter(w => w.id !== id) }, () => this.fetchStockQuotes());
   }
 
@@ -6242,7 +6289,8 @@ class Component extends DCLogic {
     const transactions = [...s.transactions, txn];
     this.setState({ transactions, quickAmount: '', quickLastMsg: `${s.quickType === 'expense' ? '-' : '+'}${this.fmt(amount)} em ${cat.name}`, quickSuccessTs: Date.now() });
     setTimeout(() => this.setState({ quickSuccessTs: 0 }), 3000);
-    await window._sb.from('transactions').insert(this._txnRow(txn, s.user.id));
+    const ok = await this._dbCheck(window._sb.from('transactions').insert(this._txnRow(txn, s.user.id)), 'O lançamento NÃO foi salvo. Tente de novo.');
+    if (!ok) this.setState({ transactions: this.state.transactions.filter(t => t.id !== txn.id), quickSuccessTs: 0 });
   }
 
   exportXlsx = (filteredTxns) => {
@@ -6331,8 +6379,7 @@ class Component extends DCLogic {
     const savingsGoal = cfgSavingsGoal && parseFloat(cfgSavingsGoal) > 0 ? parseFloat(cfgSavingsGoal) : 0;
     this.setState({ savingsGoal, savingCfg: true });
     try {
-      await window._sb.from('profiles').update({ currency: cfgCurrency, savings_goal: savingsGoal }).eq('id', user.id);
-      this._toast('Perfil atualizado!');
+      if (await this._dbCheck(window._sb.from('profiles').update({ currency: cfgCurrency, savings_goal: savingsGoal }).eq('id', user.id), 'Não foi possível salvar o perfil. Tente novamente.')) this._toast('Perfil atualizado!');
     } finally {
       this.setState({ savingCfg: false });
     }
@@ -6342,8 +6389,7 @@ class Component extends DCLogic {
     const { cfgJarvisNotes, user } = this.state;
     this.setState({ savingJarvisNotes: true });
     try {
-      await window._sb.from('jarvis_context').upsert({ user_id: user.id, personal_notes: cfgJarvisNotes, updated_at: new Date().toISOString() });
-      this._toast('Contexto do Jarvis atualizado!');
+      if (await this._dbCheck(window._sb.from('jarvis_context').upsert({ user_id: user.id, personal_notes: cfgJarvisNotes, updated_at: new Date().toISOString() }), 'Não foi possível salvar o contexto do Jarvis. Tente novamente.')) this._toast('Contexto do Jarvis atualizado!');
     } finally {
       this.setState({ savingJarvisNotes: false });
     }
@@ -6657,7 +6703,7 @@ class Component extends DCLogic {
         return {
           ...n, preview: preview || 'Nota em branco',
           displayTitle: n.title || 'Sem título', titleColor: n.title ? '#E2E8F0' : '#475569',
-          fmtUpdated: n.updatedAt ? this.fmtDate(n.updatedAt.split('T')[0]) : '',
+          fmtUpdated: n.updatedAt ? this.fmtDate(new Date(n.updatedAt).toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' })) : '',
           isDeleting: s.deletingId === n.id, notDeleting: s.deletingId !== n.id,
           cardClass: 'hud-tile hud-tile-cyan hud-tile-interactive' + (s.draggingNoteId === n.id ? ' hud-tile-dragging' : ''),
           onOpen: () => { if (this._noteJustDragged) return; this.openNote(n); },
@@ -7913,7 +7959,7 @@ class Component extends DCLogic {
       hasNewsDigest: !!s.newsDigest,
       noNewsDigest: !s.newsDigest,
       newsGroups: newsGroupsList,
-      newsUpdatedLabel: s.newsDigest ? ('Atualizado em ' + this.fmtDate(s.newsDigest.created_at.split('T')[0]) + ' às ' + new Date(s.newsDigest.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })) : '',
+      newsUpdatedLabel: s.newsDigest ? ('Atualizado em ' + this.fmtDate(new Date(s.newsDigest.created_at).toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' })) + ' às ' + new Date(s.newsDigest.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })) : '',
       refreshNews: this.refreshNews,
       refreshingNews: s.refreshingNews,
       refreshNewsLabel: s.refreshingNews ? 'Atualizando…' : 'Atualizar agora',

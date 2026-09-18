@@ -14,6 +14,9 @@ const CORS_HEADERS = {
 // Voz "Jarvis (UCM) - Português Brasileiro" escolhida no playground da Fish
 // Audio — reference_id é específico dessa voz clonada, não muda por request.
 const JARVIS_VOICE_REFERENCE_ID = "a5b93aeddcc948c19ea04f0afe9d178c";
+// App de usuário único. O cadastro de contas no Supabase está aberto, então "estar logado" não
+// basta — sem essa trava qualquer conta nova gastaria os créditos da Fish Audio.
+const OWNER_USER_ID = "c1f1f1f8-ba26-4e66-8c86-c645dc9cbb1d";
 const FISH_MODEL = "s2-pro";
 const MAX_TEXT_LENGTH = 2000;
 
@@ -56,6 +59,7 @@ Deno.serve(async (req: Request) => {
     });
     const { data: { user }, error: userErr } = await sb.auth.getUser();
     if (userErr || !user) return json({ error: "Sessão inválida." }, 401);
+    if (user.id !== OWNER_USER_ID) return json({ error: "Acesso negado." }, 403);
 
     const body = await req.json().catch(() => ({}));
     const text = stripMarkdown(String(body?.text || "").slice(0, MAX_TEXT_LENGTH));

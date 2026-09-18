@@ -152,6 +152,9 @@ Deno.serve(async (req: Request) => {
       });
       const { data: { user }, error: userErr } = await sb.auth.getUser();
       if (userErr || !user) return json({ error: "Sessão inválida." }, 401);
+      // O cadastro de contas está aberto — sem essa trava, qualquer conta nova forçaria resumos
+      // novos à vontade (o "forced" pula o limite de um por dia) gastando a chave da Anthropic.
+      if (user.id !== OWNER_USER_ID) return json({ error: "Acesso negado." }, 403);
       forced = true;
     } else {
       // Chamada do pg_cron — não existe sessão de usuário nenhuma nesse contexto,

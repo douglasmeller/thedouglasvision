@@ -3464,6 +3464,13 @@ class Component extends DCLogic {
         this.setState({ editingNoteId: null });
         return;
       }
+      // Caiu numa entrada "de nota" mas nenhuma nota está aberta (sobra de quando a nota foi
+      // fechada por outro caminho, ou de um F5 com a nota aberta): não é um lugar de verdade,
+      // então pula pra entrada de baixo em vez de deixar o Voltar parecer que não fez nada.
+      if (!this.state.editingNoteId && e.state && e.state.noteEditor) {
+        window.history.back();
+        return;
+      }
       const screen = this._screenFromPath(window.location.pathname);
       if (screen) this.setState({ screen, sidebarOpen: false });
     });
@@ -5485,7 +5492,7 @@ class Component extends DCLogic {
     // zeram aqui — se a nota anterior tivesse ficado aberta com o menu de barra ainda de pé
     // (ex: saiu sem apertar Escape), ele reaparecia flutuando por cima da nota nova, apontando
     // pra um texto que nem existe mais nela (achados numa auditoria).
-    window.history.pushState({ noteEditor: true }, '', window.location.pathname);
+    this._enterNoteHistory();
     this.setState({ editingNoteId: note.id, noteTitle: note.title, noteContent: note.content, noteSaveStatus: 'idle', slashMenuOpen: false, selectionToolbarOpen: false, noteExportOpen: false }, () => {
       const el = document.getElementById('note-editor-el');
       if (el) { el.innerHTML = note.content || ''; this._migrateOldChecklistRows(el); }
@@ -5496,7 +5503,7 @@ class Component extends DCLogic {
     const s = this.state;
     const nowIso = new Date().toISOString();
     const note = { id: 'nt' + Date.now(), title: '', content: '', updatedAt: nowIso, createdAt: nowIso, folderId: s.currentFolderId, pinned: false };
-    window.history.pushState({ noteEditor: true }, '', window.location.pathname);
+    this._enterNoteHistory();
     this.setState({ notes: [note, ...s.notes], editingNoteId: note.id, noteTitle: '', noteContent: '', noteSaveStatus: 'idle', slashMenuOpen: false, selectionToolbarOpen: false }, () => {
       const el = document.getElementById('note-editor-el');
       if (el) el.innerHTML = '';
@@ -5507,9 +5514,28 @@ class Component extends DCLogic {
     await window._sb.from('notes').upsert(this._noteRowOut(note, s.user.id));
   }
 
+  // Histórico do navegador × nota aberta. Abrir uma nota empilha UMA entrada marcada
+  // ({noteEditor:true}, mesma URL) pro Voltar fechar a nota em vez de sair de Anotações. O que
+  // faltava era o caminho inverso: fechar a nota por qualquer outro meio (setinha, excluir) deixava
+  // a entrada sobrando, e cada nota aberta e fechada empilhava uma "entrada fantasma" — o Voltar
+  // parecia não fazer nada uma ou duas vezes e na terceira caía na Home. Agora quem fecha a nota
+  // consome a entrada, e abrir uma nota estando numa entrada de nota (link entre notas) só a
+  // substitui em vez de empilhar outra.
+  _enterNoteHistory = () => {
+    const st = window.history.state;
+    if (st && st.noteEditor) window.history.replaceState({ noteEditor: true }, '', window.location.pathname);
+    else window.history.pushState({ noteEditor: true }, '', window.location.pathname);
+  }
+
+  _leaveNoteHistory = () => {
+    const st = window.history.state;
+    if (st && st.noteEditor) window.history.back();
+  }
+
   closeNoteEditor = () => {
     this._flushNoteSave();
     this.setState({ editingNoteId: null, slashMenuOpen: false, selectionToolbarOpen: false, noteExportOpen: false });
+    this._leaveNoteHistory();
   }
 
   setNoteTitle = (e) => {
@@ -5607,7 +5633,9 @@ class Component extends DCLogic {
     const { error } = await window._sb.rpc('trash_note', { p_id: id });
     if (error) { this.setState({ deletingId: null }); this._toast('Não foi possível mover pra lixeira. Tente novamente.'); return; }
     const note = this.state.notes.find(n => n.id === id);
-    const editingNoteId = this.state.editingNoteId === id ? null : this.state.editingNoteId;
+    const wasEditing = this.state.editingNoteId === id;
+    const editingNoteId = wasEditing ? null : this.state.editingNoteId;
+    if (wasEditing) this._leaveNoteHistory();
     this.setState(st => ({
       notes: st.notes.filter(n => n.id !== id), deletingId: null, editingNoteId,
       notesTrash: note ? [{ id, title: note.title, content: note.content, folderId: note.folderId, deletedAt: new Date().toISOString() }, ...st.notesTrash] : st.notesTrash,

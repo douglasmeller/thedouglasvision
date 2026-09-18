@@ -2928,6 +2928,13 @@
             </div>
           </div>
           <div class="jarvis-font-display" style="font-size: 16px; font-weight: 700; color: {{ jarvisAccentColor }}; letter-spacing: 1px; text-transform: uppercase; flex-shrink: 0;">{{ jarvisLiveStatusLabel }}</div>
+          <!-- Interromper é por toque: o microfone não fica aberto enquanto ele fala (ver
+               _liveProcessSpeakQueue), então não dá mais pra cortar ele falando por cima. -->
+          <sc-if value="{{ jarvisLiveSpeaking }}" hint-placeholder-val="{{ false }}">
+            <button onClick="{{ liveInterrupt }}" class="hud-btn-ghost" style="flex-shrink: 0;">
+              <i class="ph ph-hand-palm" style="font-size: 15px;"></i>Tocar para interromper
+            </button>
+          </sc-if>
           <sc-if value="{{ hasLiveTranscript }}" hint-placeholder-val="{{ false }}">
             <div class="jarvis-font" style="max-width: 480px; text-align: center; font-size: 15px; color: #94A3B8; line-height: 1.6;">{{ jarvisLiveTranscript }}</div>
           </sc-if>
@@ -4054,8 +4061,12 @@ class Component extends DCLogic {
     // (_liveInterrupt incrementa _liveGen) enquanto essa resposta ainda tá chegando da rede, os
     // callbacks abaixo (que continuam rodando em segundo plano, a promise não é cancelável) checam
     // isso e não fazem mais nada — sem essa trava, a resposta antiga e a nova se misturavam e o
-    // "Ouvindo..." travava pra sempre. Fora do modo ao vivo, _liveGen nunca muda, então é inofensivo.
-    const myLiveGen = this._liveGen || 0;
+    // "Ouvindo..." travava pra sempre.
+    // _liveGen é inicializado em 0 como campo da classe. Antes não era: aqui virava "|| 0" = 0,
+    // mas as checagens lá embaixo comparam com this._liveGen cru (undefined), e 0 !== undefined —
+    // TODA mensagem digitada era descartada como "velha" antes de aparecer, e o carregando nunca
+    // desligava (só funcionava depois de usar o modo de voz uma vez na sessão). Era a bolinha eterna.
+    const myLiveGen = this._liveGen;
     // Resposta falada só quando a MENSAGEM foi ditada (mic ou modo ao vivo) — mensagem digitada
     // nunca deve vir com áudio, mesmo com a voz ligada. Zera aqui pra próxima mensagem, se
     // digitada, não herdar isso de uma anterior ditada.
@@ -4419,7 +4430,6 @@ class Component extends DCLogic {
   stopJarvisLiveMode = () => {
     this._liveGen = (this._liveGen || 0) + 1; // invalida qualquer resposta/escuta ainda em andamento
     if (this._jarvisLiveRecognition) { this._jarvisLiveRecognition.onend = null; this._jarvisLiveRecognition.onerror = null; this._jarvisLiveRecognition.stop(); this._jarvisLiveRecognition = null; }
-    this._liveStopBargeIn();
     if (this._jarvisAudio) {
       this._jarvisAudio.onended = null; this._jarvisAudio.pause();
       if (this._jarvisAudio.src && this._jarvisAudio.src.startsWith('blob:')) URL.revokeObjectURL(this._jarvisAudio.src);
@@ -4505,6 +4515,9 @@ class Component extends DCLogic {
   // aparece em quase toda resposta) viravam 6 frases de 1 letra cada, e o Fish Audio soletrava
   // "jota, á, erre..." em vez de falar "Jarvis" — foi o que o Sr. Douglas ouviu no primeiro teste.
   // Também não corta abreviações comuns tipo "Sr."/"Dr." no meio de "Sr. Douglas".
+  // Geração do modo ao vivo — ver sendJarvisMessage. Tem que nascer como número: as checagens
+  // comparam direto com ele, e undefined fazia toda resposta digitada ser descartada.
+  _liveGen = 0;
   _LIVE_SENTENCE_ABBR = new Set(['sr', 'sra', 'srta', 'dr', 'dra', 'prof', 'profa', 'sto', 'sta', 'jr', 'exmo', 'exma']);
   _splitLiveSentences = (text) => {
     const sentences = [];
@@ -4553,50 +4566,17 @@ class Component extends DCLogic {
     // Interrompido enquanto esse áudio ainda estava sendo gerado — descarta em vez de tocar
     // por cima do que já voltou a acontecer.
     if (myGen !== this._liveGen) { if (url) URL.revokeObjectURL(url); this._liveSpeaking = false; return; }
-    this._liveStartBargeIn();
+    // O microfone fica FECHADO enquanto o Jarvis fala. Antes ele abria em paralelo pra detectar
+    // interrupção por voz, e isso quebrava a ligação de três jeitos: (1) com o microfone aberto,
+    // o Windows/celular entra em "modo chamada" e abaixa o volume dos outros sons — a voz saía
+    // baixinha; (2) sem fone, o microfone ouvia a própria voz do Jarvis, contava 3 palavras e se
+    // interrompia sozinho — a voz sumia; (3) liga-desliga de reconhecimento a cada trecho brigava
+    // com a escuta seguinte (o navegador só aceita um reconhecimento por vez) — ele não ouvia.
+    // Interromper agora é tocando na tela (_liveInterrupt), ver o modal do modo ao vivo.
     this._playJarvisSpeech(url, () => {
       this._liveSpeaking = false;
-      this._liveStopBargeIn();
       this._liveProcessSpeakQueue();
     });
-  }
-
-  // Escuta em paralelo enquanto o Jarvis está falando — se o Sr. Douglas começar a falar de
-  // verdade nesse meio-tempo, corta o áudio na hora e passa a escutar (interromper, não esperar
-  // ele terminar a fala inteira). Exige pelo menos 3 PALAVRAS num resultado FINAL — não só
-  // caracteres, que é o que fazia qualquer ruído/tosse/monossílabo cortar a fala à toa. A API do
-  // navegador não dá como configurar supressão de ruído aqui; fone de ouvido ajuda mais que
-  // qualquer ajuste de código (menos ruído ambiente e sem eco do próprio áudio do Jarvis voltando
-  // pro microfone).
-  _liveStartBargeIn = () => {
-    if (!this.state.jarvisLiveMode) return;
-    const BARGE_IN_MIN_WORDS = 3;
-    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SR) return;
-    const rec = new SR();
-    rec.lang = 'pt-BR';
-    rec.continuous = true;
-    rec.interimResults = false;
-    rec.onresult = (e) => {
-      const last = e.results[e.results.length - 1];
-      if (!last || !last.isFinal) return;
-      const heard = (last[0]?.transcript || '').trim();
-      const wordCount = heard ? heard.split(/\s+/).length : 0;
-      if (wordCount >= BARGE_IN_MIN_WORDS) this._liveInterrupt();
-    };
-    rec.onerror = () => {};
-    rec.onend = () => {};
-    this._jarvisBargeInRecognition = rec;
-    try { rec.start(); } catch (e) {}
-  }
-
-  _liveStopBargeIn = () => {
-    if (this._jarvisBargeInRecognition) {
-      this._jarvisBargeInRecognition.onresult = null;
-      this._jarvisBargeInRecognition.onend = null;
-      try { this._jarvisBargeInRecognition.stop(); } catch (e) {}
-      this._jarvisBargeInRecognition = null;
-    }
   }
 
   // Esvazia a fila de fala liberando os áudios que já estavam sendo baixados — como o fetch agora
@@ -4615,11 +4595,10 @@ class Component extends DCLogic {
     // seus callbacks passam a checar isso e não fazem mais nada — ver sendJarvisMessage). Só que
     // isso também significa que NINGUÉM mais vai zerar jarvisLoading pra essa resposta (o
     // finishUp() de sendJarvisMessage se recusa a rodar quando o gen não bate mais) — sem zerar
-    // aqui também, jarvisLoading ficava travado em true pra sempre a cada barge-in, e isso bloqueava
-    // toda mensagem seguinte (de voz ou digitada, sendJarvisMessage recusa enviar com jarvisLoading
-    // true). Era essa a causa real do "só responde a minha primeira fala" (achado numa auditoria).
+    // aqui também, jarvisLoading ficava travado em true pra sempre a cada interrupção, e isso
+    // bloqueava toda mensagem seguinte (de voz ou digitada, sendJarvisMessage recusa enviar com
+    // jarvisLoading true).
     this._liveGen = (this._liveGen || 0) + 1;
-    this._liveStopBargeIn();
     this._liveClearSpeakQueue();
     this._liveSpeaking = false;
     if (this._jarvisAudio) {
@@ -8051,6 +8030,7 @@ class Component extends DCLogic {
       jarvisLiveListening: s.jarvisLiveStatus === 'listening',
       jarvisLiveThinking: s.jarvisLiveStatus === 'thinking',
       jarvisLiveSpeaking: s.jarvisLiveStatus === 'speaking',
+      liveInterrupt: this._liveInterrupt,
       hasLiveTranscript: !!s.jarvisLiveTranscript.trim(),
       jarvisLiveTranscript: s.jarvisLiveTranscript,
       toggleJarvisListening: this.toggleJarvisListening,

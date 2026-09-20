@@ -4542,7 +4542,19 @@ class Component extends DCLogic {
 
   // Chamado de dentro de um clique de verdade (abrir o Jarvis, ligar o modo ao vivo) — nunca de
   // dentro de uma resposta assíncrona, senão não destrava nada.
+  // ─── Áudio no iPhone ───
+  // No iOS o som de uma página web obedece a chavinha de silencioso e, enquanto o microfone está
+  // ativo (o reconhecimento de voz), o sistema põe o aparelho em "modo chamada": o som sai baixo e
+  // pelo fone de ouvido do telefone, não pelo alto-falante. Era isso que fazia a voz do Jarvis
+  // sumir (ou ficar baixinha) no celular. navigator.audioSession (Safari 17+) deixa dizer ao sistema o
+  // que estamos fazendo: 'playback' = tocar som (alto-falante, ignora o silencioso),
+  // 'play-and-record' = escutando o microfone. Onde a API não existe, não faz nada.
+  _setAudioSession = (type) => {
+    try { if (navigator.audioSession) navigator.audioSession.type = type; } catch (_e) {}
+  }
+
   _unlockJarvisAudio = () => {
+    this._setAudioSession('playback');
     const audio = this._getJarvisAudioEl();
     audio.src = this._JARVIS_SILENT_WAV;
     const p = audio.play();
@@ -4574,6 +4586,9 @@ class Component extends DCLogic {
   _playJarvisSpeech = (url, onDone) => {
     const finish = () => { if (onDone) onDone(); };
     if (!url) { finish(); return; }
+    // Volta pro modo de reprodução: o modo de gravação da escuta anterior deixaria essa fala baixa
+    // e no fone de ouvido do telefone (ver _setAudioSession).
+    this._setAudioSession('playback');
     const audio = this._getJarvisAudioEl();
     const prevUrl = audio.src;
     audio.pause();
@@ -4614,6 +4629,7 @@ class Component extends DCLogic {
       if (this._jarvisAudio.src && this._jarvisAudio.src.startsWith('blob:')) URL.revokeObjectURL(this._jarvisAudio.src);
     }
     this._liveClearSpeakQueue(); this._liveSpeaking = false;
+    this._setAudioSession('auto'); // devolve o aparelho ao estado normal ao desligar a ligação
     // jarvisLoading: false é essencial aqui — sem isso, encerrar a ligação enquanto uma resposta
     // ainda estava chegando da rede (o gen bump acima invalida os callbacks de sendJarvisMessage,
     // que são quem normalmente zera isso) deixava jarvisLoading travado em true pra sempre, o que
@@ -4686,6 +4702,7 @@ class Component extends DCLogic {
     };
     maxWaitTimer = setTimeout(finish, LIVE_MAX_WAIT_MS);
     this._jarvisLiveRecognition = rec;
+    this._setAudioSession('play-and-record');
     try { rec.start(); } catch (e) { finish(); }
   }
 

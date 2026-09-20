@@ -578,7 +578,7 @@
                   </sc-if>
                 </div>
                 <div style="padding: 10px 12px; border-top: 1px solid #151525; display: flex; gap: 6px; flex-shrink: 0;">
-                  <input type="text" class="jarvis-font" value="{{ jarvisInput }}" onInput="{{ setJarvisInput }}" onKeyDown="{{ jarvisKeyDown }}" placeholder="" style="flex: 1; min-width: 0; background: #0D0D1A; border: 1px solid #1E2A45; border-radius: 8px; padding: 8px 10px; color: #E2E8F0; font-size: 12.5px;">
+                  <textarea rows="1" class="jarvis-font jarvis-input" value="{{ jarvisInput }}" onInput="{{ setJarvisInput }}" onKeyDown="{{ jarvisKeyDown }}" placeholder="" style="flex: 1; min-width: 0; background: #0D0D1A; border: 1px solid #1E2A45; border-radius: 8px; padding: 8px 10px; color: #E2E8F0; font-size: 12.5px; font-family: inherit; line-height: 1.45; resize: none; overflow-y: hidden; box-sizing: border-box;"></textarea>
                   <button onClick="{{ startJarvisLiveMode }}" title="Falar ao vivo com o Jarvis" style="width: 34px; height: 34px; border-radius: 8px; background: transparent; border: 1px solid #1E2A45; color: #64748B; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
                     <i class="ph ph-phone-call" style="font-size: 14px;"></i>
                   </button>
@@ -2406,7 +2406,7 @@
               </sc-if>
             </div>
             <div style="padding: 14px 20px; border-top: 1px solid #151525; display: flex; gap: 10px; flex-shrink: 0;">
-              <input type="text" class="jarvis-font" value="{{ jarvisInput }}" onInput="{{ setJarvisInput }}" onKeyDown="{{ jarvisKeyDown }}" placeholder="" style="flex: 1; background: #0D0D1A; border: 1px solid #1E2A45; border-radius: 9px; padding: 11px 14px; color: #E2E8F0; font-size: 14px;">
+              <textarea rows="1" class="jarvis-font jarvis-input" value="{{ jarvisInput }}" onInput="{{ setJarvisInput }}" onKeyDown="{{ jarvisKeyDown }}" placeholder="" style="flex: 1; min-width: 0; background: #0D0D1A; border: 1px solid #1E2A45; border-radius: 9px; padding: 11px 14px; color: #E2E8F0; font-size: 14px; font-family: inherit; line-height: 1.45; resize: none; overflow-y: hidden; box-sizing: border-box;"></textarea>
               <button onClick="{{ startJarvisLiveMode }}" title="Falar ao vivo com o Jarvis" style="width: 44px; height: 44px; border-radius: 9px; background: transparent; border: 1px solid #1E2A45; color: #64748B; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
                 <i class="ph ph-phone-call" style="font-size: 17px;"></i>
               </button>
@@ -2521,7 +2521,7 @@
             </sc-if>
           </div>
           <div style="padding: 10px 14px; border-top: 1px solid #151525; display: flex; gap: 8px; flex-shrink: 0;">
-            <input type="text" class="jarvis-font" value="{{ jarvisInput }}" onInput="{{ setJarvisInput }}" onKeyDown="{{ jarvisKeyDown }}" placeholder="" style="flex: 1; min-width: 0; background: #0D0D1A; border: 1px solid #1E2A45; border-radius: 8px; padding: 9px 11px; color: #E2E8F0; font-size: 13px;">
+            <textarea rows="1" class="jarvis-font jarvis-input" value="{{ jarvisInput }}" onInput="{{ setJarvisInput }}" onKeyDown="{{ jarvisKeyDown }}" placeholder="" style="flex: 1; min-width: 0; background: #0D0D1A; border: 1px solid #1E2A45; border-radius: 8px; padding: 9px 11px; color: #E2E8F0; font-size: 13px; font-family: inherit; line-height: 1.45; resize: none; overflow-y: hidden; box-sizing: border-box;"></textarea>
             <button onClick="{{ startJarvisLiveMode }}" title="Falar ao vivo com o Jarvis" style="width: 38px; height: 38px; border-radius: 8px; background: transparent; border: 1px solid #1E2A45; color: #64748B; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
               <i class="ph ph-phone-call" style="font-size: 15px;"></i>
             </button>
@@ -4177,7 +4177,7 @@ class Component extends DCLogic {
       let transcript = '';
       for (let i = 0; i < e.results.length; i++) transcript += e.results[i][0].transcript;
       this._jarvisInputWasVoice = true; // marca essa mensagem como ditada — só isso libera a resposta falada (ver sendJarvisMessage)
-      this.setState({ jarvisInput: transcript });
+      this.setState({ jarvisInput: transcript }, () => this._growAllJarvisInputs());
     };
     rec.onerror = () => this.setState({ jarvisListening: false });
     rec.onend = () => this.setState({ jarvisListening: false });
@@ -4193,6 +4193,26 @@ class Component extends DCLogic {
       if (!this.state.jarvisLoaded) this.loadJarvisHistory();
       this._scrollJarvisToBottom();
     }
+  }
+
+  // O campo do Jarvis é uma caixa de texto de UMA linha que cresce conforme o texto (Shift+Enter
+  // quebra linha). Era um <input type="text">, que não guarda quebra de linha nem cresce — por
+  // isso o Shift+Enter simplesmente não fazia nada. Cresce até um teto e depois rola por dentro.
+  _JARVIS_INPUT_MAX_H = 150;
+  _autoGrowJarvisInput = (el) => {
+    if (!el || !el.style) return;
+    el.style.height = 'auto'; // zera antes de medir, senão só cresce e nunca encolhe ao apagar
+    const h = Math.min(el.scrollHeight, this._JARVIS_INPUT_MAX_H);
+    el.style.height = h + 'px';
+    el.style.overflowY = el.scrollHeight > this._JARVIS_INPUT_MAX_H ? 'auto' : 'hidden';
+  }
+
+  // Quando o texto é preenchido por fora (ditado, modo ao vivo) ou limpo depois de enviar, o
+  // onInput não dispara — então a altura é recalculada na mão em todos os campos abertos.
+  _growAllJarvisInputs = () => {
+    setTimeout(() => {
+      document.querySelectorAll('.jarvis-input').forEach(el => this._autoGrowJarvisInput(el));
+    }, 0);
   }
 
   // Token de acesso SEM poder travar. supabase.auth.getSession() espera um "lock" interno do
@@ -4242,7 +4262,7 @@ class Component extends DCLogic {
     const wasVoiceInput = !!this._jarvisInputWasVoice;
     this._jarvisInputWasVoice = false;
     const userMsg = this._jarvisMsg('user', text, null);
-    this.setState({ jarvisMessages: [...s.jarvisMessages, userMsg], jarvisInput: '', jarvisLoading: true }, () => this._scrollJarvisToBottom());
+    this.setState({ jarvisMessages: [...s.jarvisMessages, userMsg], jarvisInput: '', jarvisLoading: true }, () => { this._scrollJarvisToBottom(); this._growAllJarvisInputs(); });
 
     // Efeito de "máquina de escrever": o texto que chega da rede (em pedaços grandes e irregulares)
     // vira uma fila (fullTarget), e um timer revela essa fila aos poucos (revealedLen), letra por
@@ -4893,7 +4913,7 @@ class Component extends DCLogic {
           </div>
           <div id="pip-msgs" style="flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:8px;"></div>
           <div style="display:flex;gap:6px;padding:10px;border-top:1px solid #1E2A45;flex-shrink:0;">
-            <input id="pip-input" type="text" placeholder="" style="flex:1;min-width:0;background:#0D0D1A;border:1px solid #1E2A45;border-radius:8px;padding:9px 11px;color:#E2E8F0;font-size:13px;">
+            <textarea id="pip-input" rows="1" placeholder="" style="flex:1;min-width:0;background:#0D0D1A;border:1px solid #1E2A45;border-radius:8px;padding:9px 11px;color:#E2E8F0;font-size:13px;font-family:inherit;line-height:1.45;resize:none;overflow-y:hidden;box-sizing:border-box;"></textarea>
             <button id="pip-send" style="width:36px;height:36px;border-radius:8px;background:transparent;border:1px solid #1E2A45;color:${cur.accent};cursor:pointer;flex-shrink:0;font-size:19px;font-weight:700;font-family:'Share Tech Mono','Courier New',monospace;line-height:1;">&gt;</button>
           </div>
         </div>
@@ -4904,10 +4924,15 @@ class Component extends DCLogic {
         const text = input.value;
         if (!text.trim() || this.state.jarvisLoading) return;
         input.value = '';
+        this._autoGrowJarvisInput(input); // volta pra uma linha depois de enviar
         this.setState({ jarvisInput: text }, () => this.sendJarvisMessage());
       };
       pip.document.getElementById('pip-send').addEventListener('click', send);
-      input.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } });
+      input.addEventListener('input', () => this._autoGrowJarvisInput(input));
+      input.addEventListener('keydown', e => {
+        if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); return; }
+        if (e.key === 'Enter' && e.shiftKey) setTimeout(() => this._autoGrowJarvisInput(input), 0);
+      });
       input.focus();
       this._renderJarvisPip();
     };
@@ -8509,8 +8534,16 @@ class Component extends DCLogic {
       })),
       hasJarvisMessages: s.jarvisMessages.length > 0, noJarvisMessages: s.jarvisMessages.length === 0,
       jarvisInput: s.jarvisInput,
-      setJarvisInput: e => { this._jarvisInputWasVoice = false; this.setState({ jarvisInput: e.target.value }); },
-      jarvisKeyDown: e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); this.sendJarvisMessage(); } },
+      setJarvisInput: e => { this._jarvisInputWasVoice = false; this._autoGrowJarvisInput(e.target); this.setState({ jarvisInput: e.target.value }); },
+      jarvisKeyDown: e => {
+        if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); this.sendJarvisMessage(); return; }
+        if (e.key === 'Enter' && e.shiftKey) {
+          // A quebra de linha é o comportamento padrão da caixa de texto; aqui só garantimos que a
+          // caixa cresça e que a conversa continue colada no fim, pro campo não sair da vista.
+          const el = e.target;
+          setTimeout(() => { this._autoGrowJarvisInput(el); this._scrollJarvisToBottom(); }, 0);
+        }
+      },
       jarvisLoading: s.jarvisLoading,
       showJarvisTypingCursor: s.jarvisLoading && (s.jarvisMessages.length === 0 || s.jarvisMessages[s.jarvisMessages.length - 1].isUser),
       jarvisOpen: s.jarvisOpen,

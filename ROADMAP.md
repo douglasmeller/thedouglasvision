@@ -6,7 +6,7 @@ Ideias e próximos passos discutidos, ainda não implementados.
 Ordem sugerida — bug antes de feature, e o que é função central antes do que é novo:
 1. **Jarvis — voz ao vivo e resposta travada** — corrigido em 18/09 e verificado em simulação com o código real; falta o Douglas testar com áudio de verdade.
 2. **Inspeção total com o Opus 5** — feita em 18/09, ver seção própria. Sobrou um pedido pro Douglas (desligar o cadastro de contas no Supabase).
-3. **Shift+Enter no chat do Jarvis** — ver "Jarvis — pequenos ajustes". Pequeno, dá pra encaixar junto com o item 1.
+3. **Shift+Enter no chat do Jarvis** — feito em 20/09, ver "Jarvis — pequenos ajustes".
 4. **Agenda — refinamento grande** — ver "Novos setores → Agenda".
 5. **Anotações mais completas** — feito em 18/09 (busca, fixar, lixeira, ordenação, exportar, links entre notas).
 6. **Cofre de Senhas** — ver "Novos setores → Cofre de senhas". Precisa de conversa de arquitetura antes de código.
@@ -142,7 +142,8 @@ Verificação com o código REAL do componente rodando fora do navegador (Node) 
 - **Conhecidos, não corrigidos (decisão de produto)**: apagar uma categoria deixa os lançamentos dela sem categoria, sem aviso; clicar numa tarefa no calendário abre o dia, não a tarefa (entra no refinamento da Agenda).
 
 ## Jarvis — pequenos ajustes
-- **Shift+Enter no chat** (reforçado em 17/09): ao apertar Shift+Enter, o texto deve descer pra linha de baixo, a caixa de texto crescer junto, e a tela acompanhar o cursor. Hoje o campo cresce mas a view não acompanha. *(O pedido de 17/09 chegou cortado — "a caixa de texto expanda e…" — confirmar com o Douglas se tinha mais alguma coisa depois disso.)*
+- **Shift+Enter no chat (feito, 20/09)**: o campo do Jarvis era um `<input type="text">`, que por definição não aceita quebra de linha — Shift+Enter não fazia nada em lugar nenhum. Os quatro campos (Home, tela do Jarvis, bolinha e janela flutuante) viraram `<textarea rows="1">` que cresce sozinho conforme o texto, até um teto de 150px (~9 linhas), quando passa a rolar por dentro. Enter sozinho continua enviando; Shift+Enter desce a linha, a caixa cresce e o chat acompanha o cursor. Depois de enviar, a caixa volta pra uma linha. As mensagens já eram renderizadas quebrando por `
+` (`_parseJarvisContent`), então a mensagem multilinha chega e aparece certa.
 
 ---
 *Itens marcados "(feito)" já foram implementados. O resto ainda é intenção — nada além disso foi construído.*

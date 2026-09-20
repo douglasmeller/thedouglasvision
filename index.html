@@ -4195,6 +4195,31 @@ class Component extends DCLogic {
     }
   }
 
+  // Token de acesso SEM poder travar. supabase.auth.getSession() espera um "lock" interno do
+  // navegador (navigator.locks); se outra aba ou uma renovação de token deixou esse lock preso, a
+  // promessa nunca resolve — e como toda chamada às funções do servidor começa por ela, o envio
+  // inteiro ficava parado ali, sem erro nenhum e sem nada chegar ao servidor (foi o "bolinha azul
+  // pra sempre" do Jarvis: os logs mostravam zero requisições). Espera até 4s pelo cliente; se não
+  // vier, lê o token direto do armazenamento local, onde o próprio Supabase guarda a sessão.
+  // Devolve null só se não achar sessão nenhuma.
+  _getAccessToken = async () => {
+    const viaClient = window._sb.auth.getSession().then(({ data: { session } }) => (session ? session.access_token : null)).catch(() => null);
+    const timeout = new Promise(r => setTimeout(() => r('__timeout__'), 4000));
+    const r = await Promise.race([viaClient, timeout]);
+    if (r !== '__timeout__') return r;
+    try {
+      const key = Object.keys(localStorage).find(k => /^sb-.*-auth-token$/.test(k));
+      const sess = key ? JSON.parse(localStorage.getItem(key)) : null;
+      return sess && sess.access_token ? sess.access_token : null;
+    } catch (_e) { return null; }
+  }
+
+  // Espera o próximo pedaço da resposta, com limite de tempo sem receber nada.
+  _readWithIdleTimeout = (reader, ms) => Promise.race([
+    reader.read(),
+    new Promise((_, rej) => setTimeout(() => rej(new Error('A resposta parou de chegar (sem dados por ' + Math.round(ms / 1000) + 's). Tente de novo.')), ms)),
+  ])
+
   sendJarvisMessage = async () => {
     const s = this.state;
     const text = s.jarvisInput.trim();
@@ -4325,15 +4350,25 @@ class Component extends DCLogic {
     };
 
     try {
-      const { data: { session } } = await window._sb.auth.getSession();
+      const accessToken = await this._getAccessToken();
+      if (!accessToken) throw new Error('Não consegui confirmar o seu login. Recarregue a página (F5).');
       // O roteador rápido (Groq) ficou instável demais no modo ao vivo — de volta a ir direto no
       // Claude sempre, igual o chat de texto normal. jarvis-live-chat continua existindo (deployada,
       // sem uso) caso valha revisitar depois, só não é mais chamada daqui.
-      const resp = await fetch('https://evkpskwjzbyzpvvodnwf.supabase.co/functions/v1/jarvis-chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.access_token },
-        body: JSON.stringify({ message: text, model: s.jarvisModel, conversation_id: s.jarvisConversationId }),
-      });
+      // Sem resposta nenhuma do servidor em 60s = erro visível, em vez de carregando pra sempre.
+      const ctrl = new AbortController();
+      const connectTimer = setTimeout(() => ctrl.abort(), 60000);
+      let resp;
+      try {
+        resp = await fetch('https://evkpskwjzbyzpvvodnwf.supabase.co/functions/v1/jarvis-chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + accessToken },
+          body: JSON.stringify({ message: text, model: s.jarvisModel, conversation_id: s.jarvisConversationId }),
+          signal: ctrl.signal,
+        });
+      } catch (fetchErr) {
+        throw new Error(ctrl.signal.aborted ? 'O servidor não respondeu em 60 segundos. Tente de novo.' : 'Não consegui falar com o servidor. Confira a conexão e tente de novo.');
+      } finally { clearTimeout(connectTimer); }
       // Sem isso, uma resposta de erro (ex: sessão expirada, 401) tenta ser lida como stream SSE —
       // o corpo não bate com o formato "data: {...}" esperado, nenhum evento reconhece, e o Douglas
       // ficava vendo o carregando sumir sem nenhuma mensagem, nem de erro nem de resposta.
@@ -4361,7 +4396,7 @@ class Component extends DCLogic {
         }
       };
       while (true) {
-        const { done, value } = await reader.read();
+        const { done, value } = await this._readWithIdleTimeout(reader, 60000);
         if (done) break;
         buffer += decoder.decode(value, { stream: true });
         const parts = buffer.split('\n\n');
@@ -4520,11 +4555,11 @@ class Component extends DCLogic {
   _fetchJarvisSpeech = async (text) => {
     if (!text || !text.trim()) return null;
     try {
-      const { data: { session } } = await window._sb.auth.getSession();
-      if (!session) return null;
+      const speakToken = await this._getAccessToken();
+      if (!speakToken) return null;
       const resp = await fetch('https://evkpskwjzbyzpvvodnwf.supabase.co/functions/v1/jarvis-speak', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.access_token },
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + speakToken },
         body: JSON.stringify({ text }),
       });
       if (!resp.ok) return null;

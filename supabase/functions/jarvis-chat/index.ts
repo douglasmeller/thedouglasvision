@@ -244,13 +244,20 @@ const TOOLS = [
   // ─── Agenda ───────────────────────────────────────────────────────────────
   {
     name: "create_event",
-    description: "Cria um evento/compromisso na Agenda.",
+    description: "Cria um evento/compromisso na Agenda. Pode ter hora de fim, durar vários dias e se repetir.",
     input_schema: {
       type: "object",
       properties: {
         title: { type: "string" },
-        date: { type: "string", description: "YYYY-MM-DD." },
-        time: { type: "string", description: "Hora no formato HH:MM. Opcional — sem isso é evento de dia todo." },
+        date: { type: "string", description: "Dia (do início) YYYY-MM-DD. Em evento que repete, é a primeira ocorrência." },
+        time: { type: "string", description: "Hora de início HH:MM. Opcional — sem isso é evento sem hora." },
+        end_time: { type: "string", description: "Hora de fim HH:MM. Opcional, exige time." },
+        all_day: { type: "boolean", description: "Evento de dia inteiro (ignora time/end_time)." },
+        end_date: { type: "string", description: "Último dia YYYY-MM-DD, pra evento de vários dias (viagem, férias). Opcional." },
+        recurrence: { type: "string", enum: ["daily", "weekdays", "weekly", "custom", "monthly", "yearly"], description: "Repetição: daily=todo dia, weekdays=seg a sex, weekly=toda semana no mesmo dia da semana de date, custom=dias da semana em recurrence_days, monthly=todo mês no mesmo dia, yearly=todo ano. Omita se não repete." },
+        recurrence_days: { type: "array", items: { type: "number" }, description: "Só com recurrence=custom: dias da semana, 0=domingo … 6=sábado." },
+        recurrence_until: { type: "string", description: "Repete até esse dia YYYY-MM-DD (inclusive). Opcional." },
+        recurrence_count: { type: "number", description: "Ou: repete N vezes no total. Opcional." },
         notes: { type: "string" },
       },
       required: ["title", "date"],
@@ -258,14 +265,21 @@ const TOOLS = [
   },
   {
     name: "update_event",
-    description: "Edita um evento da Agenda pelo id (use list_events pra achar).",
+    description: "Edita um evento da Agenda pelo id (use list_events pra achar). Em evento que repete, muda a SÉRIE INTEIRA — pra mudar só um dia, exclua aquela ocorrência (delete_event com occurrence_date) e crie um evento avulso.",
     input_schema: {
       type: "object",
       properties: {
         id: { type: "string" },
         title: { type: "string" },
-        date: { type: "string", description: "YYYY-MM-DD." },
-        time: { type: "string", description: "HH:MM, ou string vazia pra virar dia todo." },
+        date: { type: "string", description: "YYYY-MM-DD (início da série, em evento que repete)." },
+        time: { type: "string", description: "HH:MM, ou string vazia pra tirar a hora." },
+        end_time: { type: "string", description: "HH:MM, ou string vazia pra tirar." },
+        all_day: { type: "boolean" },
+        end_date: { type: "string", description: "YYYY-MM-DD, ou string vazia pra voltar a ser de um dia só." },
+        recurrence: { type: "string", description: "daily | weekdays | weekly | custom | monthly | yearly, ou string vazia pra parar de repetir." },
+        recurrence_days: { type: "array", items: { type: "number" } },
+        recurrence_until: { type: "string", description: "YYYY-MM-DD, ou string vazia." },
+        recurrence_count: { type: "number", description: "N vezes, ou 0 pra tirar o limite." },
         notes: { type: "string" },
       },
       required: ["id"],
@@ -273,17 +287,24 @@ const TOOLS = [
   },
   {
     name: "delete_event",
-    description: "Exclui um evento da Agenda pelo id. Ação imediata e definitiva.",
-    input_schema: { type: "object", properties: { id: { type: "string" } }, required: ["id"] },
+    description: "Exclui um evento da Agenda pelo id. Ação imediata e definitiva. Em evento que repete: com occurrence_date exclui só aquele dia; sem, exclui a série inteira.",
+    input_schema: {
+      type: "object",
+      properties: {
+        id: { type: "string" },
+        occurrence_date: { type: "string", description: "YYYY-MM-DD da ocorrência a excluir (só em evento que repete)." },
+      },
+      required: ["id"],
+    },
   },
   {
     name: "list_events",
-    description: "Lista eventos da Agenda num intervalo de datas, com os ids pra editar/excluir.",
+    description: "Lista os eventos da Agenda num intervalo de datas — já com as ocorrências dos eventos que se repetem calculadas (cada uma com a data dela e o id da série) — com os ids pra editar/excluir.",
     input_schema: {
       type: "object",
       properties: {
         from: { type: "string", description: "Data inicial YYYY-MM-DD. Padrão: hoje." },
-        to: { type: "string", description: "Data final YYYY-MM-DD. Opcional." },
+        to: { type: "string", description: "Data final YYYY-MM-DD. Padrão: 60 dias depois de from." },
         limit: { type: "number", description: "Padrão 30." },
       },
     },
@@ -476,6 +497,136 @@ async function resolveExpenseId(sb: SupabaseClient, name: string): Promise<{ id?
 // Hora no formato HH:MM — usado pelos eventos da agenda.
 function isValidTime(s: unknown): s is string {
   return typeof s === "string" && /^([01]\d|2[0-3]):[0-5]\d$/.test(s);
+}
+
+// ─── Agenda: repetição e vários dias ─────────────────────────────────────────
+// Mesma regra do app (TheDouglasVision.dc.html → _eventStartsInRange): datas 'YYYY-MM-DD' com
+// conta em UTC puro; uma linha por série + exceções (exdates); mês sem o dia (31, 29/02) é pulado.
+const RECURRENCES = ["daily", "weekdays", "weekly", "custom", "monthly", "yearly"];
+const dParse = (k: string) => { const [y, m, d] = k.split("-").map(Number); return new Date(Date.UTC(y, m - 1, d)); };
+const dKey = (dt: Date) => dt.toISOString().slice(0, 10);
+const dAdd = (k: string, n: number) => { const dt = dParse(k); dt.setUTCDate(dt.getUTCDate() + n); return dKey(dt); };
+const dDiff = (a: string, b: string) => Math.round((dParse(b).getTime() - dParse(a).getTime()) / 86400000);
+// deno-lint-ignore no-explicit-any
+type EventRow = Record<string, any>;
+const spanDays = (ev: EventRow) => (ev.end_date && ev.end_date > ev.date ? dDiff(ev.date, ev.end_date) : 0);
+
+function eventStartsInRange(ev: EventRow, fromKey: string, toKey: string): string[] {
+  const span = spanDays(ev);
+  const lo = dAdd(fromKey, -span);
+  if (!ev.recurrence) return ev.date >= lo && ev.date <= toKey ? [ev.date] : [];
+  const ex = new Set<string>(ev.exdates || []);
+  const count: number | null = ev.recurrence_count || null;
+  const end: string = ev.recurrence_until && ev.recurrence_until < toKey ? ev.recurrence_until : toKey;
+  const out: string[] = [];
+  if (ev.date > end) return out;
+  const start = dParse(ev.date);
+  let n = 0;
+  const take = (k: string) => { n++; if (k >= lo && !ex.has(k)) out.push(k); };
+  if (ev.recurrence === "monthly" || ev.recurrence === "yearly") {
+    const y0 = start.getUTCFullYear(), m0 = start.getUTCMonth(), d0 = start.getUTCDate();
+    for (let i = 0; i < 5000; i++) {
+      const first = ev.recurrence === "yearly" ? new Date(Date.UTC(y0 + i, m0, 1)) : new Date(Date.UTC(y0, m0 + i, 1));
+      if (dKey(first) > end) break;
+      const dim = new Date(Date.UTC(first.getUTCFullYear(), first.getUTCMonth() + 1, 0)).getUTCDate();
+      if (d0 > dim) continue;
+      const k = dKey(new Date(Date.UTC(first.getUTCFullYear(), first.getUTCMonth(), d0)));
+      if (k > end) break;
+      take(k);
+      if (count && n >= count) break;
+    }
+    return out;
+  }
+  const dows: number[] | null = ev.recurrence === "weekdays" ? [1, 2, 3, 4, 5]
+    : (ev.recurrence === "custom" && ev.recurrence_days && ev.recurrence_days.length ? ev.recurrence_days : null);
+  const step = ev.recurrence === "weekly" ? 7 : 1;
+  const cur = new Date(start.getTime());
+  if (!count && lo > ev.date) cur.setUTCDate(cur.getUTCDate() + Math.floor(dDiff(ev.date, lo) / step) * step);
+  for (let i = 0; i < 20000; i++) {
+    const k = dKey(cur);
+    if (k > end) break;
+    if (!dows || dows.includes(cur.getUTCDay())) {
+      take(k);
+      if (count && n >= count) break;
+    }
+    cur.setUTCDate(cur.getUTCDate() + step);
+  }
+  return out;
+}
+
+const WEEKDAYS_PT = ["domingo", "segunda", "terça", "quarta", "quinta", "sexta", "sábado"];
+function recurrenceText(ev: EventRow): string {
+  if (!ev.recurrence) return "";
+  const d = dParse(ev.date);
+  const base = ({
+    daily: "todo dia",
+    weekdays: "dias úteis (seg a sex)",
+    weekly: `toda semana (${WEEKDAYS_PT[d.getUTCDay()]})`,
+    custom: "toda semana: " + (ev.recurrence_days || []).slice().sort().map((i: number) => WEEKDAYS_PT[i]).join(", "),
+    monthly: `todo mês, dia ${d.getUTCDate()}`,
+    yearly: `todo ano em ${ev.date.slice(8, 10)}/${ev.date.slice(5, 7)}`,
+  } as Record<string, string>)[ev.recurrence] || ev.recurrence;
+  if (ev.recurrence_until) return `${base}, até ${ev.recurrence_until}`;
+  if (ev.recurrence_count) return `${base}, ${ev.recurrence_count} vezes`;
+  return base;
+}
+
+// Ocorrências (com a data de cada uma) que encostam em [from, to], ordenadas.
+function expandEvents(rows: EventRow[], from: string, to: string) {
+  const out: EventRow[] = [];
+  for (const ev of rows) {
+    const span = spanDays(ev);
+    for (const occ of eventStartsInRange(ev, from, to)) {
+      out.push({
+        id: ev.id, title: ev.title, date: occ, end_date: span ? dAdd(occ, span) : null,
+        time: ev.all_day ? null : ev.time, end_time: ev.all_day ? null : ev.end_time, all_day: !!ev.all_day,
+        notes: ev.notes, repeats: recurrenceText(ev) || null,
+      });
+    }
+  }
+  return out.sort((a, b) => (a.date + (a.all_day ? "00:00" : a.time || "99:99")).localeCompare(b.date + (b.all_day ? "00:00" : b.time || "99:99")));
+}
+
+// Valida e normaliza os campos de duração/repetição vindos de create_event/update_event.
+// `partial` = update: só mexe no que veio. Devolve { patch } ou { error }.
+function eventFieldsFromInput(input: EventRow, partial: boolean): { patch?: EventRow; error?: string } {
+  const patch: EventRow = {};
+  const has = (k: string) => input[k] !== undefined;
+  if (has("time")) {
+    if (input.time && !isValidTime(input.time)) return { error: "time precisa estar no formato HH:MM." };
+    patch.time = input.time || null;
+  }
+  if (has("end_time")) {
+    if (input.end_time && !isValidTime(input.end_time)) return { error: "end_time precisa estar no formato HH:MM." };
+    patch.end_time = input.end_time || null;
+  }
+  if (has("all_day")) {
+    patch.all_day = !!input.all_day;
+    if (input.all_day) { patch.time = null; patch.end_time = null; }
+  }
+  if (has("end_date")) {
+    if (input.end_date && !isValidDate(input.end_date)) return { error: "end_date precisa estar no formato YYYY-MM-DD." };
+    patch.end_date = input.end_date || null;
+  }
+  if (has("recurrence")) {
+    if (input.recurrence && !RECURRENCES.includes(input.recurrence)) return { error: "recurrence precisa ser daily, weekdays, weekly, custom, monthly ou yearly." };
+    patch.recurrence = input.recurrence || null;
+    if (!input.recurrence) { patch.recurrence_days = null; patch.recurrence_until = null; patch.recurrence_count = null; patch.exdates = []; }
+  }
+  if (has("recurrence_days")) {
+    const days = Array.isArray(input.recurrence_days) ? input.recurrence_days.map(Number).filter((n: number) => Number.isInteger(n) && n >= 0 && n <= 6) : [];
+    patch.recurrence_days = days.length ? [...new Set(days)].sort() : null;
+  }
+  if (has("recurrence_until")) {
+    if (input.recurrence_until && !isValidDate(input.recurrence_until)) return { error: "recurrence_until precisa estar no formato YYYY-MM-DD." };
+    patch.recurrence_until = input.recurrence_until || null;
+  }
+  if (has("recurrence_count")) {
+    const n = Number(input.recurrence_count);
+    patch.recurrence_count = n >= 1 ? Math.floor(n) : null;
+  }
+  if (!partial && patch.recurrence === "custom" && !patch.recurrence_days) return { error: "recurrence=custom precisa de recurrence_days (0=domingo … 6=sábado)." };
+  return { patch };
 }
 
 // O corpo das notas é HTML (editor rich text). Pra devolver ao modelo como texto legível —
@@ -739,11 +890,14 @@ async function executeTool(sb: SupabaseClient, userId: string, name: string, inp
     case "create_event": {
       if (!input.title || typeof input.title !== "string") return { error: "title é obrigatório." };
       if (!isValidDate(input.date)) return { error: "date precisa estar no formato YYYY-MM-DD." };
-      if (input.time && !isValidTime(input.time)) return { error: "time precisa estar no formato HH:MM." };
+      const fields = eventFieldsFromInput(input, false);
+      if (fields.error) return { error: fields.error };
       const row = {
         id: genId("ev"), user_id: userId, title: input.title, date: input.date,
-        time: input.time || null, notes: input.notes || null,
+        time: null, notes: input.notes || null, ...fields.patch,
       };
+      if (row.end_date && row.end_date < row.date) return { error: "end_date não pode ser antes de date." };
+      if (row.time && row.end_time && !row.end_date && row.end_time <= row.time) return { error: "end_time precisa ser depois de time." };
       const { data, error } = await sb.from("agenda_events").insert(row).select();
       if (error) return { error: error.message };
       return { ok: true, event: data?.[0] };
@@ -757,10 +911,9 @@ async function executeTool(sb: SupabaseClient, userId: string, name: string, inp
         if (!isValidDate(input.date)) return { error: "date precisa estar no formato YYYY-MM-DD." };
         patch.date = input.date;
       }
-      if (input.time !== undefined) {
-        if (input.time && !isValidTime(input.time)) return { error: "time precisa estar no formato HH:MM." };
-        patch.time = input.time || null;
-      }
+      const fields = eventFieldsFromInput(input, true);
+      if (fields.error) return { error: fields.error };
+      Object.assign(patch, fields.patch);
       if (input.notes !== undefined) patch.notes = input.notes || null;
       const { data, error } = await sb.from("agenda_events").update(patch).eq("id", input.id).select();
       if (error) return { error: error.message };
@@ -770,6 +923,19 @@ async function executeTool(sb: SupabaseClient, userId: string, name: string, inp
 
     case "delete_event": {
       if (!input.id) return { error: "id é obrigatório." };
+      if (input.occurrence_date) {
+        if (!isValidDate(input.occurrence_date)) return { error: "occurrence_date precisa estar no formato YYYY-MM-DD." };
+        const { data: rows, error: e1 } = await sb.from("agenda_events").select("*").eq("id", input.id);
+        if (e1) return { error: e1.message };
+        const ev = rows?.[0];
+        if (!ev) return { error: "Nenhum evento com esse id foi encontrado (ou não pertence a você)." };
+        if (ev.recurrence) {
+          const exdates = [...new Set([...(ev.exdates || []), input.occurrence_date])];
+          const { data, error } = await sb.from("agenda_events").update({ exdates }).eq("id", input.id).select();
+          if (error) return { error: error.message };
+          return { ok: true, removed_occurrence: input.occurrence_date, event: data?.[0] };
+        }
+      }
       const { data, error } = await sb.from("agenda_events").delete().eq("id", input.id).select();
       if (error) return { error: error.message };
       if (!data || data.length === 0) return { error: "Nenhum evento com esse id foi encontrado (ou não pertence a você)." };
@@ -778,12 +944,14 @@ async function executeTool(sb: SupabaseClient, userId: string, name: string, inp
 
     case "list_events": {
       const from = isValidDate(input.from) ? input.from : new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
-      let q = sb.from("agenda_events").select("id, title, date, time, notes")
-        .gte("date", from).order("date", { ascending: true }).limit(input.limit || 30);
-      if (isValidDate(input.to)) q = q.lte("date", input.to);
-      const { data, error } = await q;
+      const to = isValidDate(input.to) && input.to >= from ? input.to : dAdd(from, 60);
+      // Série que repete pode ter começado bem antes de `from`, então busca todas e calcula as
+      // ocorrências do intervalo aqui (é um usuário só — a tabela é pequena).
+      const { data, error } = await sb.from("agenda_events").select("*");
       if (error) return { error: error.message };
-      return { events: data };
+      const events = expandEvents(data || [], from, to);
+      const limit = input.limit || 30;
+      return { from, to, events: events.slice(0, limit), truncated: events.length > limit };
     }
 
     // ─── Anotações ──────────────────────────────────────────────────────────
@@ -998,7 +1166,7 @@ async function buildSnapshot(sb: SupabaseClient) {
     sb.from("goals").select("name, target, current, deadline"),
     sb.from("categories").select("id, name, budget"),
     sb.from("tasks").select("title, done, due_date, priority, list_name"),
-    sb.from("agenda_events").select("title, date, time"),
+    sb.from("agenda_events").select("*"),
     sb.from("notes").select("title, updated_at").order("updated_at", { ascending: false }).limit(5),
     sb.from("stock_watchlist").select("ticker"),
     sb.from("recurring_expenses").select("name, amount, target_total, end_date, installment"),
@@ -1058,10 +1226,15 @@ async function buildSnapshot(sb: SupabaseClient) {
     .slice(0, 5)
     .map((t) => `- ${t.title} (prazo ${t.due_date}${t.due_date < todayISO ? " — ATRASADA" : t.due_date === todayISO ? " — hoje" : ""}${t.priority ? `, prioridade ${t.priority}` : ""})`);
 
-  const upcomingEvents = (eventsData || [])
-    .filter((e) => e.date === todayISO || e.date === tomorrowISO)
-    .sort((a, b) => (a.date + (a.time || "99:99")).localeCompare(b.date + (b.time || "99:99")))
-    .map((e) => `- ${e.date === todayISO ? "hoje" : "amanhã"}${e.time ? ` ${e.time}` : " (dia todo)"}: ${e.title}`);
+  // Ocorrências que COBREM hoje/amanhã — inclui repetições e evento de vários dias em andamento.
+  const upcomingEvents: string[] = [];
+  for (const [day, label] of [[todayISO, "hoje"], [tomorrowISO, "amanhã"]]) {
+    for (const e of expandEvents(eventsData || [], day, day)) {
+      const hours = e.all_day ? " (dia inteiro)" : e.time ? ` ${e.time}${e.end_time ? `–${e.end_time}` : ""}` : "";
+      const span = e.end_date ? ` (de ${e.date} a ${e.end_date})` : "";
+      upcomingEvents.push(`- ${label}${hours}: ${e.title}${span}${e.repeats ? ` [repete: ${e.repeats}]` : ""}`);
+    }
+  }
 
   const noteTitles = (notesData || []).map((n) => n.title || "(sem título)");
   const tickers = (stocksData || []).map((s) => s.ticker);

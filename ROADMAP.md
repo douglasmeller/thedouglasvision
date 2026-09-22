@@ -9,11 +9,12 @@ fechando um assunto inteiro, com deploy e teste próprios. A ordem segue: primei
 quebrado, depois o que é base pras outras, por último o que é novo.
 
 **Fase 1 — Bug do Mark XLIII (Sonnet) travando o chat.** ✅ Feita em 22/09.
-**Fase 2 — Editor de anotações: leitura e escrita** (cabeçalho fixo, fonte, espaçamento, itálico, negrito, ícone de grifar).
+**Fase 2 — Editor de anotações: leitura e escrita.** ✅ Feita em 22/09.
 **Fase 3 — Jarvis sabe onde o Sr. Douglas está** (contexto de tela/nota aberta).
 **Fase 4 — Jarvis formata anotação de verdade** (blocos do TDV + botão "J" na barra).
 **Fase 5 — Tabela com mais linhas e colunas.**
 **Fase 6 — Tarefas recorrentes.**
+**Fase 7 — Agenda: visão por semana e por dia, tudo numa tela só** (pedido de 22/09).
 
 Depois disso continuam na fila, esperando decisão do Sr. Douglas:
 - **Cofre de Senhas** — falta escolher a forma de recuperação (ver "Novos setores → Cofre de senhas").
@@ -57,7 +58,7 @@ contra o arquivo testado.
 
 ---
 
-### Fase 2 — Editor de anotações: leitura e escrita
+### Fase 2 — Editor de anotações: leitura e escrita — FEITA (22/09)
 Tudo dentro do editor, sem tocar em Jarvis. Um deploy só.
 
 1. **Cabeçalho fixo ao rolar** — hoje, rolando pra baixo dentro de uma nota, o título e a barra de
@@ -87,6 +88,24 @@ Tudo dentro do editor, sem tocar em Jarvis. Um deploy só.
 
 **Teste:** editor aberto no navegador com CSS real — rolar e conferir que o cabeçalho fica; aplicar
 negrito/itálico e conferir o HTML gravado; exportar PDF com cada fonte e conferir a página gerada.
+
+**Feito em 22/09:**
+- **Cabeçalho fixo:** o corpo da nota passou a rolar por dentro (altura presa à janela na cadeia
+  toda: tela → wrapper → painel → corpo, com `min-height: 0`), então título e barra ficam parados.
+  A classe `.fade-in` saiu da tela do editor: a animação deixa um `translateY(10px)` grudado, que
+  empurrava tudo e sobrava rolagem na área do app. Conferido no desktop e no celular.
+- **Fonte:** corpo em **Chakra Petch** (técnica, combina com o TDV, legível em texto longo) com
+  itálico DE VERDADE — a Inter carregada aqui só tem os pesos retos. Espaçamento entre letras
+  0.035em e margem esquerda de 30px (era 20px).
+- **Negrito e itálico:** o botão de itálico não existia. E o negrito falhava **no toque**: tocar no
+  botão apaga a seleção antes do clique chegar (o `preventDefault` do mousedown só segura o mouse),
+  e sem seleção o `execCommand` não formata nada. Agora a seleção é guardada no `pointerdown` e
+  devolvida antes do comando — conferido simulando o toque do iPhone.
+- **Grifar sem a letra "A":** marca-texto virou só o quadradinho colorido; cor da letra continua com
+  o "A".
+- **Fonte na exportação:** o menu Exportar ganhou um seletor (Inter, Chakra Petch, Georgia, Times,
+  Arial, Courier). O HTML de impressão também ganhou regras próprias de negrito, itálico, títulos,
+  parágrafos e listas — sem isso o reset do app deixava tudo espremido no PDF.
 
 ---
 
@@ -158,6 +177,29 @@ lados (app e Edge Function).
 próximo prazo (modelo do Todoist) ou cada ocorrência vira uma tarefa própria no banco? A primeira é
 mais simples e não enche a tabela; a segunda deixa o histórico do que foi feito em cada data.
 Precisa também aparecer na grade da Agenda e nas tools do Jarvis (create_task/update_task).
+
+
+---
+
+### Fase 7 — Agenda: visão por semana e por dia, tudo numa tela só
+**Pedido (22/09):** além do mês, ter **semana** e **dia** ("grandão"), e a agenda caber **numa tela
+só, sem rolar pra cima e pra baixo** pra ver tudo — do jeito que o Google Agenda faz.
+
+**O que isso significa na prática:**
+- Alternador com **Dia · Semana · Mês · Mapa** (o Mapa já existe, de 22/09).
+- **Semana:** 7 colunas, faixa de horas na lateral, evento desenhado na altura do horário dele
+  (usando início e fim, que passaram a existir em 22/09); evento de dia inteiro e de vários dias
+  numa faixa fixa no topo, como no Google.
+- **Dia:** uma coluna só, hora a hora, com espaço pra ler o título e o local sem cortar.
+- **Tela cheia:** a área da agenda passa a ocupar a altura da janela e rolar por dentro (só as
+  horas, quando o dia não couber), em vez de esticar a página. É o mesmo problema que a fase 2
+  resolve no editor de anotações — vale reaproveitar a solução.
+- Arrastar continua funcionando nas novas visões (mouse e toque), e na semana/dia passa a poder
+  mudar também o HORÁRIO, não só o dia.
+
+**A decidir antes de codar:** faixa de horas fixa (0h–23h) ou ajustada ao que existe no dia; e se o
+"hoje" abre em Dia ou em Semana no celular (no celular, Semana com 7 colunas fica apertado — o
+Google usa 3 dias).
 
 ## Fila anterior (pedidos de 17/09) — concluída em 22/09, menos os 2 últimos
 Ordem sugerida — bug antes de feature, e o que é função central antes do que é novo:

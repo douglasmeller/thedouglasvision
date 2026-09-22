@@ -25,7 +25,7 @@
   <link rel="stylesheet" href="_ds/nocturne-6ad6d877-2b1e-4775-8548-94fdb4d1c0bd/styles.css">
   <script src="_ds/nocturne-6ad6d877-2b1e-4775-8548-94fdb4d1c0bd/_ds_bundle.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Orbitron:wght@500;700;900&family=Share+Tech+Mono&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Chakra+Petch:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400;1,600;1,700&family=Orbitron:wght@500;700;900&family=Share+Tech+Mono&display=swap">
   <link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css">
   <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
   <style>
@@ -34,6 +34,14 @@
     /* Textão corrido (resumo de notícia, corpo de anotação) fica ilegível em monoespaçada por muita linha —
        essa classe devolve uma fonte de leitura só onde o texto é longo. O resto do app usa a mono herdada. */
     .reading-font { font-family: 'Inter', sans-serif; }
+    /* Corpo da anotação: Chakra Petch tem cara técnica (combina com o resto do TDV) mas continua
+       legível em texto longo, e traz itálico DE VERDADE — a Inter carregada aqui só tem os pesos
+       retos, então itálico nela sairia inclinado pelo navegador, sem desenho próprio.
+       As margens dos blocos vêm daqui de propósito: o reset lá em cima zera tudo, e o HTML que o
+       Jarvis (ou um "colar" de fora) escreve usa h1..h6/p/ul soltos. */
+    .note-body { font-family: 'Chakra Petch', 'Inter', sans-serif; letter-spacing: 0.035em; }
+    .note-body b, .note-body strong { font-weight: 700; }
+    .note-body i, .note-body em { font-style: italic; }
     /* Fundo com grade sutil de HUD — quase imperceptível, só dá profundidade por trás dos painéis. */
     body {
       background-image:
@@ -2311,12 +2319,19 @@
 
           <!-- ── Editor de nota ── -->
           <sc-if value="{{ isNoteEditor }}" hint-placeholder-val="{{ false }}">
-            <div class="fade-in" style="padding: 20px; max-width: 1280px; margin: 0 auto; width: 100%; box-sizing: border-box;">
+            <!-- height: 100% + min-height: 0 na cadeia toda é o que faz o CORPO da nota rolar por
+                 dentro, em vez da página inteira: antes, nota comprida esticava o painel e o
+                 título/barra subiam junto e sumiam da tela. -->
+            <!-- Sem a classe .fade-in aqui de propósito: a animação usa fill-mode both e deixa um
+                 transform translateY(10px) grudado no elemento, que empurrava a tela 10px pra baixo
+                 (sobrando rolagem na área do app) e ainda virava bloco de contenção pros elementos
+                 position:fixed de dentro. -->
+            <div style="padding: 20px; max-width: 1280px; margin: 0 auto; width: 100%; height: 100%; min-height: 0; display: flex; flex-direction: column; box-sizing: border-box;">
               <!-- O id fica AQUI dentro, e não no div de cima, de propósito: o motor de template
                    descarta id/title/data-* do elemento que é filho RAIZ de um bloco sc-if (tratado
                    como host). Lá em cima o getElementById voltaria null e o menu do "/" cairia no
                    canto superior esquerdo — que era exatamente o sintoma relatado. -->
-              <div id="note-editor-wrap" style="position: relative; display: flex; flex-direction: column; gap: 10px; width: 100%;">
+              <div id="note-editor-wrap" style="position: relative; display: flex; flex-direction: column; gap: 10px; width: 100%; flex: 1; min-height: 0;">
               <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px;">
                 <button onClick="{{ closeNoteEditor }}" class="hud-btn-ghost" style="padding: 7px 12px; font-size: 12px;">
                   <i class="ph ph-arrow-left" style="font-size: 14px;"></i>Anotações
@@ -2332,6 +2347,17 @@
                     <sc-if value="{{ noteExportOpen }}" hint-placeholder-val="{{ false }}">
                       <div class="modal-in hud-tile hud-tile-cyan" style="position: absolute; top: 36px; right: 0; z-index: 260; width: 210px; padding: 6px; box-shadow: 0 18px 50px #000000AA;">
                         <div class="hud-label" style="padding: 5px 8px 6px; color: #38BDF8;">EXPORTAR</div>
+                        <div style="padding: 2px 8px 8px;">
+                          <div style="font-size: 10px; color: #475569; margin-bottom: 5px;">Fonte do PDF</div>
+                          <select value="{{ noteExportFont }}" onChange="{{ setNoteExportFont }}" style="width: 100%; box-sizing: border-box; background: #0D0D16; border: 1px solid #1B2438; border-radius: 7px; color: #94A3B8; font-size: 12px; font-family: inherit; padding: 6px 7px; cursor: pointer;">
+                            <option value="Inter">Inter (moderna)</option>
+                            <option value="Chakra Petch">Chakra Petch (técnica, a do TDV)</option>
+                            <option value="Georgia">Georgia (serifada)</option>
+                            <option value="Times New Roman">Times New Roman (clássica)</option>
+                            <option value="Arial">Arial (neutra)</option>
+                            <option value="Courier New">Courier New (máquina de escrever)</option>
+                          </select>
+                        </div>
                         <div onClick="{{ exportNoteMd }}" class="hud-menu-row" style="display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 7px; cursor: pointer; color: #94A3B8; font-size: 13px;"><i class="ph ph-markdown-logo" style="font-size: 15px;"></i>Markdown (.md)</div>
                         <div onClick="{{ exportNoteTxt }}" class="hud-menu-row" style="display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 7px; cursor: pointer; color: #94A3B8; font-size: 13px;"><i class="ph ph-file-text" style="font-size: 15px;"></i>Texto (.txt)</div>
                         <div onClick="{{ exportNotePdf }}" class="hud-menu-row" style="display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 7px; cursor: pointer; color: #94A3B8; font-size: 13px;"><i class="ph ph-file-pdf" style="font-size: 15px;"></i>PDF (imprimir)</div>
@@ -2344,13 +2370,14 @@
               <!-- Título, barra de ferramentas e corpo dentro de UM painel só: antes eram três
                    caixas soltas com borda própria e espaço entre elas. A barra rola na horizontal
                    em vez de quebrar em duas linhas (era o que acontecia até em tela larga). -->
-              <div class="hud-tile hud-tile-cyan" style="display: flex; flex-direction: column; overflow: hidden; min-height: 68vh;">
+              <div class="hud-tile hud-tile-cyan" style="display: flex; flex-direction: column; overflow: hidden; flex: 1; min-height: 0;">
                 <div style="display: flex; align-items: center; gap: 9px; padding: 13px 16px 11px; border-bottom: 1px solid #1B2438;">
                   <span style="color: #38BDF8; font-size: 16px; line-height: 1; flex-shrink: 0;">▌</span>
                   <input id="note-title-input" type="text" value="{{ noteTitle }}" onInput="{{ setNoteTitle }}" placeholder="Sem título" style="flex: 1; min-width: 0; box-sizing: border-box; background: transparent; border: none; color: #E2E8F0; font-size: 19px; font-weight: 600; font-family: inherit; padding: 0;">
                 </div>
                 <div style="display: flex; align-items: center; gap: 5px; padding: 8px 12px; border-bottom: 1px solid #1B2438; overflow-x: auto; overflow-y: hidden;">
-                  <button onMouseDown="{{ preventFocusLoss }}" onClick="{{ noteBold }}" title="Negrito" class="hud-icon-btn" style="width: 29px; height: 29px; font-weight: 700; font-size: 13px;">B</button>
+                  <button onMouseDown="{{ preventFocusLoss }}" onPointerDown="{{ noteToolPointerDown }}" onClick="{{ noteBold }}" title="Negrito" class="hud-icon-btn" style="width: 29px; height: 29px; font-weight: 700; font-size: 13px;">B</button>
+                  <button onMouseDown="{{ preventFocusLoss }}" onPointerDown="{{ noteToolPointerDown }}" onClick="{{ noteItalic }}" title="Itálico" class="hud-icon-btn" style="width: 29px; height: 29px; font-style: italic; font-weight: 600; font-size: 14px; font-family: Georgia, serif;">I</button>
                   <select onMouseDown="{{ preventFocusLoss }}" onChange="{{ noteExecFontSize }}" style="height: 29px; flex-shrink: 0; border-radius: 7px; background: #0D0D16; border: 1px solid #1B2438; color: #94A3B8; cursor: pointer; font-size: 12px; font-family: inherit; padding: 0 6px;">
                     <option value="">Tamanho</option>
                     <option value="12">Pequeno</option>
@@ -2359,27 +2386,27 @@
                     <option value="28">Título</option>
                   </select>
                   <div style="width: 1px; height: 18px; background: #1B2438; margin: 0 3px; flex-shrink: 0;"></div>
-                  <button onMouseDown="{{ preventFocusLoss }}" onClick="{{ noteOrderedList }}" title="Lista numerada" class="hud-icon-btn" style="width: 29px; height: 29px;"><i class="ph ph-list-numbers" style="font-size: 14px;"></i></button>
-                  <button onMouseDown="{{ preventFocusLoss }}" onClick="{{ noteUnorderedList }}" title="Lista com marcadores" class="hud-icon-btn" style="width: 29px; height: 29px;"><i class="ph ph-list-bullets" style="font-size: 14px;"></i></button>
-                  <button onMouseDown="{{ preventFocusLoss }}" onClick="{{ noteInsertChecklist }}" title="Checklist" class="hud-icon-btn" style="width: 29px; height: 29px;"><i class="ph ph-check-square" style="font-size: 14px;"></i></button>
-                  <button onMouseDown="{{ preventFocusLoss }}" onClick="{{ noteInsertTable }}" title="Tabela" class="hud-icon-btn" style="width: 29px; height: 29px;"><i class="ph ph-table" style="font-size: 14px;"></i></button>
-                  <button onMouseDown="{{ preventFocusLoss }}" onClick="{{ noteInsertLink }}" title="Link" class="hud-icon-btn" style="width: 29px; height: 29px;"><i class="ph ph-link" style="font-size: 14px;"></i></button>
+                  <button onMouseDown="{{ preventFocusLoss }}" onPointerDown="{{ noteToolPointerDown }}" onClick="{{ noteOrderedList }}" title="Lista numerada" class="hud-icon-btn" style="width: 29px; height: 29px;"><i class="ph ph-list-numbers" style="font-size: 14px;"></i></button>
+                  <button onMouseDown="{{ preventFocusLoss }}" onPointerDown="{{ noteToolPointerDown }}" onClick="{{ noteUnorderedList }}" title="Lista com marcadores" class="hud-icon-btn" style="width: 29px; height: 29px;"><i class="ph ph-list-bullets" style="font-size: 14px;"></i></button>
+                  <button onMouseDown="{{ preventFocusLoss }}" onPointerDown="{{ noteToolPointerDown }}" onClick="{{ noteInsertChecklist }}" title="Checklist" class="hud-icon-btn" style="width: 29px; height: 29px;"><i class="ph ph-check-square" style="font-size: 14px;"></i></button>
+                  <button onMouseDown="{{ preventFocusLoss }}" onPointerDown="{{ noteToolPointerDown }}" onClick="{{ noteInsertTable }}" title="Tabela" class="hud-icon-btn" style="width: 29px; height: 29px;"><i class="ph ph-table" style="font-size: 14px;"></i></button>
+                  <button onMouseDown="{{ preventFocusLoss }}" onPointerDown="{{ noteToolPointerDown }}" onClick="{{ noteInsertLink }}" title="Link" class="hud-icon-btn" style="width: 29px; height: 29px;"><i class="ph ph-link" style="font-size: 14px;"></i></button>
                   <div style="width: 1px; height: 18px; background: #1B2438; margin: 0 3px; flex-shrink: 0;"></div>
-                  <button onMouseDown="{{ preventFocusLoss }}" onClick="{{ noteJustifyLeft }}" title="Alinhar à esquerda" class="hud-icon-btn" style="width: 29px; height: 29px;"><i class="ph ph-text-align-left" style="font-size: 14px;"></i></button>
-                  <button onMouseDown="{{ preventFocusLoss }}" onClick="{{ noteJustifyCenter }}" title="Centralizar" class="hud-icon-btn" style="width: 29px; height: 29px;"><i class="ph ph-text-align-center" style="font-size: 14px;"></i></button>
-                  <button onMouseDown="{{ preventFocusLoss }}" onClick="{{ noteJustifyRight }}" title="Alinhar à direita" class="hud-icon-btn" style="width: 29px; height: 29px;"><i class="ph ph-text-align-right" style="font-size: 14px;"></i></button>
+                  <button onMouseDown="{{ preventFocusLoss }}" onPointerDown="{{ noteToolPointerDown }}" onClick="{{ noteJustifyLeft }}" title="Alinhar à esquerda" class="hud-icon-btn" style="width: 29px; height: 29px;"><i class="ph ph-text-align-left" style="font-size: 14px;"></i></button>
+                  <button onMouseDown="{{ preventFocusLoss }}" onPointerDown="{{ noteToolPointerDown }}" onClick="{{ noteJustifyCenter }}" title="Centralizar" class="hud-icon-btn" style="width: 29px; height: 29px;"><i class="ph ph-text-align-center" style="font-size: 14px;"></i></button>
+                  <button onMouseDown="{{ preventFocusLoss }}" onPointerDown="{{ noteToolPointerDown }}" onClick="{{ noteJustifyRight }}" title="Alinhar à direita" class="hud-icon-btn" style="width: 29px; height: 29px;"><i class="ph ph-text-align-right" style="font-size: 14px;"></i></button>
                   <div style="width: 1px; height: 18px; background: #1B2438; margin: 0 3px; flex-shrink: 0;"></div>
                   <sc-for list="{{ noteColorOptions }}" as="co" hint-placeholder-count="7">
-                    <button onMouseDown="{{ preventFocusLoss }}" onClick="{{ co.onClick }}" title="Cor do texto" style="{{ co.swatchStyle }}">A</button>
+                    <button onMouseDown="{{ preventFocusLoss }}" onPointerDown="{{ noteToolPointerDown }}" onClick="{{ co.onClick }}" title="Cor do texto" style="{{ co.swatchStyle }}">A</button>
                   </sc-for>
-                  <button onMouseDown="{{ preventFocusLoss }}" onClick="{{ noteClearTextColor }}" title="Voltar à cor padrão do texto" class="hud-icon-btn" style="width: 26px; height: 26px;"><i class="ph ph-text-a-underline" style="font-size: 13px;"></i></button>
+                  <button onMouseDown="{{ preventFocusLoss }}" onPointerDown="{{ noteToolPointerDown }}" onClick="{{ noteClearTextColor }}" title="Voltar à cor padrão do texto" class="hud-icon-btn" style="width: 26px; height: 26px;"><i class="ph ph-text-a-underline" style="font-size: 13px;"></i></button>
                   <div style="width: 1px; height: 18px; background: #1B2438; margin: 0 3px; flex-shrink: 0;"></div>
                   <sc-for list="{{ noteHighlightOptions }}" as="ho" hint-placeholder-count="5">
-                    <button onMouseDown="{{ preventFocusLoss }}" onClick="{{ ho.onClick }}" title="Marca-texto" style="{{ ho.swatchStyle }}">A</button>
+                    <button onMouseDown="{{ preventFocusLoss }}" onPointerDown="{{ noteToolPointerDown }}" onClick="{{ ho.onClick }}" title="Marca-texto" style="{{ ho.swatchStyle }}"></button>
                   </sc-for>
-                  <button onMouseDown="{{ preventFocusLoss }}" onClick="{{ noteClearHighlight }}" title="Tirar o marca-texto" class="hud-icon-btn" style="width: 26px; height: 26px;"><i class="ph ph-eraser" style="font-size: 13px;"></i></button>
+                  <button onMouseDown="{{ preventFocusLoss }}" onPointerDown="{{ noteToolPointerDown }}" onClick="{{ noteClearHighlight }}" title="Tirar o marca-texto" class="hud-icon-btn" style="width: 26px; height: 26px;"><i class="ph ph-eraser" style="font-size: 13px;"></i></button>
                 </div>
-                <div id="note-editor-el" class="reading-font" contenteditable="true" onInput="{{ handleNoteInput }}" onKeyDown="{{ noteEditorKeyDown }}" onClick="{{ noteEditorClick }}" style="flex: 1; padding: 18px 20px; color: #E2E8F0; font-size: 14px; line-height: 1.7; outline: none; overflow-wrap: break-word; overflow-y: auto; overflow-x: auto;"></div>
+                <div id="note-editor-el" class="note-body" contenteditable="true" onInput="{{ handleNoteInput }}" onKeyDown="{{ noteEditorKeyDown }}" onClick="{{ noteEditorClick }}" style="flex: 1; min-height: 0; padding: 20px 24px 20px 30px; color: #E2E8F0; font-size: 14px; line-height: 1.75; outline: none; overflow-wrap: break-word; overflow-y: auto; overflow-x: auto;"></div>
               </div>
               <sc-if value="{{ slashMenuOpen }}" hint-placeholder-val="{{ false }}">
                 <div style="{{ slashMenuStyle }}">
@@ -2402,18 +2429,19 @@
               <sc-if value="{{ selectionToolbarOpen }}" hint-placeholder-val="{{ false }}">
                 <div style="{{ selectionToolbarStyle }}">
                   <div id="note-sel-toolbar" class="modal-in hud-tile hud-tile-cyan" style="display: flex; flex-wrap: wrap; align-items: center; gap: 5px; padding: 6px; max-width: 330px; box-shadow: 0 18px 50px #000000AA, 0 0 22px #38BDF81A;">
-                    <button onMouseDown="{{ preventFocusLoss }}" onClick="{{ noteBold }}" title="Negrito" class="hud-icon-btn" style="width: 28px; height: 28px; font-weight: 700; font-size: 12px;">B</button>
-                    <button onMouseDown="{{ preventFocusLoss }}" onClick="{{ noteInsertLink }}" title="Link" class="hud-icon-btn" style="width: 28px; height: 28px;"><i class="ph ph-link" style="font-size: 13px;"></i></button>
+                    <button onMouseDown="{{ preventFocusLoss }}" onPointerDown="{{ noteToolPointerDown }}" onClick="{{ noteBold }}" title="Negrito" class="hud-icon-btn" style="width: 28px; height: 28px; font-weight: 700; font-size: 12px;">B</button>
+                    <button onMouseDown="{{ preventFocusLoss }}" onPointerDown="{{ noteToolPointerDown }}" onClick="{{ noteItalic }}" title="Itálico" class="hud-icon-btn" style="width: 28px; height: 28px; font-style: italic; font-weight: 600; font-size: 13px; font-family: Georgia, serif;">I</button>
+                    <button onMouseDown="{{ preventFocusLoss }}" onPointerDown="{{ noteToolPointerDown }}" onClick="{{ noteInsertLink }}" title="Link" class="hud-icon-btn" style="width: 28px; height: 28px;"><i class="ph ph-link" style="font-size: 13px;"></i></button>
                     <div style="width: 1px; height: 18px; background: #1B2438; margin: 0 2px;"></div>
                     <sc-for list="{{ noteColorOptions }}" as="co" hint-placeholder-count="7">
-                      <button onMouseDown="{{ preventFocusLoss }}" onClick="{{ co.onClick }}" title="Cor do texto" style="{{ co.swatchStyle }}">A</button>
+                      <button onMouseDown="{{ preventFocusLoss }}" onPointerDown="{{ noteToolPointerDown }}" onClick="{{ co.onClick }}" title="Cor do texto" style="{{ co.swatchStyle }}">A</button>
                     </sc-for>
-                    <button onMouseDown="{{ preventFocusLoss }}" onClick="{{ noteClearTextColor }}" title="Voltar à cor padrão do texto" class="hud-icon-btn" style="width: 26px; height: 26px;"><i class="ph ph-text-a-underline" style="font-size: 13px;"></i></button>
+                    <button onMouseDown="{{ preventFocusLoss }}" onPointerDown="{{ noteToolPointerDown }}" onClick="{{ noteClearTextColor }}" title="Voltar à cor padrão do texto" class="hud-icon-btn" style="width: 26px; height: 26px;"><i class="ph ph-text-a-underline" style="font-size: 13px;"></i></button>
                     <div style="width: 1px; height: 18px; background: #1B2438; margin: 0 2px;"></div>
                     <sc-for list="{{ noteHighlightOptions }}" as="ho" hint-placeholder-count="5">
-                      <button onMouseDown="{{ preventFocusLoss }}" onClick="{{ ho.onClick }}" title="Marca-texto" style="{{ ho.swatchStyle }}">A</button>
+                      <button onMouseDown="{{ preventFocusLoss }}" onPointerDown="{{ noteToolPointerDown }}" onClick="{{ ho.onClick }}" title="Marca-texto" style="{{ ho.swatchStyle }}"></button>
                     </sc-for>
-                    <button onMouseDown="{{ preventFocusLoss }}" onClick="{{ noteClearHighlight }}" title="Tirar o marca-texto" class="hud-icon-btn" style="width: 26px; height: 26px;"><i class="ph ph-eraser" style="font-size: 13px;"></i></button>
+                    <button onMouseDown="{{ preventFocusLoss }}" onPointerDown="{{ noteToolPointerDown }}" onClick="{{ noteClearHighlight }}" title="Tirar o marca-texto" class="hud-icon-btn" style="width: 26px; height: 26px;"><i class="ph ph-eraser" style="font-size: 13px;"></i></button>
                   </div>
                 </div>
               </sc-if>
@@ -3352,6 +3380,7 @@ class Component extends DCLogic {
     noteSearch: '',
     noteSort: 'recent', // 'recent' | 'name' | 'created' — lembrado por dispositivo (localStorage)
     noteExportOpen: false,
+    noteExportFont: (() => { try { return localStorage.getItem('tdv_noteExportFont') || 'Inter'; } catch (_e) { return 'Inter'; } })(),
     slashMenuMode: 'blocks', // 'blocks' (digitou "/") | 'link' (digitou "[[")
     jarvisLiveMode: false,
     jarvisLiveTranscript: '',
@@ -6206,6 +6235,10 @@ class Component extends DCLogic {
 
   preventFocusLoss = (e) => e.preventDefault();
 
+  // Não usa preventDefault: no ponteiro isso engoliria o clique em alguns navegadores. Só guarda
+  // a seleção antes de o toque/clique mexer nela.
+  noteToolPointerDown = () => this._rememberNoteSelection();
+
   openNote = (note) => {
     // Marca uma entrada própria no histórico pro botão Voltar do navegador fechar a nota em vez
     // de sair de Anotações inteira (ver _onPopState). slashMenuOpen/selectionToolbarOpen também
@@ -6504,8 +6537,23 @@ class Component extends DCLogic {
       const w = window.open('', '_blank');
       if (!w) { this._toast('O navegador bloqueou a janela de impressão. Permita pop-ups pra este site.'); return; }
       const esc = (t) => t.replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
-      w.document.write('<!DOCTYPE html><html><head><meta charset="utf-8"><title>' + esc(title) + '</title><style>'
-        + 'body{font-family:Inter,Segoe UI,Arial,sans-serif;color:#111;background:#fff;max-width:760px;margin:32px auto;padding:0 24px;line-height:1.6;font-size:14px}'
+      // A fonte do PDF é escolhida no menu de exportar — o arquivo vai pra outra pessoa, então nem
+      // sempre a fonte do app é a melhor. As duas fontes web precisam do link do Google Fonts na
+      // janela de impressão; as outras já existem em qualquer computador.
+      const font = s.noteExportFont || 'Inter';
+      const webFont = font === 'Inter' || font === 'Chakra Petch';
+      const fontLink = webFont
+        ? '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=' + font.replace(/ /g, '+') + ':ital,wght@0,400;0,600;0,700;1,400&display=swap">'
+        : '';
+      const stack = font === 'Georgia' ? 'Georgia,serif'
+        : font === 'Times New Roman' ? '"Times New Roman",Times,serif'
+        : font === 'Courier New' ? '"Courier New",Courier,monospace'
+        : '"' + font + '","Segoe UI",Arial,sans-serif';
+      w.document.write('<!DOCTYPE html><html><head><meta charset="utf-8"><title>' + esc(title) + '</title>' + fontLink + '<style>'
+        + 'body{font-family:' + stack + ';color:#111;background:#fff;max-width:760px;margin:32px auto;padding:0 24px;line-height:1.6;font-size:14px}'
+        + 'b,strong{font-weight:700}i,em{font-style:italic}'
+        + 'h1,h2,h3,h4{margin:18px 0 8px;line-height:1.25}h1{font-size:22px}h2{font-size:19px}h3{font-size:16px}'
+        + 'p{margin:0 0 10px}ul,ol{margin:0 0 10px;padding-left:22px}li{margin:2px 0}blockquote{margin:10px 0;padding-left:12px;border-left:3px solid #bbb}'
         + 'h1.t{font-size:26px;margin:0 0 20px;border-bottom:2px solid #111;padding-bottom:8px}'
         + '*{color:#111 !important;background:transparent !important;border-color:#bbb !important}'
         + 'mark,[style*="background"]{background:#fff3a3 !important}'
@@ -6680,9 +6728,32 @@ class Component extends DCLogic {
     this._toast('Nota movida para ' + (dest || 'a pasta') + '.');
   }
 
+  // No celular, tocar num botão da barra tira a seleção ANTES do clique chegar aqui (o
+  // preventDefault do mousedown só segura o mouse). Sem seleção, o execCommand('bold') não tem o
+  // que formatar e o botão parecia simplesmente não funcionar. Por isso a seleção é guardada no
+  // pointerdown — que dispara antes de tudo, no dedo e no mouse — e devolvida antes do comando.
+  _rememberNoteSelection = () => {
+    const el = document.getElementById('note-editor-el');
+    const sel = window.getSelection();
+    if (el && sel && sel.rangeCount && !sel.isCollapsed && el.contains(sel.anchorNode)) {
+      this._noteRange = sel.getRangeAt(0).cloneRange();
+    }
+  }
+
+  _restoreNoteSelection = () => {
+    const el = document.getElementById('note-editor-el');
+    if (!el) return false;
+    const sel = window.getSelection();
+    if (sel && sel.rangeCount && !sel.isCollapsed && el.contains(sel.anchorNode)) { el.focus(); return true; }
+    if (!this._noteRange || !el.contains(this._noteRange.commonAncestorContainer)) { el.focus(); return false; }
+    el.focus();
+    try { sel.removeAllRanges(); sel.addRange(this._noteRange); } catch (_e) { return false; }
+    return true;
+  }
+
   noteExec = (cmd, value) => {
     const el = document.getElementById('note-editor-el');
-    if (el) el.focus();
+    this._restoreNoteSelection();
     document.execCommand(cmd, false, value);
     this.handleNoteInput({ target: el });
   }
@@ -9222,7 +9293,9 @@ class Component extends DCLogic {
       currentNotePinned: !!(s.notes.find(n => n.id === s.editingNoteId) || {}).pinned,
       currentNotePinTitle: (s.notes.find(n => n.id === s.editingNoteId) || {}).pinned ? 'Desafixar' : 'Fixar no topo',
       toggleCurrentNotePin: () => this.toggleNotePin(s.editingNoteId),
-      noteExportOpen: s.noteExportOpen, toggleNoteExport: this.toggleNoteExport,
+      noteExportOpen: s.noteExportOpen,
+      noteExportFont: s.noteExportFont,
+      setNoteExportFont: e => { const v = e.target.value; try { localStorage.setItem('tdv_noteExportFont', v); } catch (_e) {} this.setState({ noteExportFont: v }); }, toggleNoteExport: this.toggleNoteExport,
       exportNoteMd: () => this.exportNote('md'), exportNoteTxt: () => this.exportNote('txt'), exportNotePdf: () => this.exportNote('pdf'),
       slashMenuHeader: s.slashMenuMode === 'link' ? 'LINKAR NOTA' : 'BLOCOS',
       slashMenuEmptyLabel: s.slashMenuMode === 'link' ? 'Nenhuma nota com esse nome.' : 'Nada encontrado.',
@@ -9244,6 +9317,8 @@ class Component extends DCLogic {
       noteSaveDotColor: s.noteSaveStatus === 'saving' ? '#F5B841' : '#22C55E',
       preventFocusLoss: this.preventFocusLoss,
       noteBold: () => this.noteExec('bold'),
+      noteItalic: () => this.noteExec('italic'),
+      noteToolPointerDown: this.noteToolPointerDown,
       noteOrderedList: () => this.noteExec('insertOrderedList'),
       noteUnorderedList: () => this.noteExec('insertUnorderedList'),
       noteExecFontSize: this.noteExecFontSize,
@@ -9268,7 +9343,9 @@ class Component extends DCLogic {
       noteClearTextColor: () => this._wrapSelectionStyle('color', ''),
       noteHighlightOptions: ['#FDE047', '#86EFAC', '#93C5FD', '#FCA5A5', '#D8B4FE'].map(c => ({
         color: c, onClick: () => this._wrapSelectionStyle('backgroundColor', c),
-        swatchStyle: { width: '26px', height: '26px', borderRadius: '7px', background: c, border: '1px solid #1E2A45', cursor: 'pointer', padding: 0, flexShrink: 0, color: '#0D0D1A', fontWeight: '700', fontSize: '13px', fontFamily: 'inherit', display: 'flex', alignItems: 'center', justifyContent: 'center' },
+        // Sem a letra "A" aqui de propósito (pedido do Sr. Douglas): marca-texto é só o quadradinho
+        // da cor. Os botões de cor da LETRA continuam com o "A" colorido.
+        swatchStyle: { width: '26px', height: '26px', borderRadius: '7px', background: c, border: '1px solid #00000055', boxShadow: 'inset 0 0 0 1px #FFFFFF22', cursor: 'pointer', padding: 0, flexShrink: 0, display: 'block' },
       })),
       // notícias
       hasNewsDigest: !!s.newsDigest,

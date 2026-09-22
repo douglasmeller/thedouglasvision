@@ -28,6 +28,19 @@ const CORS_HEADERS = {
 
 // ─── Tool schemas ───────────────────────────────────────────────────────────
 
+// Formato que o editor de anotações do TDV entende. Fica numa constante porque vale pra
+// create_note e update_note — e porque foi exatamente a falta disso que fez o Jarvis escrever
+// <h2>/<p> soltos (que o reset de CSS do app achata) e, depois, texto corrido com linhas de
+// "=====" (que o editor não desenha de jeito nenhum).
+const BLOCK_FORMAT = `Formato do corpo: HTML dos blocos do editor do TDV, um bloco por linha.
+- Título: <div class="tdv-h2" style="font-weight:700;margin:8px 0 2px;font-size:20px;line-height:1.3;">Texto</div> (tdv-h1 com 24px, tdv-h2 com 20px, tdv-h3 com 17px).
+- Parágrafo: <div>Texto</div>. Linha em branco entre seções: <div><br></div>.
+- Lista: <ul style="padding-left:22px;margin:6px 0;"><li>item</li></ul> (<ol> igual, pra numerada). O padding-left é obrigatório: sem ele os marcadores somem.
+- Destaque: <b>negrito</b> e <i>itálico</i>.
+- Citação: <div class="tdv-quote" style="border-left:3px solid #334155;padding-left:14px;margin:6px 0;font-style:italic;color:#CBD5E1;">Texto</div>.
+- Divisor: <hr class="tdv-divider" style="border:none;border-top:1px solid #1E2A45;margin:14px 0;">.
+NUNCA use <h1>..<h6> ou <p> soltos, markdown (#, **, -) nem linhas de ===== / ----- pra separar seções: o editor não desenha nada disso e a nota vira um bloco espremido. Não use emojis, a menos que o Sr. Douglas peça.`;
+
 const TOOLS = [
   {
     name: "create_transaction",
@@ -315,12 +328,12 @@ const TOOLS = [
   // ─── Anotações ────────────────────────────────────────────────────────────
   {
     name: "create_note",
-    description: "Cria uma anotação na aba Anotações. O conteúdo aceita HTML simples (o editor é rich text).",
+    description: "Cria uma anotação na aba Anotações. " + BLOCK_FORMAT,
     input_schema: {
       type: "object",
       properties: {
         title: { type: "string" },
-        content: { type: "string", description: "Corpo da nota. HTML simples é aceito." },
+        content: { type: "string", description: "Corpo da nota, no formato de blocos descrito na tool." },
         folder_name: { type: "string", description: "Nome da pasta onde criar a nota. Cria a pasta na raiz se ela ainda não existir. Omitir cria na raiz (fora de qualquer pasta)." },
       },
       required: ["title"],
@@ -328,7 +341,9 @@ const TOOLS = [
   },
   {
     name: "update_note",
-    description: "Edita uma anotação pelo id (use list_notes pra achar). Também serve pra mover a nota de pasta.",
+    description: "Edita uma anotação pelo id (use list_notes pra achar). Também serve pra mover a nota de pasta. "
+      + "A versão anterior é guardada sozinha antes de gravar, então dá pra desfazer no app. "
+      + "Ao REORGANIZAR uma nota existente, preserve todo o conteúdo — não resuma nem invente. " + BLOCK_FORMAT,
     input_schema: {
       type: "object",
       properties: {
@@ -1003,6 +1018,17 @@ async function executeTool(sb: SupabaseClient, userId: string, name: string, inp
 
     case "update_note": {
       if (!input.id) return { error: "id é obrigatório." };
+      // Antes de qualquer escrita, guarda a versão atual (título + corpo COM a formatação) pra o
+      // app poder desfazer. Falha aqui não impede a edição — mas é registrada.
+      if (input.content !== undefined || input.title !== undefined) {
+        const { data: antes } = await sb.from("notes").select("title, content").eq("id", input.id).maybeSingle();
+        if (antes) {
+          const { error: verErr } = await sb.from("note_versions").insert({
+            note_id: input.id, user_id: userId, title: antes.title, content: antes.content, source: "jarvis",
+          });
+          if (verErr) console.error("note_versions falhou:", verErr.message);
+        }
+      }
       const patch: Record<string, unknown> = { updated_at: new Date().toISOString() };
       if (input.title !== undefined) patch.title = input.title;
       if (input.content !== undefined) {

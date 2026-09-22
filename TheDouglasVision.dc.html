@@ -42,6 +42,29 @@
     .note-body { font-family: 'Chakra Petch', 'Inter', sans-serif; letter-spacing: 0.035em; }
     .note-body b, .note-body strong { font-weight: 700; }
     .note-body i, .note-body em { font-style: italic; }
+    /* Rede de proteção: HTML "de fora" (colado de outro lugar, ou escrito pelo Jarvis antes de ele
+       aprender os blocos do TDV) usa h1..h6/p/ul soltos. O reset lá no topo zera margem e padding
+       de tudo, então isso vinha espremido num bloco só. Aqui o respiro volta. */
+    .note-body h1, .note-body h2, .note-body h3, .note-body h4, .note-body h5, .note-body h6 {
+      font-weight: 700; line-height: 1.3; margin: 10px 0 3px;
+    }
+    .note-body h1 { font-size: 24px; } .note-body h2 { font-size: 20px; } .note-body h3 { font-size: 17px; }
+    .note-body h4, .note-body h5, .note-body h6 { font-size: 15px; }
+    .note-body p { margin: 0 0 9px; }
+    .note-body ul, .note-body ol { margin: 6px 0; padding-left: 22px; }
+    .note-body li { margin: 2px 0; }
+    .note-body blockquote { margin: 8px 0; padding-left: 14px; border-left: 3px solid #334155; font-style: italic; color: #CBD5E1; }
+    .note-body table { border-collapse: collapse; }
+    .note-body td, .note-body th { border: 1px solid #1E2A45; padding: 4px 8px; }
+    /* Jarvis mexendo na nota: corpo desfocado, chuva de binário por cima e barra de carregamento. */
+    @keyframes jarvisScan { 0% { transform: translateY(-100%); } 100% { transform: translateY(1400%); } }
+    @keyframes jarvisBar { 0% { left: -35%; } 100% { left: 100%; } }
+    @keyframes jarvisPulse { 0%, 100% { opacity: 0.55; } 50% { opacity: 1; } }
+    .jarvis-working-body { filter: blur(3.5px) saturate(0.7); pointer-events: none; user-select: none; }
+    .jarvis-scanline { position: absolute; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, transparent, #38BDF8, transparent); box-shadow: 0 0 14px #38BDF8; animation: jarvisScan 2.6s linear infinite; }
+    .jarvis-bar-track { position: relative; height: 4px; border-radius: 3px; background: #0D0D1A; border: 1px solid #1E2A4577; overflow: hidden; width: 260px; max-width: 70vw; }
+    .jarvis-bar-fill { position: absolute; top: 0; bottom: 0; width: 35%; border-radius: 3px; background: linear-gradient(90deg, transparent, #38BDF8, #2563EB, transparent); animation: jarvisBar 1.15s ease-in-out infinite; }
+    .jarvis-working-label { animation: jarvisPulse 1.6s ease-in-out infinite; }
     /* Fundo com grade sutil de HUD — quase imperceptível, só dá profundidade por trás dos painéis. */
     body {
       background-image:
@@ -2376,6 +2399,8 @@
                   <input id="note-title-input" type="text" value="{{ noteTitle }}" onInput="{{ setNoteTitle }}" placeholder="Sem título" style="flex: 1; min-width: 0; box-sizing: border-box; background: transparent; border: none; color: #E2E8F0; font-size: 19px; font-weight: 600; font-family: inherit; padding: 0;">
                 </div>
                 <div style="display: flex; align-items: center; gap: 5px; padding: 8px 12px; border-bottom: 1px solid #1B2438; overflow-x: auto; overflow-y: hidden;">
+                  <button onClick="{{ askJarvisToPolishNote }}" title="Pedir uma ajeitada básica ao Jarvis" class="hud-icon-btn" style="width: 29px; height: 29px; font-family: Orbitron, sans-serif; font-weight: 700; font-size: 14px; color: #38BDF8; text-shadow: 0 0 10px #38BDF877;">J</button>
+                  <div style="width: 1px; height: 18px; background: #1B2438; margin: 0 3px; flex-shrink: 0;"></div>
                   <button onMouseDown="{{ preventFocusLoss }}" onPointerDown="{{ noteToolPointerDown }}" onClick="{{ noteBold }}" title="Negrito" class="hud-icon-btn" style="width: 29px; height: 29px; font-weight: 700; font-size: 13px;">B</button>
                   <button onMouseDown="{{ preventFocusLoss }}" onPointerDown="{{ noteToolPointerDown }}" onClick="{{ noteItalic }}" title="Itálico" class="hud-icon-btn" style="width: 29px; height: 29px; font-style: italic; font-weight: 600; font-size: 14px; font-family: Georgia, serif;">I</button>
                   <select onMouseDown="{{ preventFocusLoss }}" onChange="{{ noteExecFontSize }}" style="height: 29px; flex-shrink: 0; border-radius: 7px; background: #0D0D16; border: 1px solid #1B2438; color: #94A3B8; cursor: pointer; font-size: 12px; font-family: inherit; padding: 0 6px;">
@@ -2406,8 +2431,29 @@
                   </sc-for>
                   <button onMouseDown="{{ preventFocusLoss }}" onPointerDown="{{ noteToolPointerDown }}" onClick="{{ noteClearHighlight }}" title="Tirar o marca-texto" class="hud-icon-btn" style="width: 26px; height: 26px;"><i class="ph ph-eraser" style="font-size: 13px;"></i></button>
                 </div>
-                <div id="note-editor-el" class="note-body" contenteditable="true" onInput="{{ handleNoteInput }}" onKeyDown="{{ noteEditorKeyDown }}" onClick="{{ noteEditorClick }}" style="flex: 1; min-height: 0; padding: 20px 24px 20px 30px; color: #E2E8F0; font-size: 14px; line-height: 1.75; outline: none; overflow-wrap: break-word; overflow-y: auto; overflow-x: auto;"></div>
+                <div style="position: relative; flex: 1; min-height: 0; display: flex; flex-direction: column;">
+                  <div id="note-editor-el" class="{{ noteBodyClass }}" contenteditable="true" onInput="{{ handleNoteInput }}" onKeyDown="{{ noteEditorKeyDown }}" onClick="{{ noteEditorClick }}" style="flex: 1; min-height: 0; padding: 20px 24px 20px 30px; color: #E2E8F0; font-size: 14px; line-height: 1.75; outline: none; overflow-wrap: break-word; overflow-y: auto; overflow-x: auto;"></div>
+                  <!-- Jarvis reescrevendo: corpo desfocado por baixo, chuva de binário e varredura
+                       por cima, barra de carregamento embaixo. -->
+                  <sc-if value="{{ jarvisOnNote }}" hint-placeholder-val="{{ false }}">
+                    <div style="position: absolute; inset: 0; z-index: 4; overflow: hidden; background: #0A0A0FAA; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px;">
+                      <canvas id="jarvis-rain" style="position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0.5;"></canvas>
+                      <div class="jarvis-scanline"></div>
+                      <div class="jarvis-font-display jarvis-working-label" style="position: relative; font-size: 13px; letter-spacing: 3px; color: #38BDF8; text-shadow: 0 0 12px #38BDF8AA;">J.A.R.V.I.S. REESCREVENDO</div>
+                      <div class="jarvis-bar-track" style="position: relative;"><div class="jarvis-bar-fill"></div></div>
+                      <div class="jarvis-font" style="position: relative; font-size: 11px; color: #64748B;">não mexa na nota até terminar</div>
+                    </div>
+                  </sc-if>
+                </div>
               </div>
+              <sc-if value="{{ hasJarvisNoteUndo }}" hint-placeholder-val="{{ false }}">
+                <div class="hud-tile" style="display: flex; align-items: center; gap: 10px; padding: 9px 13px; border-color: #38BDF83A;">
+                  <i class="ph ph-sparkle" style="font-size: 15px; color: #38BDF8; flex-shrink: 0;"></i>
+                  <span style="flex: 1; min-width: 0; font-size: 12.5px; color: #94A3B8;">O Jarvis reescreveu esta nota.</span>
+                  <button onClick="{{ undoJarvisNote }}" class="hud-btn-ghost" style="padding: 6px 12px; font-size: 12px; flex-shrink: 0;"><i class="ph ph-arrow-counter-clockwise" style="font-size: 13px;"></i>Desfazer</button>
+                  <button onClick="{{ dismissJarvisNoteUndo }}" class="hud-icon-btn" style="width: 26px; height: 26px; font-size: 14px; flex-shrink: 0;">×</button>
+                </div>
+              </sc-if>
               <sc-if value="{{ slashMenuOpen }}" hint-placeholder-val="{{ false }}">
                 <div style="{{ slashMenuStyle }}">
                   <div class="modal-in hud-tile hud-tile-cyan" style="width: 220px; max-height: 320px; overflow-y: auto; padding: 6px; box-shadow: 0 18px 50px #000000AA, 0 0 22px #38BDF81A;">
@@ -3380,6 +3426,8 @@ class Component extends DCLogic {
     noteSearch: '',
     noteSort: 'recent', // 'recent' | 'name' | 'created' — lembrado por dispositivo (localStorage)
     noteExportOpen: false,
+    jarvisOnNote: false,      // Jarvis escrevendo na nota aberta agora
+    jarvisNoteUndo: null,     // { id, title, content } da versão de antes, pro botão Desfazer
     noteExportFont: (() => { try { return localStorage.getItem('tdv_noteExportFont') || 'Inter'; } catch (_e) { return 'Inter'; } })(),
     slashMenuMode: 'blocks', // 'blocks' (digitou "/") | 'link' (digitou "[[")
     jarvisLiveMode: false,
@@ -3656,6 +3704,7 @@ class Component extends DCLogic {
 
   componentDidUpdate() {
     this._syncAgendaMap();
+    this._syncJarvisRain();
     // O framework (support.js) chama componentDidUpdate(prevProps) — SÓ as props, nunca o estado
     // anterior. Esta função já foi escrita como (prevProps, prevState): prevState vinha sempre
     // undefined, "prevState.screen" estourava na primeira linha a cada atualização, o framework
@@ -4650,6 +4699,8 @@ class Component extends DCLogic {
       }
       this.setState({ jarvisLoading: false });
       if (dataChangedFlag) this._refreshData();
+      // Recarrega a nota aberta sem F5 (e encerra o efeito) mesmo se o turno terminou em erro.
+      if (this.state.jarvisOnNote) this._finishJarvisNoteWork();
       // No modo ao vivo a fala já foi disparada por frase, direto do stream (liveFlushSentences)
       // — aqui só cobre o modo passivo normal (auto-play de uma vez só, texto completo), e só
       // quando a pergunta em si foi ditada. Mensagem digitada nunca deve receber resposta falada.
@@ -4716,6 +4767,9 @@ class Component extends DCLogic {
           if (!s.jarvisConversationId) this.setState({ jarvisConversationId: evt.conversationId });
         } else if (evt.type === 'text') {
           appendToLastAssistant(evt.text);
+        } else if (evt.type === 'tool') {
+          // Ferramenta de anotação com a nota aberta na tela: liga o efeito e trava o autosave.
+          if (this._JARVIS_NOTE_TOOLS.includes(evt.name) && this.state.editingNoteId) this._startJarvisNoteWork();
         } else if (evt.type === 'done') {
           dataChangedFlag = evt.dataChanged;
           this.setState({ jarvisConversationId: evt.conversationId });
@@ -6292,6 +6346,177 @@ class Component extends DCLogic {
     this.openTaskModal(task);
   }
 
+  // Chuva de 0 e 1 no canvas enquanto o Jarvis reescreve. Nasce e morre junto com a sobreposição;
+  // quando ela some, o laço para (nada de rAF rodando pra sempre em segundo plano).
+  _syncJarvisRain = () => {
+    const cv = this.state.jarvisOnNote ? document.getElementById('jarvis-rain') : null;
+    if (!cv) {
+      if (this._rainFrame) { cancelAnimationFrame(this._rainFrame); this._rainFrame = null; this._rainCanvas = null; }
+      return;
+    }
+    if (this._rainCanvas === cv) return;
+    this._rainCanvas = cv;
+    const ctx = cv.getContext('2d');
+    if (!ctx) return;
+    const passo = 12;
+    let colunas = [], larg = 0, alt = 0;
+    const medir = () => {
+      const r = cv.getBoundingClientRect();
+      larg = cv.width = Math.max(1, Math.round(r.width));
+      alt = cv.height = Math.max(1, Math.round(r.height));
+      colunas = new Array(Math.ceil(larg / passo)).fill(0).map(() => Math.random() * alt);
+    };
+    medir();
+    let ultimo = 0;
+    const frame = (t) => {
+      if (!this.state.jarvisOnNote || !cv.isConnected) { this._rainFrame = null; this._rainCanvas = null; return; }
+      this._rainFrame = requestAnimationFrame(frame);
+      if (t - ultimo < 42) return;   // ~24 quadros por segundo: cadência de terminal, não de jogo
+      ultimo = t;
+      if (Math.abs(cv.getBoundingClientRect().width - larg) > 2) medir();
+      ctx.fillStyle = 'rgba(10, 10, 15, 0.16)';
+      ctx.fillRect(0, 0, larg, alt);
+      ctx.font = '12px "Share Tech Mono", monospace';
+      for (let i = 0; i < colunas.length; i++) {
+        const y = colunas[i];
+        ctx.fillStyle = Math.random() < 0.12 ? '#BFDBFE' : '#38BDF8';
+        ctx.fillText(Math.random() < 0.5 ? '0' : '1', i * passo, y);
+        colunas[i] = y > alt + Math.random() * 120 ? 0 : y + passo;
+      }
+    };
+    this._rainFrame = requestAnimationFrame(frame);
+  }
+
+  // ─── Jarvis mexendo na nota aberta ────────────────────────────────────────
+  // O chat já avisa quando uma ferramenta roda (evento "tool") e quando o turno acabou mexendo em
+  // dados ("done" com dataChanged). Com a nota aberta na tela, isso vira: trava o autosave (pra o
+  // texto velho não voltar por cima do que ele escreveu), mostra o efeito, e no fim recarrega a
+  // nota do banco — sem F5 — guardando a versão de antes pro Desfazer.
+  _JARVIS_NOTE_TOOLS = ['update_note', 'create_note']
+
+  _startJarvisNoteWork = () => {
+    if (!this.state.editingNoteId || this.state.jarvisOnNote) return;
+    const el = document.getElementById('note-editor-el');
+    this._noteBeforeJarvis = {
+      id: this.state.editingNoteId,
+      title: this.state.noteTitle,
+      content: el ? el.innerHTML : this.state.noteContent,
+    };
+    clearTimeout(this._noteSaveTimer);
+    this._noteSavePending = false;
+    this._jarvisNoteStartedAt = Date.now();
+    this.setState({ jarvisOnNote: true, jarvisNoteUndo: null });
+  }
+
+  _finishJarvisNoteWork = async () => {
+    if (!this.state.jarvisOnNote) return;
+    // Efeito dura no mínimo 1,2s — senão numa edição rápida ele só pisca e assusta.
+    const passou = Date.now() - (this._jarvisNoteStartedAt || 0);
+    if (passou < 1200) await new Promise(r => setTimeout(r, 1200 - passou));
+    const id = this.state.editingNoteId;
+    const antes = this._noteBeforeJarvis;
+    if (!id) { this.setState({ jarvisOnNote: false }); return; }
+    const { data, error } = await window._sb.from('notes').select('title, content').eq('id', id).maybeSingle();
+    if (error || !data) {
+      this.setState({ jarvisOnNote: false });
+      this._toast('O Jarvis mexeu na nota, mas não consegui recarregar. Dê F5 pra ver.');
+      return;
+    }
+    const arrumado = this._normalizeNoteHtml(data.content || '');
+    const el = document.getElementById('note-editor-el');
+    if (el) el.innerHTML = arrumado;
+    const mudou = antes && antes.id === id && (antes.content !== arrumado || antes.title !== (data.title || ''));
+    this.setState({
+      noteTitle: data.title || '', noteContent: arrumado, noteSaveStatus: 'saved',
+      jarvisOnNote: false, jarvisNoteUndo: mudou ? antes : null,
+    });
+    // Se a rede de proteção precisou arrumar o HTML, grava já arrumado.
+    if (arrumado !== (data.content || '')) this.saveNoteContent();
+    clearTimeout(this._jarvisUndoTimer);
+    if (mudou) this._jarvisUndoTimer = setTimeout(() => this.setState({ jarvisNoteUndo: null }), 45000);
+  }
+
+  undoJarvisNote = async () => {
+    const v = this.state.jarvisNoteUndo;
+    if (!v || v.id !== this.state.editingNoteId) return;
+    const el = document.getElementById('note-editor-el');
+    if (el) el.innerHTML = v.content || '';
+    this.setState({ noteTitle: v.title || '', noteContent: v.content || '', jarvisNoteUndo: null }, () => this.saveNoteContent());
+    this._toast('Nota voltou pra versão de antes do Jarvis.');
+  }
+
+  // Pede uma ajeitada básica ao Jarvis, pelo chat mesmo (fica na trilha de auditoria). O id vai na
+  // mensagem porque ele ainda não sabe em que tela o Sr. Douglas está — isso é a fase 3.
+  askJarvisToPolishNote = () => {
+    const s = this.state;
+    if (!s.editingNoteId || s.jarvisLoading) return;
+    this._flushNoteSave();
+    const titulo = s.noteTitle || 'Sem título';
+    const msg = 'Dê uma ajeitada básica na anotação de id ' + s.editingNoteId + ' ("' + titulo + '"): organize em títulos, '
+      + 'listas e parágrafos com espaçamento, usando os blocos do editor. Não invente, não resuma e não mude o título — '
+      + 'só reorganize o que já está lá. Responda curto quando terminar.';
+    this.setState({ jarvisInput: msg, jarvisOpen: true }, () => this.sendJarvisMessage());
+  }
+
+  // Deixa apresentável o HTML que não veio do editor: texto puro (o caso do "=====" que o Jarvis
+  // escreveu em 22/09), markdown solto e h1..h6/p genéricos viram os blocos do TDV.
+  _normalizeNoteHtml = (html) => {
+    const bruto = String(html || '');
+    if (!bruto.trim()) return bruto;
+    const temBloco = /<(div|p|h[1-6]|ul|ol|li|table|pre|blockquote|details)\b/i.test(bruto);
+    const H = { 1: '24px', 2: '20px', 3: '17px' };
+    const titulo = (nivel, texto) => '<div class="tdv-h' + nivel + '" style="font-weight:700;margin:8px 0 2px;font-size:' + H[nivel] + ';line-height:1.3;">' + texto + '</div>';
+    if (!temBloco) {
+      // Texto corrido: quebra em linhas, "=====" logo abaixo de uma linha vira título dela,
+      // "- item" vira lista, linha vazia vira espaço.
+      const linhas = bruto.replace(/<br\s*\/?>(\r?\n)?/gi, '\n').split('\n');
+      const out = [];
+      let lista = [];
+      const fechaLista = () => { if (lista.length) { out.push('<ul style="padding-left:22px;margin:6px 0;">' + lista.join('') + '</ul>'); lista = []; } };
+      for (let i = 0; i < linhas.length; i++) {
+        const linha = linhas[i].trim();
+        const proxima = (linhas[i + 1] || '').trim();
+        if (/^[=]{3,}$/.test(linha) || /^[-]{3,}$/.test(linha)) continue; // separador já consumido abaixo
+        if (!linha) { fechaLista(); out.push('<div><br></div>'); continue; }
+        if (/^[=]{3,}$/.test(proxima)) { fechaLista(); out.push(titulo(2, linha)); i++; continue; }
+        if (/^[-]{3,}$/.test(proxima)) { fechaLista(); out.push(titulo(3, linha)); i++; continue; }
+        const item = linha.match(/^(?:[-*•]|\d+[.)])\s+(.*)$/);
+        if (item) { lista.push('<li>' + item[1] + '</li>'); continue; }
+        const md = linha.match(/^(#{1,3})\s+(.*)$/);
+        if (md) { fechaLista(); out.push(titulo(md[1].length, md[2])); continue; }
+        fechaLista();
+        out.push('<div>' + linha + '</div>');
+      }
+      fechaLista();
+      return out.join('');
+    }
+    // HTML genérico: h1..h6 viram blocos de título, <p> vira <div>, listas ganham o recuo.
+    const caixa = document.createElement('div');
+    caixa.innerHTML = bruto;
+    caixa.querySelectorAll('h1,h2,h3,h4,h5,h6').forEach(h => {
+      const nivel = Math.min(3, Number(h.tagName[1]));
+      const novo = document.createElement('div');
+      novo.className = 'tdv-h' + nivel;
+      novo.style.cssText = 'font-weight:700;margin:8px 0 2px;font-size:' + H[nivel] + ';line-height:1.3;';
+      novo.innerHTML = h.innerHTML;
+      h.replaceWith(novo);
+    });
+    caixa.querySelectorAll('p').forEach(par => {
+      const novo = document.createElement('div');
+      novo.innerHTML = par.innerHTML || '<br>';
+      par.replaceWith(novo);
+    });
+    caixa.querySelectorAll('ul,ol').forEach(l => { if (!l.style.paddingLeft) l.style.cssText = 'padding-left:22px;margin:6px 0;'; });
+    caixa.querySelectorAll('blockquote').forEach(q => {
+      const novo = document.createElement('div');
+      novo.className = 'tdv-quote';
+      novo.style.cssText = 'border-left:3px solid #334155;padding-left:14px;margin:6px 0;font-style:italic;color:#CBD5E1;';
+      novo.innerHTML = q.innerHTML;
+      q.replaceWith(novo);
+    });
+    return caixa.innerHTML;
+  }
+
   // ─── Anotações — autosave o tempo todo, sem botão de salvar (espírito dontpad) ─
 
   preventFocusLoss = (e) => e.preventDefault();
@@ -6420,6 +6645,9 @@ class Component extends DCLogic {
   }
 
   saveNoteContent = async () => {
+    // Enquanto o Jarvis escreve na nota, o que está na tela é o texto ANTIGO — gravar agora
+    // desfaria o trabalho dele no meio.
+    if (this.state.jarvisOnNote) return;
     const s = this.state;
     const id = s.editingNoteId;
     if (!id) return;
@@ -9355,6 +9583,12 @@ class Component extends DCLogic {
       currentNotePinTitle: (s.notes.find(n => n.id === s.editingNoteId) || {}).pinned ? 'Desafixar' : 'Fixar no topo',
       toggleCurrentNotePin: () => this.toggleNotePin(s.editingNoteId),
       noteExportOpen: s.noteExportOpen,
+      jarvisOnNote: s.jarvisOnNote,
+      noteBodyClass: s.jarvisOnNote ? 'note-body jarvis-working-body' : 'note-body',
+      askJarvisToPolishNote: this.askJarvisToPolishNote,
+      hasJarvisNoteUndo: !!s.jarvisNoteUndo && s.jarvisNoteUndo.id === s.editingNoteId,
+      undoJarvisNote: this.undoJarvisNote,
+      dismissJarvisNoteUndo: () => this.setState({ jarvisNoteUndo: null }),
       noteExportFont: s.noteExportFont,
       setNoteExportFont: e => { const v = e.target.value; try { localStorage.setItem('tdv_noteExportFont', v); } catch (_e) {} this.setState({ noteExportFont: v }); }, toggleNoteExport: this.toggleNoteExport,
       exportNoteMd: () => this.exportNote('md'), exportNoteTxt: () => this.exportNote('txt'), exportNotePdf: () => this.exportNote('pdf'),

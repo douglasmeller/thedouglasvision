@@ -11,7 +11,7 @@ quebrado, depois o que é base pras outras, por último o que é novo.
 **Fase 1 — Bug do Mark XLIII (Sonnet) travando o chat.** ✅ Feita em 22/09.
 **Fase 2 — Editor de anotações: leitura e escrita.** ✅ Feita em 22/09.
 **Fase 3 — Jarvis sabe onde o Sr. Douglas está** (contexto de tela/nota aberta).
-**Fase 4 — Jarvis formata anotação de verdade** (blocos do TDV + botão "J" na barra).
+**Fase 4 — Jarvis formata anotação de verdade.** ✅ Feita em 22/09.
 **Fase 5 — Tabela com mais linhas e colunas.**
 **Fase 6 — Tarefas recorrentes.**
 **Fase 7 — Agenda: visão por semana e por dia, tudo numa tela só** (pedido de 22/09).
@@ -134,7 +134,7 @@ certa, e some quando não há nota aberta.
 
 ---
 
-### Fase 4 — Jarvis formatando anotação com os blocos do TDV
+### Fase 4 — Jarvis formatando anotação com os blocos do TDV — FEITA (22/09)
 **Sintoma:** em 22/09 o Jarvis "organizou" a nota de Alinhamento financeiro e ela ficou espremida,
 sem espaçamento vertical.
 
@@ -171,6 +171,29 @@ não existe histórico de versões de nota.
 
 **Teste:** simulador com uma nota bagunçada, conferindo que o HTML gravado usa os blocos do TDV; e
 conferência visual no navegador (é sobre respiro visual, tem que ser visto).
+
+**Feito em 22/09:**
+- **Jarvis aprendeu o formato:** `create_note`/`update_note` trazem os blocos do TDV com exemplo de
+  cada um e a proibição explícita de `<h1>..<h6>`/`<p>` soltos, markdown e linhas de `=====` — foi
+  assim que ele estragou uma nota de verdade nesse dia. Também: não usar emoji sem o Sr. Douglas
+  pedir, e nunca resumir ao reorganizar.
+- **Rede de proteção no app:** CSS próprio dentro do editor pra h1..h6/p/ul/ol/blockquote/tabela
+  (o reset global zerava margem e recuo), mais um normalizador que converte o que chega de fora:
+  texto corrido com `=====`/`-----`/markdown vira título, `- item` vira lista, `<h2>` vira
+  `.tdv-h2`, `<p>` vira bloco, lista ganha recuo. Vale também pra texto colado de outro lugar.
+- **Versão anterior guardada:** tabela `note_versions` (RLS por dono, 20 versões por nota, aparadas
+  por trigger). A Edge Function grava a versão atual — com formatação — antes de qualquer escrita
+  do Jarvis. Nasceu de um caso real: a auditoria só guardava o texto puro, e as cores do Sr.
+  Douglas se perderam.
+- **Efeito ao vivo + sem F5:** o chat já mandava o evento `tool`; agora, com a nota aberta, isso
+  liga o modo "J.A.R.V.I.S. reescrevendo" (corpo desfocado, chuva de 0 e 1 num canvas, varredura e
+  barra estilo filme de hacker, nas cores do sistema), trava o autosave (senão o texto velho
+  voltava por cima) e, no fim, recarrega a nota do banco sozinho. O efeito dura no mínimo 1,2s pra
+  não piscar.
+- **Desfazer:** barra embaixo do editor por 45s depois que ele mexe, que devolve a versão de antes.
+- **Botão "J"** na barra de formatação (Orbitron, azul): pede a ajeitada básica pelo chat, com id e
+  título da nota na mensagem — assim fica na trilha de auditoria como qualquer outro pedido.
+- 23 testes novos no app + 5 na Edge Function.
 
 ---
 

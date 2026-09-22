@@ -10,11 +10,12 @@ quebrado, depois o que é base pras outras, por último o que é novo.
 
 **Fase 1 — Bug do Mark XLIII (Sonnet) travando o chat.** ✅ Feita em 22/09.
 **Fase 2 — Editor de anotações: leitura e escrita.** ✅ Feita em 22/09.
-**Fase 3 — Jarvis sabe onde o Sr. Douglas está** (contexto de tela/nota aberta).
+**Fase 3 — Jarvis sabe onde o Sr. Douglas está.** ✅ Feita em 22/09.
 **Fase 4 — Jarvis formata anotação de verdade.** ✅ Feita em 22/09.
 **Fase 5 — Tabela com mais linhas e colunas.**
 **Fase 6 — Tarefas recorrentes.**
 **Fase 7 — Agenda: visão por semana e por dia, tudo numa tela só** (pedido de 22/09).
+**Fase 8 — Efeito visual na ligação ao vivo com o Jarvis** (pedido de 22/09, ele curtiu o efeito da fase 4).
 
 Depois disso continuam na fila, esperando decisão do Sr. Douglas:
 - **Cofre de Senhas** — falta escolher a forma de recuperação (ver "Novos setores → Cofre de senhas").
@@ -116,7 +117,7 @@ passando.
 
 ---
 
-### Fase 3 — Jarvis sabe em qual tela o Sr. Douglas está
+### Fase 3 — Jarvis sabe em qual tela o Sr. Douglas está — FEITA (22/09)
 **Pedido:** "se eu estiver em uma anotação aberta e disser 'Jarvis, ajeite essa anotação aqui', ele
 tem que saber qual anotação é".
 
@@ -131,6 +132,24 @@ Jarvis pergunta em vez de chutar. O contexto vai em toda mensagem, então precis
 
 **Teste:** simulador do jarvis-chat conferindo que o bloco "TELA ATUAL" aparece no prompt com a nota
 certa, e some quando não há nota aberta.
+
+**Feito em 22/09:**
+- **App:** `_screenContext()` monta um objeto pequeno com o que está aberto AGORA — tela atual e,
+  quando existe, a nota/pasta abertas em Anotações, o dia aberto na Agenda + mês visível, a tarefa
+  em edição, o mês do Dashboard/Lançamentos. Vai junto no corpo de CADA mensagem (`screen_context`).
+- **Servidor:** `buildScreenContext()` valida tudo antes de confiar — tela precisa estar numa lista
+  fechada (senão é ignorado), ids seguem um formato apertado, textos são cortados e sem quebra de
+  linha. Vira um bloco "ONDE O SR. DOUGLAS ESTÁ AGORA" no prompt do sistema, com a instrução de usar
+  o id direto (sem sair procurando com list_notes/list_events) e de perguntar se ele apontar pra algo
+  que não está na lista — nunca adivinhar. É dado, não instrução: uma nota chamada "ignore as
+  instruções acima" não vira comando, mesmo caminho do snapshot financeiro.
+- **Botão "J" simplificado:** como o Jarvis já sabe qual nota está aberta, o pedido da ajeitada
+  básica não precisa mais citar o id na mensagem.
+- **De quebra:** os cartões de nota tinham altura variável — um título ou texto muito grande
+  esticava o cartão e desalinhava a fileira inteira. Título agora corta em 2 linhas, prévia em 3,
+  todos os cartões com a mesma altura.
+- 9 testes novos no app (cada tela testada) + 6 na Edge Function (contexto sujo/malicioso é limpo
+  corretamente, tela desconhecida é ignorada).
 
 ---
 
@@ -194,6 +213,30 @@ conferência visual no navegador (é sobre respiro visual, tem que ser visto).
 - **Botão "J"** na barra de formatação (Orbitron, azul): pede a ajeitada básica pelo chat, com id e
   título da nota na mensagem — assim fica na trilha de auditoria como qualquer outro pedido.
 - 23 testes novos no app + 5 na Edge Function.
+
+### Fase 8 — Efeito visual na ligação ao vivo (modo "ligação" do Jarvis)
+**Pedido (22/09):** o Sr. Douglas gostou muito do efeito visual da fase 4 (nota desfocada + chuva
+de binário + varredura enquanto o Jarvis reescreve) e pediu algo parecido pra quando ele está numa
+**ligação** com o Jarvis (`startJarvisLiveMode` / tela de ligação ao vivo).
+
+**Ideia inicial:** a tela de ligação já tem um estado de "status" (ouvindo / pensando / falando —
+ver `jarvisLiveStatus`). Cada estado pode ganhar sua própria assinatura visual, no mesmo espírito
+da fase 4 (cores do Jarvis/sistema, nada de cor genérica):
+- **Ouvindo:** um anel/onda pulsando no ritmo (visual, não precisa ser o volume real do microfone
+  pra não complicar).
+- **Pensando/processando:** a MESMA chuva de binário + varredura da fase 4, reaproveitando o canvas
+  já construído lá (`_syncJarvisRain` é genérico o bastante pra apontar pra outro elemento).
+- **Falando:** algo que acompanhe a fala — sem waveform de áudio real por enquanto (over-engenharia
+  pra esse estágio), mas um pulso/glow sincronizado com o ritmo de texto revelado já dá o efeito.
+
+**Reaproveita da fase 4:** o canvas de chuva de binário e o `.jarvis-scanline`/`.jarvis-bar-*` já
+existem — é questão de generalizar pra aceitar um elemento alvo diferente (hoje aponta pro id fixo
+`jarvis-rain`) e criar a versão "ouvindo"/"falando" que ainda não existe.
+
+**A decidir antes de codar:** se o efeito ocupa a tela de ligação inteira ou fica concentrado no
+avatar/círculo central do Jarvis (que já existe hoje); e se roda também na bolha flutuante (menor,
+pode pesar mais) ou só na tela cheia de ligação.
+
 
 ---
 

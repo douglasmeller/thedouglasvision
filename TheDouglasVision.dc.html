@@ -40,6 +40,10 @@
        As margens dos blocos vêm daqui de propósito: o reset lá em cima zera tudo, e o HTML que o
        Jarvis (ou um "colar" de fora) escreve usa h1..h6/p/ul soltos. */
     .note-body { font-family: 'Chakra Petch', 'Inter', sans-serif; letter-spacing: 0.035em; }
+    /* Cartão de nota: título em até 2 linhas, prévia em até 3 — sem isso, um título comprido ou
+       um texto grande esticava aquele cartão e a fileira inteira ficava desproporcional. */
+    .note-card-title { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .note-card-preview { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
     .note-body b, .note-body strong { font-weight: 700; }
     .note-body i, .note-body em { font-style: italic; }
     /* Rede de proteção: HTML "de fora" (colado de outro lugar, ou escrito pelo Jarvis antes de ele
@@ -60,7 +64,12 @@
     @keyframes jarvisScan { 0% { transform: translateY(-100%); } 100% { transform: translateY(1400%); } }
     @keyframes jarvisBar { 0% { left: -35%; } 100% { left: 100%; } }
     @keyframes jarvisPulse { 0%, 100% { opacity: 0.55; } 50% { opacity: 1; } }
+    /* transition fica na classe base (sempre presente) pra animar tanto ao entrar quanto ao sair
+       do modo "Jarvis trabalhando" — trocar a classe no mesmo nó de DOM já anima sozinho. */
+    .note-body { transition: filter 0.55s ease; }
     .jarvis-working-body { filter: blur(3.5px) saturate(0.7); pointer-events: none; user-select: none; }
+    .jarvis-overlay { opacity: 1; transition: opacity 0.6s ease; }
+    .jarvis-overlay-fading { opacity: 0; }
     .jarvis-scanline { position: absolute; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, transparent, #38BDF8, transparent); box-shadow: 0 0 14px #38BDF8; animation: jarvisScan 2.6s linear infinite; }
     .jarvis-bar-track { position: relative; height: 4px; border-radius: 3px; background: #0D0D1A; border: 1px solid #1E2A4577; overflow: hidden; width: 260px; max-width: 70vw; }
     .jarvis-bar-fill { position: absolute; top: 0; bottom: 0; width: 35%; border-radius: 3px; background: linear-gradient(90deg, transparent, #38BDF8, #2563EB, transparent); animation: jarvisBar 1.15s ease-in-out infinite; }
@@ -2270,10 +2279,10 @@
               <sc-if value="{{ hasNoteItems }}" hint-placeholder-val="{{ false }}">
                 <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(196px, 1fr)); gap: 9px;">
                   <sc-for list="{{ noteItems }}" as="nt" hint-placeholder-count="4">
-                    <div onClick="{{ nt.onOpen }}" onMouseDown="{{ nt.onDragStart }}" class="{{ nt.cardClass }}" title="Arraste para uma pasta ou para a trilha acima" style="padding: 12px 13px; display: flex; flex-direction: column; gap: 7px; min-height: 104px; box-sizing: border-box; text-align: left;">
+                    <div onClick="{{ nt.onOpen }}" onMouseDown="{{ nt.onDragStart }}" class="{{ nt.cardClass }}" title="Arraste para uma pasta ou para a trilha acima" style="padding: 12px 13px; display: flex; flex-direction: column; gap: 7px; height: 132px; box-sizing: border-box; text-align: left;">
                       <div class="hud-tile-sweep"></div>
                       <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 6px; position: relative; min-width: 0;">
-                        <div style="font-size: 13px; font-weight: 600; color: {{ nt.titleColor }}; overflow-wrap: break-word; flex: 1; min-width: 0;">
+                        <div class="note-card-title" style="font-size: 13px; font-weight: 600; color: {{ nt.titleColor }}; overflow-wrap: break-word; flex: 1; min-width: 0;">
                           <sc-if value="{{ nt.isPinned }}" hint-placeholder-val="{{ false }}"><i class="ph ph-push-pin" title="Fixada" style="color: #F5B841; font-size: 12px; margin-right: 4px;"></i></sc-if>{{ nt.displayTitle }}
                         </div>
                         <div class="hud-tile-actions" style="display: flex; gap: 5px; flex-shrink: 0;">
@@ -2285,7 +2294,7 @@
                           </button>
                         </div>
                       </div>
-                      <div class="reading-font" style="font-size: 11.5px; color: #64748B; line-height: 1.55; flex: 1; overflow-wrap: break-word; position: relative;">{{ nt.preview }}</div>
+                      <div class="reading-font note-card-preview" style="font-size: 11.5px; color: #64748B; line-height: 1.55; flex: 1; overflow-wrap: break-word; position: relative;">{{ nt.preview }}</div>
                       <div style="display: flex; align-items: center; gap: 6px; position: relative;">
                         <span style="width: 4px; height: 4px; border-radius: 50%; background: #38BDF8; flex-shrink: 0;"></span>
                         <span class="hud-label" style="letter-spacing: 1px;">{{ nt.fmtUpdated }}</span>
@@ -2436,7 +2445,7 @@
                   <!-- Jarvis reescrevendo: corpo desfocado por baixo, chuva de binário e varredura
                        por cima, barra de carregamento embaixo. -->
                   <sc-if value="{{ jarvisOnNote }}" hint-placeholder-val="{{ false }}">
-                    <div style="position: absolute; inset: 0; z-index: 4; overflow: hidden; background: #0A0A0FAA; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px;">
+                    <div class="{{ jarvisOverlayClass }}" style="position: absolute; inset: 0; z-index: 4; overflow: hidden; background: #0A0A0FAA; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px;">
                       <canvas id="jarvis-rain" style="position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0.5;"></canvas>
                       <div class="jarvis-scanline"></div>
                       <div class="jarvis-font-display jarvis-working-label" style="position: relative; font-size: 13px; letter-spacing: 3px; color: #38BDF8; text-shadow: 0 0 12px #38BDF8AA;">J.A.R.V.I.S. REESCREVENDO</div>
@@ -3427,6 +3436,7 @@ class Component extends DCLogic {
     noteSort: 'recent', // 'recent' | 'name' | 'created' — lembrado por dispositivo (localStorage)
     noteExportOpen: false,
     jarvisOnNote: false,      // Jarvis escrevendo na nota aberta agora
+    jarvisNoteFading: false,  // true = terminou, efeito está dissolvendo (não sumiu de repente)
     jarvisNoteUndo: null,     // { id, title, content } da versão de antes, pro botão Desfazer
     noteExportFont: (() => { try { return localStorage.getItem('tdv_noteExportFont') || 'Inter'; } catch (_e) { return 'Inter'; } })(),
     slashMenuMode: 'blocks', // 'blocks' (digitou "/") | 'link' (digitou "[[")
@@ -4572,6 +4582,37 @@ class Component extends DCLogic {
     }, 0);
   }
 
+  // ─── Onde o Sr. Douglas está agora ────────────────────────────────────────
+  // Vai junto com cada mensagem pro Jarvis, pra "ajeite esta anotação aqui" funcionar sem ele
+  // precisar dizer qual é. Fica pequeno de propósito: só o que está aberto na tela.
+  _screenContext = () => {
+    const s = this.state;
+    const ctx = { screen: s.screen };
+    if (s.screen === 'notas') {
+      if (s.editingNoteId) { ctx.noteId = s.editingNoteId; ctx.noteTitle = s.noteTitle || ''; }
+      const pasta = s.currentFolderId && s.noteFolders.find(f => f.id === s.currentFolderId);
+      if (pasta) { ctx.folderId = pasta.id; ctx.folderName = pasta.name || ''; }
+    }
+    if (s.screen === 'agenda') {
+      if (s.showEventModal && s.eventModalDate) ctx.agendaDay = s.eventModalDate;
+      const base = new Date();
+      base.setDate(1);
+      base.setMonth(base.getMonth() + s.agendaMonthOffset);
+      ctx.monthLabel = base.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+    }
+    if (s.screen === 'tarefas' && s.showTaskModal && s.editTaskId) {
+      ctx.taskId = s.editTaskId;
+      ctx.taskTitle = s.taskTitle || '';
+    }
+    if (s.screen === 'dashboard' || s.screen === 'lancamentos') {
+      // dashMonth é 'AAAA-MM' (vazio = mês corrente).
+      const chave = s.dashMonth || new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' }).slice(0, 7);
+      const [ano, mes] = chave.split('-').map(Number);
+      ctx.monthLabel = new Date(ano, mes - 1, 1).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+    }
+    return ctx;
+  }
+
   // Token de acesso SEM poder travar. supabase.auth.getSession() espera um "lock" interno do
   // navegador (navigator.locks); se outra aba ou uma renovação de token deixou esse lock preso, a
   // promessa nunca resolve — e como toda chamada às funções do servidor começa por ela, o envio
@@ -4742,7 +4783,7 @@ class Component extends DCLogic {
         resp = await fetch('https://evkpskwjzbyzpvvodnwf.supabase.co/functions/v1/jarvis-chat', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + accessToken },
-          body: JSON.stringify({ message: text, model: s.jarvisModel, conversation_id: s.jarvisConversationId }),
+          body: JSON.stringify({ message: text, model: s.jarvisModel, conversation_id: s.jarvisConversationId, screen_context: this._screenContext() }),
           signal: ctrl.signal,
         });
       } catch (fetchErr) {
@@ -6405,9 +6446,12 @@ class Component extends DCLogic {
     clearTimeout(this._noteSaveTimer);
     this._noteSavePending = false;
     this._jarvisNoteStartedAt = Date.now();
-    this.setState({ jarvisOnNote: true, jarvisNoteUndo: null });
+    this.setState({ jarvisOnNote: true, jarvisNoteFading: false, jarvisNoteUndo: null });
   }
 
+  // Some aos poucos em vez de sumir na hora — três passos: revela o texto novo (blur ainda ligado
+  // por uma fração de segundo pra não "piscar" nítido embaixo do véu), começa a dissolver o véu, e
+  // só desmonta o overlay (canvas incluso) depois da transição de CSS ter tempo de terminar.
   _finishJarvisNoteWork = async () => {
     if (!this.state.jarvisOnNote) return;
     // Efeito dura no mínimo 1,2s — senão numa edição rápida ele só pisca e assusta.
@@ -6415,10 +6459,11 @@ class Component extends DCLogic {
     if (passou < 1200) await new Promise(r => setTimeout(r, 1200 - passou));
     const id = this.state.editingNoteId;
     const antes = this._noteBeforeJarvis;
-    if (!id) { this.setState({ jarvisOnNote: false }); return; }
+    clearTimeout(this._jarvisFadeTimer);
+    if (!id) { this.setState({ jarvisOnNote: false, jarvisNoteFading: false }); return; }
     const { data, error } = await window._sb.from('notes').select('title, content').eq('id', id).maybeSingle();
     if (error || !data) {
-      this.setState({ jarvisOnNote: false });
+      this.setState({ jarvisOnNote: false, jarvisNoteFading: false });
       this._toast('O Jarvis mexeu na nota, mas não consegui recarregar. Dê F5 pra ver.');
       return;
     }
@@ -6428,12 +6473,14 @@ class Component extends DCLogic {
     const mudou = antes && antes.id === id && (antes.content !== arrumado || antes.title !== (data.title || ''));
     this.setState({
       noteTitle: data.title || '', noteContent: arrumado, noteSaveStatus: 'saved',
-      jarvisOnNote: false, jarvisNoteUndo: mudou ? antes : null,
+      jarvisNoteFading: true, jarvisNoteUndo: mudou ? antes : null,
     });
     // Se a rede de proteção precisou arrumar o HTML, grava já arrumado.
     if (arrumado !== (data.content || '')) this.saveNoteContent();
     clearTimeout(this._jarvisUndoTimer);
     if (mudou) this._jarvisUndoTimer = setTimeout(() => this.setState({ jarvisNoteUndo: null }), 45000);
+    // Dá tempo da dissolução (transição de 0,6s) rodar antes de desmontar o overlay de vez.
+    this._jarvisFadeTimer = setTimeout(() => this.setState({ jarvisOnNote: false, jarvisNoteFading: false }), 650);
   }
 
   undoJarvisNote = async () => {
@@ -6452,7 +6499,7 @@ class Component extends DCLogic {
     if (!s.editingNoteId || s.jarvisLoading) return;
     this._flushNoteSave();
     const titulo = s.noteTitle || 'Sem título';
-    const msg = 'Dê uma ajeitada básica na anotação de id ' + s.editingNoteId + ' ("' + titulo + '"): organize em títulos, '
+    const msg = 'Dê uma ajeitada básica nesta anotação que está aberta ("' + titulo + '"): organize em títulos, '
       + 'listas e parágrafos com espaçamento, usando os blocos do editor. Não invente, não resuma e não mude o título — '
       + 'só reorganize o que já está lá. Responda curto quando terminar.';
     this.setState({ jarvisInput: msg, jarvisOpen: true }, () => this.sendJarvisMessage());
@@ -9584,7 +9631,10 @@ class Component extends DCLogic {
       toggleCurrentNotePin: () => this.toggleNotePin(s.editingNoteId),
       noteExportOpen: s.noteExportOpen,
       jarvisOnNote: s.jarvisOnNote,
-      noteBodyClass: s.jarvisOnNote ? 'note-body jarvis-working-body' : 'note-body',
+      jarvisOverlayClass: s.jarvisNoteFading ? 'jarvis-overlay jarvis-overlay-fading' : 'jarvis-overlay',
+      // O desfoque some junto com o overlay (ao começar a dissolver), não só quando ele é
+      // desmontado — senão o texto "pulava" nítido de repente por baixo de um véu ainda visível.
+      noteBodyClass: (s.jarvisOnNote && !s.jarvisNoteFading) ? 'note-body jarvis-working-body' : 'note-body',
       askJarvisToPolishNote: this.askJarvisToPolishNote,
       hasJarvisNoteUndo: !!s.jarvisNoteUndo && s.jarvisNoteUndo.id === s.editingNoteId,
       undoJarvisNote: this.undoJarvisNote,

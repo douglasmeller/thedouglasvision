@@ -2,7 +2,157 @@
 
 Ideias e próximos passos discutidos, ainda não implementados.
 
-## Fila atual (pedidos de 17/09)
+## Fila atual (pedidos de 22/09)
+Feita depois do Sr. Douglas pedir explicitamente pra NÃO fazer tudo de uma vez ("se fizer vai ficar
+meia boca, eu quero tudo com excelência"). Por isso está quebrada em 6 fases pequenas, cada uma
+fechando um assunto inteiro, com deploy e teste próprios. A ordem segue: primeiro o que está
+quebrado, depois o que é base pras outras, por último o que é novo.
+
+**Fase 1 — Bug do Mark XLIII (Sonnet) travando o chat.** Diagnosticado em 22/09.
+**Fase 2 — Editor de anotações: leitura e escrita** (cabeçalho fixo, fonte, espaçamento, itálico, negrito, ícone de grifar).
+**Fase 3 — Jarvis sabe onde o Sr. Douglas está** (contexto de tela/nota aberta).
+**Fase 4 — Jarvis formata anotação de verdade** (blocos do TDV + botão "J" na barra).
+**Fase 5 — Tabela com mais linhas e colunas.**
+**Fase 6 — Tarefas recorrentes.**
+
+Depois disso continuam na fila, esperando decisão do Sr. Douglas:
+- **Cofre de Senhas** — falta escolher a forma de recuperação (ver "Novos setores → Cofre de senhas").
+- **Transcritor de reuniões** — falta escolher o serviço de transcrição e o custo.
+
+---
+
+### Fase 1 — Bug do Mark XLIII (Sonnet): chat morre no meio
+**Sintoma:** em 22/09, às 17:11 e 17:12, o Sr. Douglas pediu pro Jarvis organizar uma anotação e a
+resposta não veio; ele perguntou duas vezes "o que deu errado?". A resposta que ficou gravada saiu
+toda emendada ("...preciso primeiro ler o conteúdo dela:Perfeito. Agora vou reorganizar..."), sem
+os trechos do meio.
+
+**Causa (confirmada nos logs da Edge Function):**
+```
+Anthropic API error 400: messages: text content blocks must be non-empty
+   at streamAnthropicTurn (jarvis-chat/index.ts)
+```
+No laço de ferramentas, `messages.push({ role: "assistant", content: result.content })` devolve pra
+API exatamente os blocos que vieram do modelo. Quando o modelo abre um bloco de texto e não escreve
+nada antes de chamar a ferramenta (o Sonnet faz isso com frequência), esse bloco volta como
+`{type:"text", text:""}` — e a API recusa a requisição inteira com 400. O erro acontece **só depois
+da primeira chamada de ferramenta**, por isso não aparece numa conversa simples.
+
+**Correção:** filtrar blocos de texto vazios antes de devolver o histórico à API (e aparar espaços).
+Vale pros três modelos, não só o Sonnet.
+
+**Teste:** no simulador do jarvis-chat (`jarvis_test.mjs`), uma rodada em que o modelo devolve
+`[{text:""},{tool_use}]` e confirmar que o que sai pra API não tem bloco vazio. Sem esse caso, o teste
+passa hoje justamente porque nunca simulou um bloco de texto vazio.
+
+**Extra da mesma fase:** hoje o erro some numa mensagem genérica. Fazer o erro do servidor chegar ao
+chat com a causa curta, pra não precisar ir no log toda vez.
+
+---
+
+### Fase 2 — Editor de anotações: leitura e escrita
+Tudo dentro do editor, sem tocar em Jarvis. Um deploy só.
+
+1. **Cabeçalho fixo ao rolar** — hoje, rolando pra baixo dentro de uma nota, o título e a barra de
+   formatação somem. Devem ficar grudados no topo (o corpo é que rola). Atenção: o container do
+   editor usa flex com `overflow-y: auto` no corpo — a barra precisa sair do fluxo de rolagem, e o
+   posicionamento do menu "/" e da barra de seleção (que é medida em `componentDidUpdate`) tem que
+   ser conferido de novo depois da mudança.
+2. **Fonte com a cara do TDV** — o corpo da nota usa Inter (`.reading-font`). Trocar por uma fonte
+   que converse com o resto do app sem virar monoespaçada pura (o texto longo em Share Tech Mono
+   fica cansativo — foi por isso que a `.reading-font` existe). Caminho: uma fonte técnica de
+   leitura pro corpo + Orbitron/Share Tech Mono só nos títulos de bloco.
+3. **Espaçamento das letras e margem esquerda maiores** — aumentar `letter-spacing` do corpo e a
+   margem esquerda do bloco (hoje `padding: 18px 20px`).
+4. **Itálico** — não existe botão. Adicionar na barra, junto de negrito.
+5. **Negrito não aparece** (nem no app, nem no PDF exportado) — o botão chama
+   `document.execCommand('bold')`. A investigação de 22/09 descartou faltar sanitizador e regra de
+   CSS matando o negrito; falta reproduzir no navegador pra saber se o `<b>` chega a ser criado.
+   Suspeita principal: a fonte carregada não tem peso alto disponível no trecho, ou o
+   `execCommand` não pega a seleção depois do `focus()`. Se for o caso, trocar por envolver a
+   seleção num `<strong>` na mão — mesmo caminho já usado pra cor e tamanho, que foram reescritos em
+   03/09 justamente por causa do `execCommand`. Conferir também no exportador de PDF.
+6. **Ícone de grifar sem a letra "A"** — o marca-texto vira só o quadradinho colorido; os botões de
+   cor da letra continuam com o "A" colorido como estão hoje.
+7. **Escolher a fonte na exportação** — ao exportar PDF (e Markdown/TXT, onde fizer sentido), poder
+   escolher a fonte do documento, já que vai pra outra pessoa. Um seletor simples no diálogo de
+   exportar, com 3 ou 4 opções (ex.: Inter, Georgia, Times, Arial), aplicado no HTML de impressão.
+
+**Teste:** editor aberto no navegador com CSS real — rolar e conferir que o cabeçalho fica; aplicar
+negrito/itálico e conferir o HTML gravado; exportar PDF com cada fonte e conferir a página gerada.
+
+---
+
+### Fase 3 — Jarvis sabe em qual tela o Sr. Douglas está
+**Pedido:** "se eu estiver em uma anotação aberta e disser 'Jarvis, ajeite essa anotação aqui', ele
+tem que saber qual anotação é".
+
+**Como:** o app já manda a mensagem pro `jarvis-chat`; passa a mandar junto um pequeno contexto de
+tela — aba atual e, quando houver, o que está aberto nela (id e título da nota, dia aberto na
+Agenda, tarefa em edição, mês do Dashboard). Na Edge Function, isso entra no prompt do sistema como
+dado estruturado ("TELA ATUAL: ..."), nunca como texto livre do usuário — mesma regra que já vale
+pro snapshot financeiro, pra não abrir porta de injeção de instrução.
+
+**Cuidados:** "essa anotação" só pode valer pra nota realmente aberta; se não houver nada aberto, o
+Jarvis pergunta em vez de chutar. O contexto vai em toda mensagem, então precisa ser curto.
+
+**Teste:** simulador do jarvis-chat conferindo que o bloco "TELA ATUAL" aparece no prompt com a nota
+certa, e some quando não há nota aberta.
+
+---
+
+### Fase 4 — Jarvis formatando anotação com os blocos do TDV
+**Sintoma:** em 22/09 o Jarvis "organizou" a nota de Alinhamento financeiro e ela ficou espremida,
+sem espaçamento vertical.
+
+**Causa (confirmada):** ele gravou HTML genérico — `<h2>`, `<h3>`, `<p>`, `<ul>` — mas o editor do
+TDV tem blocos próprios (`.tdv-h1/.tdv-h2/.tdv-h3`, `.tdv-quote`, `.tdv-callout`, `.tdv-code`,
+`.tdv-check-row`, `.tdv-toggle`). Pior: a folha de estilo do app começa com
+`*, *::before, *::after { margin: 0; padding: 0; }`, que zera as margens de `<h2>`/`<p>`/`<ul>` e o
+recuo das listas. Ou seja: o Jarvis escreveu um HTML que, dentro deste app, não tem respiro nenhum.
+
+**Correção, em duas frentes:**
+- **Ensinar o Jarvis**: a descrição da tool `update_note`/`create_note` passa a trazer o formato de
+  bloco do TDV, com exemplo curto de cada um, e a instrução de nunca usar `<h2>`/`<p>` soltos.
+- **Rede de proteção no app**: regras de CSS próprias dentro do editor pra `h1..h6`, `p`, `ul/ol`,
+  `blockquote` etc., convertendo o HTML genérico num visual decente mesmo se vier de fora (colar de
+  outro lugar cai no mesmo problema hoje). Melhor ainda: normalizar na entrada, convertendo `<h2>`
+  em `.tdv-h2` ao carregar/salvar, pra que exportação, busca e conversor de Markdown enxerguem tudo
+  igual (o conversor já aceita `H2` além de `.tdv-h2`, mas o resto do editor não).
+
+**Botão "J" na barra de formatação:** letra "J" azul na fonte do Jarvis, do lado dos botões de cor
+e negrito. Um clique = "dá uma ajeitada básica nesta nota" (títulos, listas, espaçamento, sem
+inventar conteúdo). Fluxo previsto: manda a nota pro Jarvis com um pedido fixo, mostra "arrumando…"
+e aplica o resultado. Pedido mais específico continua sendo no chat.
+**A decidir antes de codar:** se a ajeitada entra direto (a trilha de auditoria já é a rede de
+segurança, como em todo o resto) ou se mostra um "desfazer" por alguns segundos — sabendo que hoje
+não existe histórico de versões de nota.
+
+**Teste:** simulador com uma nota bagunçada, conferindo que o HTML gravado usa os blocos do TDV; e
+conferência visual no navegador (é sobre respiro visual, tem que ser visto).
+
+---
+
+### Fase 5 — Tabela: mais linhas e colunas
+Hoje `noteInsertTable` cria uma tabela fixa e não há como crescer. Adicionar controles pra inserir e
+remover linha/coluna com a tabela selecionada (botões que aparecem ao clicar dentro dela), mantendo
+o que o exportador de Markdown/PDF já sabe ler.
+**Cuidado:** o motor de template não reconhece `drop`, e a tabela vive dentro do `contenteditable` —
+os controles têm que ser manipulação de DOM na mão, como o checklist e o arrastar da Agenda.
+
+---
+
+### Fase 6 — Tarefas recorrentes
+Tarefa que se repete (toda semana, todo mês, dias úteis…), como já existe na Agenda. O melhor
+caminho é reaproveitar a mesma regra de repetição da Agenda (`recurrence`, `recurrence_days`,
+`recurrence_until`, `recurrence_count`, `exdates`), que já está pronta, testada e igual nos dois
+lados (app e Edge Function).
+**A decidir antes de codar:** o que acontece ao concluir uma ocorrência — a tarefa "renasce" no
+próximo prazo (modelo do Todoist) ou cada ocorrência vira uma tarefa própria no banco? A primeira é
+mais simples e não enche a tabela; a segunda deixa o histórico do que foi feito em cada data.
+Precisa também aparecer na grade da Agenda e nas tools do Jarvis (create_task/update_task).
+
+## Fila anterior (pedidos de 17/09) — concluída em 22/09, menos os 2 últimos
 Ordem sugerida — bug antes de feature, e o que é função central antes do que é novo:
 1. **Jarvis — voz ao vivo e resposta travada** — corrigido em 18/09 e verificado em simulação com o código real; falta o Douglas testar com áudio de verdade.
 2. **Inspeção total com o Opus 5** — feita em 18/09, ver seção própria. Sobrou um pedido pro Douglas (desligar o cadastro de contas no Supabase).

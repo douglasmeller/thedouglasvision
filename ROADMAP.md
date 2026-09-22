@@ -4,9 +4,10 @@ Ideias e próximos passos discutidos, ainda não implementados.
 
 ## Fila atual (pedidos de 22/09)
 Feita depois do Sr. Douglas pedir explicitamente pra NÃO fazer tudo de uma vez ("se fizer vai ficar
-meia boca, eu quero tudo com excelência"). Por isso está quebrada em 6 fases pequenas, cada uma
+meia boca, eu quero tudo com excelência"). Por isso está quebrada em fases pequenas, cada uma
 fechando um assunto inteiro, com deploy e teste próprios. A ordem segue: primeiro o que está
-quebrado, depois o que é base pras outras, por último o que é novo.
+quebrado, depois o que é base pras outras, por último o que é novo. A lista cresceu ao longo do
+dia conforme novos pedidos chegavam.
 
 **Fase 1 — Bug do Mark XLIII (Sonnet) travando o chat.** ✅ Feita em 22/09.
 **Fase 2 — Editor de anotações: leitura e escrita.** ✅ Feita em 22/09.
@@ -16,6 +17,9 @@ quebrado, depois o que é base pras outras, por último o que é novo.
 **Fase 6 — Tarefas recorrentes.**
 **Fase 7 — Agenda: visão por semana e por dia, tudo numa tela só** (pedido de 22/09).
 **Fase 8 — Efeito visual na ligação ao vivo com o Jarvis** (pedido de 22/09, ele curtiu o efeito da fase 4).
+**Fase 9 — Hover "piscada" deve ficar aceso enquanto o mouse estiver em cima** (pedido de 22/09).
+**Fase 10 — Checkbox das anotações com a cara do TDV** (pedido de 22/09).
+**Fase 11 — Jarvis com busca na web** (pedido de 22/09).
 
 Depois disso continuam na fila, esperando decisão do Sr. Douglas:
 - **Cofre de Senhas** — falta escolher a forma de recuperação (ver "Novos setores → Cofre de senhas").
@@ -214,32 +218,6 @@ conferência visual no navegador (é sobre respiro visual, tem que ser visto).
   título da nota na mensagem — assim fica na trilha de auditoria como qualquer outro pedido.
 - 23 testes novos no app + 5 na Edge Function.
 
-### Fase 8 — Efeito visual na ligação ao vivo (modo "ligação" do Jarvis)
-**Pedido (22/09):** o Sr. Douglas gostou muito do efeito visual da fase 4 (nota desfocada + chuva
-de binário + varredura enquanto o Jarvis reescreve) e pediu algo parecido pra quando ele está numa
-**ligação** com o Jarvis (`startJarvisLiveMode` / tela de ligação ao vivo).
-
-**Ideia inicial:** a tela de ligação já tem um estado de "status" (ouvindo / pensando / falando —
-ver `jarvisLiveStatus`). Cada estado pode ganhar sua própria assinatura visual, no mesmo espírito
-da fase 4 (cores do Jarvis/sistema, nada de cor genérica):
-- **Ouvindo:** um anel/onda pulsando no ritmo (visual, não precisa ser o volume real do microfone
-  pra não complicar).
-- **Pensando/processando:** a MESMA chuva de binário + varredura da fase 4, reaproveitando o canvas
-  já construído lá (`_syncJarvisRain` é genérico o bastante pra apontar pra outro elemento).
-- **Falando:** algo que acompanhe a fala — sem waveform de áudio real por enquanto (over-engenharia
-  pra esse estágio), mas um pulso/glow sincronizado com o ritmo de texto revelado já dá o efeito.
-
-**Reaproveita da fase 4:** o canvas de chuva de binário e o `.jarvis-scanline`/`.jarvis-bar-*` já
-existem — é questão de generalizar pra aceitar um elemento alvo diferente (hoje aponta pro id fixo
-`jarvis-rain`) e criar a versão "ouvindo"/"falando" que ainda não existe.
-
-**A decidir antes de codar:** se o efeito ocupa a tela de ligação inteira ou fica concentrado no
-avatar/círculo central do Jarvis (que já existe hoje); e se roda também na bolha flutuante (menor,
-pode pesar mais) ou só na tela cheia de ligação.
-
-
----
-
 ### Fase 5 — Tabela: mais linhas e colunas
 Hoje `noteInsertTable` cria uma tabela fixa e não há como crescer. Adicionar controles pra inserir e
 remover linha/coluna com a tabela selecionada (botões que aparecem ao clicar dentro dela), mantendo
@@ -281,6 +259,93 @@ só, sem rolar pra cima e pra baixo** pra ver tudo — do jeito que o Google Age
 **A decidir antes de codar:** faixa de horas fixa (0h–23h) ou ajustada ao que existe no dia; e se o
 "hoje" abre em Dia ou em Semana no celular (no celular, Semana com 7 colunas fica apertado — o
 Google usa 3 dias).
+
+---
+
+### Fase 8 — Efeito visual na ligação ao vivo (modo "ligação" do Jarvis)
+**Pedido (22/09):** o Sr. Douglas gostou muito do efeito visual da fase 4 (nota desfocada + chuva
+de binário + varredura enquanto o Jarvis reescreve) e pediu algo parecido pra quando ele está numa
+**ligação** com o Jarvis (`startJarvisLiveMode` / tela de ligação ao vivo).
+
+**Ideia inicial:** a tela de ligação já tem um estado de "status" (ouvindo / pensando / falando —
+ver `jarvisLiveStatus`). Cada estado pode ganhar sua própria assinatura visual, no mesmo espírito
+da fase 4 (cores do Jarvis/sistema, nada de cor genérica):
+- **Ouvindo:** um anel/onda pulsando no ritmo (visual, não precisa ser o volume real do microfone
+  pra não complicar).
+- **Pensando/processando:** a MESMA chuva de binário + varredura da fase 4, reaproveitando o canvas
+  já construído lá (`_syncJarvisRain` é genérico o bastante pra apontar pra outro elemento).
+- **Falando:** algo que acompanhe a fala — sem waveform de áudio real por enquanto (over-engenharia
+  pra esse estágio), mas um pulso/glow sincronizado com o ritmo de texto revelado já dá o efeito.
+
+**Reaproveita da fase 4:** o canvas de chuva de binário e o `.jarvis-scanline`/`.jarvis-bar-*` já
+existem — é questão de generalizar pra aceitar um elemento alvo diferente (hoje aponta pro id fixo
+`jarvis-rain`) e criar a versão "ouvindo"/"falando" que ainda não existe.
+
+**A decidir antes de codar:** se o efeito ocupa a tela de ligação inteira ou fica concentrado no
+avatar/círculo central do Jarvis (que já existe hoje); e se roda também na bolha flutuante (menor,
+pode pesar mais) ou só na tela cheia de ligação.
+
+
+---
+
+### Fase 9 — Hover "piscada" deve ficar aceso, não piscar e apagar
+**Pedido (22/09):** "quando passar o mouse por cima de botões que hoje tem o hover que pisca, a luz
+mais clara deve permanecer enquanto eu estiver com o mouse em cima, não deve piscar e apagar como é
+hoje".
+
+**Causa (achada no código):** a "piscada" é uma animação de tempo fixo —
+```css
+button:not(...):hover { animation: tdvBlink 0.3s ease; }
+@keyframes tdvBlink { 0%,100% { filter: brightness(1); } 30% { filter: brightness(1.5); } 65% { filter: brightness(0.97); } }
+```
+Ela dispara ao entrar o mouse e termina sozinha em 0,3s — MESMO que o mouse continue em cima. Depois
+disso o botão volta pro brilho normal (`brightness(1)`), dando exatamente a sensação de "piscou e
+apagou" que o Sr. Douglas descreveu, porque o CSS não tem noção de "enquanto hover" numa animação de
+keyframes com duração fixa.
+
+**Correção:** trocar a animação de tempo fixo por uma transição comum de `filter`, que sobe ao
+entrar o mouse e SÓ desce quando ele sai — fica aceso o tempo todo que estiver em cima:
+```css
+button:not(...) { transition: filter 0.15s ease; }
+button:not(...):hover { filter: brightness(1.35); }
+```
+Não mexe no outro nível de hover (a linha neon que dá a volta no contorno dos botões de ação,
+`tdvTrace` — esse é um efeito de entrada com duração própria, e é assim que já foi pedido antes:
+"o neon deve sumir depois de passar", não ficar preso aceso).
+
+---
+
+### Fase 10 — Checkbox das anotações com a cara do TDV
+**Pedido (22/09):** "o checkbox nas anotações... hoje ele é muito simples e genérico". Hoje é um
+`<input type="checkbox">` puro, sem nenhum estilo próprio — usa o desenho padrão do navegador (a
+bolinha/quadrado azul do sistema operacional), que não tem nada a ver com o resto do app.
+
+**Correção:** desenhar um checkbox próprio (`appearance: none` + quadrado com cantos levados,
+borda ciano, preenchido com glow quando marcado — mesma linguagem visual já usada no quadradinho de
+concluir tarefa da Agenda, construído em 22/09: `border-radius`, borda `#F59E0B77`/preenchido na
+cor quando marcado, ícone de check). Aqui a cor de referência é o ciano das Anotações
+(`#38BDF8`), não o âmbar das tarefas.
+
+---
+
+### Fase 11 — Jarvis com busca na web
+**Pedido (22/09):** "eu quero também que o Jarvis possa fazer pesquisa se necessário, e não ter
+acesso somente àquilo que está dentro do TDV e que ele tem de contexto meu". Hoje o Jarvis só
+enxerga os dados do próprio TDV (snapshot financeiro + as tools de notas/tarefas/agenda/etc.) — não
+tem nenhum jeito de buscar informação de fora (cotação de algo que não seja B3, notícia fora dos 4
+sites já configurados, "o que é X", endereço que o Photon não achou, etc.).
+
+**Caminho técnico:** a API da Anthropic tem uma ferramenta de busca hospedada por ela mesma
+(server-side web search) — declarar no array de `tools` da chamada ao modelo é suficiente; a
+Anthropic executa a busca e devolve o resultado, sem precisar de outra chave nem de código de busca
+próprio no jarvis-chat.
+
+**Ponto de atenção — custo:** busca na web tem custo por chamada (cobrado pela Anthropic, separado
+do custo normal de tokens), então isso é dinheiro correndo por conta do Sr. Douglas toda vez que o
+Jarvis decidir buscar. Vale considerar: (a) deixar sempre disponível e confiar no bom senso do
+modelo de só buscar quando fizer falta (já é a instrução geral dele); (b) ou exigir confirmação
+antes de usar, quebrando o padrão atual de "executa tudo direto" só pra esse caso específico, por
+ser a primeira ferramenta com custo variável por uso. Perguntar antes de codar.
 
 ## Fila anterior (pedidos de 17/09) — concluída em 22/09, menos os 2 últimos
 Ordem sugerida — bug antes de feature, e o que é função central antes do que é novo:

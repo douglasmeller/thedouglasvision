@@ -8,7 +8,7 @@ meia boca, eu quero tudo com excelência"). Por isso está quebrada em 6 fases p
 fechando um assunto inteiro, com deploy e teste próprios. A ordem segue: primeiro o que está
 quebrado, depois o que é base pras outras, por último o que é novo.
 
-**Fase 1 — Bug do Mark XLIII (Sonnet) travando o chat.** Diagnosticado em 22/09.
+**Fase 1 — Bug do Mark XLIII (Sonnet) travando o chat.** ✅ Feita em 22/09.
 **Fase 2 — Editor de anotações: leitura e escrita** (cabeçalho fixo, fonte, espaçamento, itálico, negrito, ícone de grifar).
 **Fase 3 — Jarvis sabe onde o Sr. Douglas está** (contexto de tela/nota aberta).
 **Fase 4 — Jarvis formata anotação de verdade** (blocos do TDV + botão "J" na barra).
@@ -21,7 +21,7 @@ Depois disso continuam na fila, esperando decisão do Sr. Douglas:
 
 ---
 
-### Fase 1 — Bug do Mark XLIII (Sonnet): chat morre no meio
+### Fase 1 — Bug do Mark XLIII (Sonnet): chat morre no meio — FEITA (22/09)
 **Sintoma:** em 22/09, às 17:11 e 17:12, o Sr. Douglas pediu pro Jarvis organizar uma anotação e a
 resposta não veio; ele perguntou duas vezes "o que deu errado?". A resposta que ficou gravada saiu
 toda emendada ("...preciso primeiro ler o conteúdo dela:Perfeito. Agora vou reorganizar..."), sem
@@ -45,8 +45,15 @@ Vale pros três modelos, não só o Sonnet.
 `[{text:""},{tool_use}]` e confirmar que o que sai pra API não tem bloco vazio. Sem esse caso, o teste
 passa hoje justamente porque nunca simulou um bloco de texto vazio.
 
-**Extra da mesma fase:** hoje o erro some numa mensagem genérica. Fazer o erro do servidor chegar ao
-chat com a causa curta, pra não precisar ir no log toda vez.
+**Feito:** bloco de texto vazio (ou só com espaço) deixa de voltar pra API, e o histórico vindo do
+banco também é filtrado (uma linha vazia lá derrubaria a conversa do mesmo jeito). O erro do
+servidor passou a chegar no chat com a causa curta — `shortError()` tira o "message" do JSON da
+Anthropic — em vez do "algo deu errado" genérico que obrigava a abrir o log.
+
+**Conferido:** o teste novo roda o `streamAnthropicTurn` de verdade com um bloco de texto vazio
+antes da ferramenta. Contra a versão anterior ele devolve 1 bloco vazio (o que a API recusa com
+400); contra a nova, nenhum. 27 testes do jarvis-chat passando. Publicado e conferido byte a byte
+contra o arquivo testado.
 
 ---
 

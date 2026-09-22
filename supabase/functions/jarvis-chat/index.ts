@@ -1441,12 +1441,25 @@ async function streamAnthropicTurn(
     }
   }
 
+  // O modelo às vezes ABRE um bloco de texto e vai direto pra ferramenta sem escrever nada (o
+  // Sonnet faz isso com frequência). Esse bloco volta vazio e, na rodada seguinte, a API recusa a
+  // requisição inteira com 400 "text content blocks must be non-empty" — ou seja, o chat morre no
+  // meio justamente quando o Jarvis vai FAZER alguma coisa. Por isso bloco de texto vazio (ou só
+  // com espaço) nunca entra no histórico devolvido.
   const content = blocks.filter(Boolean).map((b) =>
     b.type === "tool_use"
       ? { type: "tool_use", id: b.id, name: b.name, input: (() => { try { return JSON.parse(b.inputJson || "{}"); } catch { return {}; } })() }
       : { type: "text", text: b.text }
-  );
+  ).filter((b) => b.type !== "text" || (b as { text: string }).text.trim() !== "");
   return { content, stop_reason: stopReason };
+}
+
+// Mensagem de erro curta e legível pro chat. Erro da Anthropic vem como JSON dentro do texto do
+// Error; aqui sai só o "message" dele, cortado, pra o Sr. Douglas não precisar abrir o log.
+function shortError(e: unknown): string {
+  const raw = e instanceof Error ? e.message : String(e);
+  const m = raw.match(/"message"\s*:\s*"((?:[^"\\]|\\.)*)"/);
+  return (m ? m[1] : raw).replace(/\s+/g, " ").trim().slice(0, 200);
 }
 
 // ─── Summarization (fire-and-forget after response) ────────────────────────
@@ -1550,7 +1563,11 @@ Deno.serve(async (req: Request) => {
 
         const snapshot = await buildSnapshot(sb);
         const system = buildSystemPrompt(personaKey, ctx?.personal_notes ?? null, ctx?.summary ?? null, snapshot);
-        const history = (recentMsgs || []).slice().reverse().map((m) => ({ role: m.role, content: m.content }));
+        // Mesma regra do bloco vazio acima, agora pro histórico vindo do banco: uma linha sem
+        // conteúdo derrubaria a conversa inteira com 400.
+        const history = (recentMsgs || []).slice().reverse()
+          .filter((m) => typeof m.content === "string" && m.content.trim() !== "")
+          .map((m) => ({ role: m.role, content: m.content }));
         const messages: any[] = [...history];
 
         let dataChanged = false;
@@ -1596,7 +1613,7 @@ Deno.serve(async (req: Request) => {
         EdgeRuntime.waitUntil(maybeSummarize(sb, user.id, apiKey).catch(() => {}));
       } catch (e) {
         console.error("jarvis-chat stream error:", e);
-        send({ type: "error", error: "Algo deu errado no meio da resposta. Tente de novo." });
+        send({ type: "error", error: "Algo deu errado no meio da resposta (" + shortError(e) + "). Tente de novo." });
       } finally {
         controller.close();
       }

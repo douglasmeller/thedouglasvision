@@ -1906,7 +1906,10 @@
                       <div style="flex: 1; min-width: 0;">
                         <div style="font-size: 13px; color: #E2E8F0; overflow-wrap: break-word;">{{ ev.title }}</div>
                         <sc-if value="{{ ev.hasTime }}" hint-placeholder-val="{{ false }}">
-                          <div style="font-size: 11px; color: #64748B; margin-top: 2px;">{{ ev.time }}</div>
+                          <div style="font-size: 11px; color: #64748B; margin-top: 2px;">{{ ev.timeLabel }}</div>
+                        </sc-if>
+                        <sc-if value="{{ ev.hasDetail }}" hint-placeholder-val="{{ false }}">
+                          <div style="font-size: 11px; color: #3B82F6; margin-top: 2px; display: flex; align-items: center; gap: 4px;"><i class="ph ph-repeat" style="font-size: 11px;"></i><span>{{ ev.detail }}</span></div>
                         </sc-if>
                       </div>
                       <button onClick="{{ ev.onEdit }}" style="background: none; border: 1px solid #1A1A28; border-radius: 6px; color: #334155; cursor: pointer; padding: 5px 7px; font-size: 12px; display: flex; align-items: center; line-height: 1; flex-shrink: 0;"><i class="ph ph-pencil-simple"></i></button>
@@ -1938,10 +1941,76 @@
                   <label style="display: block; font-size: 11px; color: #475569; margin-bottom: 6px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Título</label>
                   <input type="text" value="{{ eventTitle }}" onInput="{{ setEventTitle }}" placeholder="Ex: Consulta médica" style="width: 100%; box-sizing: border-box; background: #0D0D1A; border: 1px solid #1E2A45; border-radius: 8px; padding: 11px 14px; color: #E2E8F0; font-size: 14px; font-family: inherit;">
                 </div>
-                <div>
-                  <label style="display: block; font-size: 11px; color: #475569; margin-bottom: 6px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Hora <span style="color: #334155; font-weight: 400; text-transform: none;">(opcional)</span></label>
-                  <input type="time" value="{{ eventTime }}" onInput="{{ setEventTime }}" style="width: 100%; box-sizing: border-box; background: #0D0D1A; border: 1px solid #1E2A45; border-radius: 8px; padding: 11px 14px; color: #E2E8F0; font-size: 14px; font-family: inherit;">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                  <div>
+                    <label style="display: block; font-size: 11px; color: #475569; margin-bottom: 6px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Início</label>
+                    <input type="date" value="{{ eventDate }}" onInput="{{ setEventDate }}" style="width: 100%; box-sizing: border-box; background: #0D0D1A; border: 1px solid #1E2A45; border-radius: 8px; padding: 10px 11px; color: #E2E8F0; font-size: 13px; font-family: inherit; color-scheme: dark;">
+                  </div>
+                  <div>
+                    <label style="display: block; font-size: 11px; color: #475569; margin-bottom: 6px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Fim <span style="color: #334155; font-weight: 400; text-transform: none;">(vários dias)</span></label>
+                    <input type="date" value="{{ eventEndDate }}" min="{{ eventDate }}" onInput="{{ setEventEndDate }}" style="width: 100%; box-sizing: border-box; background: #0D0D1A; border: 1px solid #1E2A45; border-radius: 8px; padding: 10px 11px; color: #E2E8F0; font-size: 13px; font-family: inherit; color-scheme: dark;">
+                  </div>
                 </div>
+                <button onClick="{{ toggleEventAllDay }}" style="{{ allDayRowStyle }}">
+                  <span style="{{ allDayBoxStyle }}"><sc-if value="{{ eventAllDay }}" hint-placeholder-val="{{ false }}"><i class="ph ph-check" style="font-weight: 700;"></i></sc-if></span>
+                  <span>Dia inteiro</span>
+                </button>
+                <sc-if value="{{ eventNotAllDay }}" hint-placeholder-val="{{ true }}">
+                  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <div>
+                      <label style="display: block; font-size: 11px; color: #475569; margin-bottom: 6px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Começa <span style="color: #334155; font-weight: 400; text-transform: none;">(opcional)</span></label>
+                      <input type="time" value="{{ eventTime }}" onInput="{{ setEventTime }}" style="width: 100%; box-sizing: border-box; background: #0D0D1A; border: 1px solid #1E2A45; border-radius: 8px; padding: 10px 11px; color: #E2E8F0; font-size: 13px; font-family: inherit; color-scheme: dark;">
+                    </div>
+                    <div>
+                      <label style="display: block; font-size: 11px; color: #475569; margin-bottom: 6px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Termina <span style="color: #334155; font-weight: 400; text-transform: none;">(opcional)</span></label>
+                      <input type="time" value="{{ eventEndTime }}" onInput="{{ setEventEndTime }}" style="width: 100%; box-sizing: border-box; background: #0D0D1A; border: 1px solid #1E2A45; border-radius: 8px; padding: 10px 11px; color: #E2E8F0; font-size: 13px; font-family: inherit; color-scheme: dark;">
+                    </div>
+                  </div>
+                </sc-if>
+                <div>
+                  <label style="display: block; font-size: 11px; color: #475569; margin-bottom: 6px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Repetir</label>
+                  <select value="{{ eventRecurrence }}" onChange="{{ setEventRecurrence }}" style="width: 100%; box-sizing: border-box; background: #0D0D1A; border: 1px solid #1E2A45; border-radius: 8px; padding: 10px 11px; color: #E2E8F0; font-size: 13px; font-family: inherit; color-scheme: dark; cursor: pointer;">
+                    <option value="">Não repete</option>
+                    <option value="daily">Todo dia</option>
+                    <option value="weekdays">Dias úteis (seg a sex)</option>
+                    <option value="weekly">Toda semana</option>
+                    <option value="custom">Dias da semana específicos</option>
+                    <option value="monthly">Todo mês</option>
+                    <option value="yearly">Todo ano</option>
+                  </select>
+                </div>
+                <sc-if value="{{ isCustomRecurrence }}" hint-placeholder-val="{{ false }}">
+                  <div style="display: flex; gap: 5px; flex-wrap: wrap;">
+                    <sc-for list="{{ recurrenceDayChips }}" as="dc" hint-placeholder-count="7">
+                      <button onClick="{{ dc.onClick }}" style="{{ dc.style }}">{{ dc.label }}</button>
+                    </sc-for>
+                  </div>
+                </sc-if>
+                <sc-if value="{{ hasEventRecurrence }}" hint-placeholder-val="{{ false }}">
+                  <div>
+                    <label style="display: block; font-size: 11px; color: #475569; margin-bottom: 6px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Termina a repetição</label>
+                    <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                      <div style="flex: 1; min-width: 130px;">
+                        <select value="{{ eventRecEnd }}" onChange="{{ setEventRecEnd }}" style="width: 100%; box-sizing: border-box; background: #0D0D1A; border: 1px solid #1E2A45; border-radius: 8px; padding: 10px 11px; color: #E2E8F0; font-size: 13px; font-family: inherit; color-scheme: dark; cursor: pointer;">
+                          <option value="never">Nunca</option>
+                          <option value="until">Em uma data</option>
+                          <option value="count">Depois de N vezes</option>
+                        </select>
+                      </div>
+                      <sc-if value="{{ isRecUntil }}" hint-placeholder-val="{{ false }}">
+                        <div style="flex: 1; min-width: 130px;">
+                          <input type="date" value="{{ eventRecUntil }}" min="{{ eventDate }}" onInput="{{ setEventRecUntil }}" style="width: 100%; box-sizing: border-box; background: #0D0D1A; border: 1px solid #1E2A45; border-radius: 8px; padding: 10px 11px; color: #E2E8F0; font-size: 13px; font-family: inherit; color-scheme: dark;">
+                        </div>
+                      </sc-if>
+                      <sc-if value="{{ isRecCount }}" hint-placeholder-val="{{ false }}">
+                        <div style="width: 96px;">
+                          <input type="number" min="1" max="999" value="{{ eventRecCount }}" onInput="{{ setEventRecCount }}" placeholder="Ex: 10" style="width: 100%; box-sizing: border-box; background: #0D0D1A; border: 1px solid #1E2A45; border-radius: 8px; padding: 10px 11px; color: #E2E8F0; font-size: 13px; font-family: inherit; color-scheme: dark;">
+                        </div>
+                      </sc-if>
+                    </div>
+                    <div style="font-size: 11px; color: #3B82F6; margin-top: 7px; display: flex; align-items: center; gap: 5px;"><i class="ph ph-repeat"></i><span>{{ eventRecSummary }}</span></div>
+                  </div>
+                </sc-if>
                 <div>
                   <label style="display: block; font-size: 11px; color: #475569; margin-bottom: 6px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Notas <span style="color: #334155; font-weight: 400; text-transform: none;">(opcional)</span></label>
                   <textarea class="reading-font" value="{{ eventNotes }}" onInput="{{ setEventNotes }}" rows="2" placeholder="Detalhes, local, contexto…" style="width: 100%; box-sizing: border-box; background: #0D0D1A; border: 1px solid #1E2A45; border-radius: 8px; padding: 11px 14px; color: #E2E8F0; font-size: 13px; font-family: inherit; line-height: 1.5; resize: vertical;"></textarea>
@@ -1951,6 +2020,20 @@
                 <sc-if value="{{ savingEvent }}" hint-placeholder-val="{{ false }}"><span class="btn-spinner"></span></sc-if>
                 <span>{{ saveEventLabel }}</span>
               </button>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- ═══ Evento que repete: aplicar em quais ocorrências ═══ -->
+        <sc-if value="{{ showEventScope }}" hint-placeholder-val="{{ false }}">
+          <div style="position: fixed; inset: 0; background: #000000aa; z-index: 210; display: flex; align-items: center; justify-content: center; padding: 16px;">
+            <div class="modal-in" style="background: #111118; border: 1px solid #1E2A45; border-radius: 14px; padding: 20px; width: 100%; max-width: 340px; display: flex; flex-direction: column; gap: 8px;">
+              <div style="font-size: 15px; font-weight: 600; color: #E2E8F0;">{{ eventScopeTitle }}</div>
+              <div style="font-size: 12px; color: #64748B; margin-bottom: 6px;">Este evento se repete. Aplicar em quais ocorrências?</div>
+              <button onClick="{{ scopeThis }}" style="{{ scopeBtnStyle }}">Só esta</button>
+              <button onClick="{{ scopeFollowing }}" style="{{ scopeBtnStyle }}">Esta e as próximas</button>
+              <button onClick="{{ scopeAll }}" style="{{ scopeBtnStyle }}">Todas</button>
+              <button onClick="{{ cancelEventScope }}" style="background: none; border: none; color: #475569; font-size: 12px; cursor: pointer; font-family: inherit; padding: 6px; margin-top: 2px;">Cancelar</button>
             </div>
           </div>
         </sc-if>
@@ -3232,6 +3315,18 @@ class Component extends DCLogic {
     eventDate: '',
     eventTime: '',
     eventNotes: '',
+    eventEndDate: '',
+    eventAllDay: false,
+    eventEndTime: '',
+    eventRecurrence: '',
+    eventRecurrenceDays: [],
+    eventRecEnd: 'never',
+    eventRecUntil: '',
+    eventRecCount: '',
+    editOccDate: null,
+    eventScopeAsk: null,   // 'save' | 'delete' — pergunta "só esta / esta e as próximas / todas"
+    scopeTargetId: null,
+    scopeOccDate: null,
     savingEvent: false,
 
     // Notícias — resumo diário gerado por IA (Edge Function news-digest), só leitura no cliente.
@@ -3958,10 +4053,22 @@ class Component extends DCLogic {
 
   _eventRowIn = (ev) => ({
     id: ev.id, title: ev.title, date: ev.date, time: ev.time || '', notes: ev.notes || '',
+    endTime: ev.end_time || '', allDay: !!ev.all_day, endDate: ev.end_date || '',
+    recurrence: ev.recurrence || '', recurrenceDays: ev.recurrence_days || [],
+    recurrenceUntil: ev.recurrence_until || '', recurrenceCount: ev.recurrence_count || null,
+    exdates: ev.exdates || [],
   })
 
   _eventRowOut = (ev, uid) => ({
-    id: ev.id, user_id: uid, title: ev.title, date: ev.date, time: ev.time || null, notes: ev.notes || null,
+    id: ev.id, user_id: uid, title: ev.title, date: ev.date,
+    time: ev.allDay ? null : (ev.time || null), end_time: ev.allDay ? null : (ev.endTime || null),
+    notes: ev.notes || null, all_day: !!ev.allDay,
+    end_date: ev.endDate && ev.endDate > ev.date ? ev.endDate : null,
+    recurrence: ev.recurrence || null,
+    recurrence_days: ev.recurrence === 'custom' && ev.recurrenceDays && ev.recurrenceDays.length ? ev.recurrenceDays : null,
+    recurrence_until: ev.recurrence && ev.recurrenceUntil ? ev.recurrenceUntil : null,
+    recurrence_count: ev.recurrence && ev.recurrenceCount ? ev.recurrenceCount : null,
+    exdates: ev.recurrence ? (ev.exdates || []) : [],
   })
 
   _noteRowIn = (n) => ({
@@ -5474,46 +5581,250 @@ class Component extends DCLogic {
 
   // ─── Agenda ──────────────────────────────────────────────────────────────
 
+  // Datas da Agenda são texto 'YYYY-MM-DD'; a conta é feita em UTC puro (meia-noite UTC), assim
+  // horário de verão e fuso nunca empurram um dia pro lado.
+  _dParse = (k) => { const [y, m, d] = k.split('-').map(Number); return new Date(Date.UTC(y, m - 1, d)); }
+  _dKey = (dt) => dt.toISOString().slice(0, 10)
+  _dAdd = (k, n) => { const dt = this._dParse(k); dt.setUTCDate(dt.getUTCDate() + n); return this._dKey(dt); }
+  _dDiff = (a, b) => Math.round((this._dParse(b) - this._dParse(a)) / 86400000)
+  _eventSpanDays = (ev) => (ev.endDate && ev.endDate > ev.date ? this._dDiff(ev.date, ev.endDate) : 0)
+
+  // Dias em que uma ocorrência do evento COMEÇA e que encostam em [fromKey, toKey] (evento de
+  // vários dias que começou antes do intervalo também conta). Sem repetição = só a data dele.
+  // Com repetição, segue a regra até a data final ou o número de vezes, pulando as ocorrências
+  // avulsas apagadas/movidas (exdates — que contam no "N vezes", como no Google Agenda). Mês que
+  // não tem o dia (31, 29/02) é pulado, também igual ao Google.
+  _eventStartsInRange = (ev, fromKey, toKey) => {
+    const span = this._eventSpanDays(ev);
+    const lo = this._dAdd(fromKey, -span);
+    if (!ev.recurrence) return ev.date >= lo && ev.date <= toKey ? [ev.date] : [];
+    const ex = new Set(ev.exdates || []);
+    const count = ev.recurrenceCount || null;
+    const end = ev.recurrenceUntil && ev.recurrenceUntil < toKey ? ev.recurrenceUntil : toKey;
+    const out = [];
+    if (ev.date > end) return out;
+    const start = this._dParse(ev.date);
+    let n = 0;
+    const take = (k) => { n++; if (k >= lo && !ex.has(k)) out.push(k); };
+    if (ev.recurrence === 'monthly' || ev.recurrence === 'yearly') {
+      const y0 = start.getUTCFullYear(), m0 = start.getUTCMonth(), d0 = start.getUTCDate();
+      for (let i = 0; i < 5000; i++) {
+        const first = ev.recurrence === 'yearly' ? new Date(Date.UTC(y0 + i, m0, 1)) : new Date(Date.UTC(y0, m0 + i, 1));
+        if (this._dKey(first) > end) break;
+        const dim = new Date(Date.UTC(first.getUTCFullYear(), first.getUTCMonth() + 1, 0)).getUTCDate();
+        if (d0 > dim) continue;
+        const k = this._dKey(new Date(Date.UTC(first.getUTCFullYear(), first.getUTCMonth(), d0)));
+        if (k > end) break;
+        take(k);
+        if (count && n >= count) break;
+      }
+      return out;
+    }
+    const dows = ev.recurrence === 'weekdays' ? [1, 2, 3, 4, 5]
+      : (ev.recurrence === 'custom' && ev.recurrenceDays && ev.recurrenceDays.length ? ev.recurrenceDays : null);
+    const step = ev.recurrence === 'weekly' ? 7 : 1;
+    const cur = new Date(start.getTime());
+    // Sem limite de vezes dá pra pular direto pra perto do intervalo em vez de andar desde o início.
+    if (!count && lo > ev.date) cur.setUTCDate(cur.getUTCDate() + Math.floor(this._dDiff(ev.date, lo) / step) * step);
+    for (let i = 0; i < 20000; i++) {
+      const k = this._dKey(cur);
+      if (k > end) break;
+      if (!dows || dows.includes(cur.getUTCDay())) {
+        take(k);
+        if (count && n >= count) break;
+      }
+      cur.setUTCDate(cur.getUTCDate() + step);
+    }
+    return out;
+  }
+
+  // Quantas ocorrências da regra (contando as apagadas avulsas) começam antes de `key`.
+  _countStartsBefore = (ev, key) => (key <= ev.date ? 0
+    : this._eventStartsInRange({ ...ev, exdates: [], endDate: '' }, ev.date, this._dAdd(key, -1)).length)
+
+  _WEEKDAY_NAMES = ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado']
+
+  _recurrenceLabel = (ev) => {
+    if (!ev.recurrence) return '';
+    const d = this._dParse(ev.date);
+    const names = this._WEEKDAY_NAMES;
+    const base = {
+      daily: 'Todo dia',
+      weekdays: 'Dias úteis (seg a sex)',
+      weekly: 'Toda semana, ' + (d.getUTCDay() === 0 || d.getUTCDay() === 6 ? 'aos ' : 'às ') + names[d.getUTCDay()] + 's',
+      custom: 'Toda semana: ' + (ev.recurrenceDays || []).slice().sort().map(i => names[i].slice(0, 3)).join(', '),
+      monthly: 'Todo mês, dia ' + d.getUTCDate(),
+      yearly: 'Todo ano em ' + String(d.getUTCDate()).padStart(2, '0') + '/' + String(d.getUTCMonth() + 1).padStart(2, '0'),
+    }[ev.recurrence] || '';
+    if (ev.recurrenceUntil) return base + ', até ' + this.fmtDate(ev.recurrenceUntil);
+    if (ev.recurrenceCount) return base + ', ' + ev.recurrenceCount + (ev.recurrenceCount === 1 ? ' vez' : ' vezes');
+    return base;
+  }
+
+  _eventTimeLabel = (ev) => {
+    if (ev.allDay || (ev.spanDays > 0 && ev.dayIndex > 0)) return ev.allDay ? 'Dia inteiro' : 'Continua';
+    if (ev.time && ev.endTime) return ev.time + ' – ' + ev.endTime;
+    return ev.time || '';
+  }
+
+  _blankEventForm = () => ({
+    editEventId: null, editOccDate: null, eventScopeAsk: null, scopeTargetId: null, scopeOccDate: null,
+    eventTitle: '', eventDate: '', eventEndDate: '', eventAllDay: false, eventTime: '', eventEndTime: '', eventNotes: '',
+    eventRecurrence: '', eventRecurrenceDays: [], eventRecEnd: 'never', eventRecUntil: '', eventRecCount: '',
+  })
+
+  // event pode ser uma OCORRÊNCIA (vinda da grade/lista, com occDate): o formulário abre com as
+  // datas dessa ocorrência e o resto da série.
   openEventModal = (dateKey, event) => {
     if (event) {
+      const series = this.state.agendaEvents.find(e => e.id === event.id) || event;
+      const occDate = event.occDate || series.date;
+      const span = this._eventSpanDays(series);
       this.setState({
-        showEventModal: true, eventModalDate: dateKey, editEventId: event.id,
-        eventTitle: event.title, eventDate: event.date, eventTime: event.time || '', eventNotes: event.notes || '',
+        ...this._blankEventForm(),
+        showEventModal: true, eventModalDate: dateKey, editEventId: series.id, editOccDate: occDate,
+        eventTitle: series.title, eventDate: occDate, eventEndDate: span ? this._dAdd(occDate, span) : '',
+        eventAllDay: !!series.allDay, eventTime: series.time || '', eventEndTime: series.endTime || '', eventNotes: series.notes || '',
+        eventRecurrence: series.recurrence || '', eventRecurrenceDays: series.recurrenceDays || [],
+        eventRecEnd: series.recurrenceUntil ? 'until' : (series.recurrenceCount ? 'count' : 'never'),
+        eventRecUntil: series.recurrenceUntil || '', eventRecCount: series.recurrenceCount ? String(series.recurrenceCount) : '',
       });
     } else {
-      this.setState({
-        showEventModal: true, eventModalDate: dateKey, editEventId: null,
-        eventTitle: '', eventDate: dateKey, eventTime: '', eventNotes: '',
-      });
+      this.setState({ ...this._blankEventForm(), showEventModal: true, eventModalDate: dateKey, eventDate: dateKey });
     }
   }
 
-  closeEventModal = () => this.setState({ showEventModal: false, editEventId: null, eventTitle: '', eventTime: '', eventNotes: '' });
+  closeEventModal = () => this.setState({ showEventModal: false, ...this._blankEventForm() });
+
+  _eventFromForm = (id) => {
+    const s = this.state;
+    const rec = s.eventRecurrence || '';
+    return {
+      id, title: s.eventTitle.trim(), date: s.eventDate,
+      endDate: s.eventEndDate && s.eventEndDate > s.eventDate ? s.eventEndDate : '',
+      allDay: !!s.eventAllDay, time: s.eventAllDay ? '' : (s.eventTime || ''), endTime: s.eventAllDay ? '' : (s.eventEndTime || ''),
+      notes: s.eventNotes.trim(),
+      recurrence: rec, recurrenceDays: rec === 'custom' ? s.eventRecurrenceDays.slice().sort() : [],
+      recurrenceUntil: rec && s.eventRecEnd === 'until' ? s.eventRecUntil : '',
+      recurrenceCount: rec && s.eventRecEnd === 'count' ? (parseInt(s.eventRecCount, 10) || null) : null,
+      exdates: [],
+    };
+  }
+
+  _eventFormError = (ev) => {
+    const s = this.state;
+    if (!ev.title) return 'Dê um título pro evento.';
+    if (!ev.date) return 'Escolha a data do evento.';
+    if (s.eventEndDate && s.eventEndDate < ev.date) return 'A data de fim não pode ser antes do início.';
+    if (!ev.allDay && ev.endTime && !ev.time) return 'Coloque a hora de início junto com a de fim.';
+    if (!ev.allDay && ev.time && ev.endTime && !ev.endDate && ev.endTime <= ev.time) return 'A hora de fim precisa ser depois da hora de início.';
+    if (ev.recurrence === 'custom' && !ev.recurrenceDays.length) return 'Escolha pelo menos um dia da semana pra repetir.';
+    if (ev.recurrence && s.eventRecEnd === 'until' && (!ev.recurrenceUntil || ev.recurrenceUntil < ev.date)) return 'A data final da repetição precisa ser depois do início.';
+    if (ev.recurrence && s.eventRecEnd === 'count' && !(ev.recurrenceCount >= 1)) return 'Diga quantas vezes o evento se repete.';
+    return null;
+  }
+
+  // Aplica uma lista de gravações na ordem: { upsert: evento } ou { remove: id }. Linhas NOVAS
+  // vêm antes de mexer na série de propósito — se a segunda gravação falhar, o pior caso é uma
+  // ocorrência aparecer duplicada, nunca sumir.
+  _commitEventChanges = async (ops, okMsg, playTone, resetForm = true) => {
+    this.setState({ savingEvent: true });
+    const uid = this.state.user.id;
+    let list = this.state.agendaEvents.slice();
+    for (const op of ops) {
+      const { error } = op.upsert
+        ? await window._sb.from('agenda_events').upsert(this._eventRowOut(op.upsert, uid))
+        : await window._sb.from('agenda_events').delete().eq('id', op.remove);
+      if (error) {
+        console.warn('Agenda: falha ao gravar', error);
+        this.setState({ agendaEvents: list, savingEvent: false, deletingId: null });
+        this._toast('Não foi possível salvar na Agenda. Tente novamente.');
+        return false;
+      }
+      if (op.upsert) {
+        const row = this._eventRowIn(this._eventRowOut(op.upsert, uid));
+        list = list.some(e => e.id === row.id) ? list.map(e => e.id === row.id ? row : e) : [...list, row];
+      } else {
+        list = list.filter(e => e.id !== op.remove);
+      }
+    }
+    const patch = { agendaEvents: list, savingEvent: false, deletingId: null };
+    this.setState(resetForm ? { ...patch, ...this._blankEventForm(), eventDate: this.state.eventModalDate } : patch);
+    if (okMsg) this._toast(okMsg);
+    if (playTone) this._playHudTone(720, 0.08, 'sine');
+    return true;
+  }
 
   saveEvent = async () => {
     const s = this.state;
     if (s.savingEvent) return;
-    const title = s.eventTitle.trim();
-    if (!title || !s.eventDate) return;
-    const event = {
-      id: s.editEventId || 'ev' + Date.now(),
-      title, date: s.eventDate, time: s.eventTime || null, notes: s.eventNotes.trim() || null,
-    };
-    this.setState({ savingEvent: true });
-    const { error } = await window._sb.from('agenda_events').upsert(this._eventRowOut(event, s.user.id));
-    if (error) { this.setState({ savingEvent: false }); this._toast('Não foi possível salvar o evento. Tente novamente.'); return; }
-    const agendaEvents = s.editEventId ? s.agendaEvents.map(e => e.id === s.editEventId ? event : e) : [...s.agendaEvents, event];
-    this.setState({ agendaEvents, editEventId: null, eventTitle: '', eventTime: '', eventNotes: '', savingEvent: false });
-    this._toast(s.editEventId ? 'Evento atualizado!' : 'Evento criado!');
-    if (!s.editEventId) this._playHudTone(720, 0.08, 'sine');
+    const series = s.editEventId ? s.agendaEvents.find(e => e.id === s.editEventId) : null;
+    const draft = this._eventFromForm(series ? series.id : 'ev' + Date.now());
+    const err = this._eventFormError(draft);
+    if (err) { this._toast(err); return; }
+    if (series && series.recurrence) {
+      this.setState({ eventScopeAsk: 'save', scopeTargetId: series.id, scopeOccDate: s.editOccDate || series.date });
+      return;
+    }
+    await this._commitEventChanges([{ upsert: draft }], series ? 'Evento atualizado!' : 'Evento criado!', !series);
   }
 
-  deleteEvent = async (id) => {
+  deleteEvent = async (id, occDate) => {
+    const series = this.state.agendaEvents.find(e => e.id === id);
+    if (!series) return;
+    if (series.recurrence) {
+      this.setState({ eventScopeAsk: 'delete', scopeTargetId: id, scopeOccDate: occDate || series.date });
+      return;
+    }
     this.setState({ deletingId: id });
     const { error } = await window._sb.from('agenda_events').delete().eq('id', id);
     if (error) { this.setState({ deletingId: null }); this._toast('Não foi possível excluir. Tente novamente.'); return; }
     this.setState({ agendaEvents: this.state.agendaEvents.filter(e => e.id !== id), deletingId: null });
     this._toast('Evento excluído.');
+  }
+
+  cancelEventScope = () => this.setState({ eventScopeAsk: null, scopeTargetId: null, scopeOccDate: null })
+
+  // Resposta da pergunta "só esta / esta e as próximas / todas" — pra salvar ou excluir uma
+  // ocorrência de evento que repete.
+  chooseEventScope = async (scope) => {
+    const s = this.state;
+    const mode = s.eventScopeAsk;
+    const series = s.agendaEvents.find(e => e.id === s.scopeTargetId);
+    const occ = s.scopeOccDate;
+    this.setState({ eventScopeAsk: null, scopeTargetId: null, scopeOccDate: null });
+    if (!series || !occ || !mode) return;
+    // "Esta e as próximas" a partir da primeira ocorrência é o mesmo que "todas".
+    if (scope === 'following' && occ <= series.date) scope = 'all';
+    // A série antiga passa a terminar na véspera da ocorrência escolhida.
+    const truncated = { ...series, recurrenceUntil: this._dAdd(occ, -1), recurrenceCount: null, exdates: (series.exdates || []).filter(d => d < occ) };
+    const newId = 'ev' + Date.now();
+    if (mode === 'delete') {
+      this.setState({ deletingId: series.id });
+      if (scope === 'this') await this._commitEventChanges([{ upsert: { ...series, exdates: [...(series.exdates || []), occ] } }], 'Ocorrência excluída.', false, false);
+      else if (scope === 'following') await this._commitEventChanges([{ upsert: truncated }], 'Esta e as próximas ocorrências foram excluídas.', false, false);
+      else await this._commitEventChanges([{ remove: series.id }], 'Evento excluído (todas as ocorrências).', false, false);
+      return;
+    }
+    const draft = this._eventFromForm(series.id);
+    if (scope === 'this') {
+      const single = { ...draft, id: newId, recurrence: '', recurrenceDays: [], recurrenceUntil: '', recurrenceCount: null, exdates: [] };
+      await this._commitEventChanges([{ upsert: single }, { upsert: { ...series, exdates: [...(series.exdates || []), occ] } }], 'Só esta ocorrência foi alterada.', false);
+    } else if (scope === 'following') {
+      // Se o "N vezes" não mudou no formulário, a série nova fica só com as que ainda faltavam.
+      const before = this._countStartsBefore(series, occ);
+      const count = draft.recurrenceCount && draft.recurrenceCount === series.recurrenceCount ? Math.max(1, series.recurrenceCount - before) : draft.recurrenceCount;
+      const next = { ...draft, id: newId, recurrenceCount: count, exdates: (series.exdates || []).filter(d => d >= occ) };
+      await this._commitEventChanges([{ upsert: next }, { upsert: truncated }], 'Esta e as próximas ocorrências foram alteradas.', false);
+    } else {
+      // "Todas": a série mantém o início dela; se a data da ocorrência mudou no formulário, a série
+      // inteira anda a mesma quantidade de dias.
+      const delta = this._dDiff(occ, draft.date);
+      const span = this._eventSpanDays(draft);
+      const date = this._dAdd(series.date, delta);
+      const all = { ...draft, date, endDate: span ? this._dAdd(date, span) : '', exdates: delta ? [] : (series.exdates || []) };
+      await this._commitEventChanges([{ upsert: all }], 'Todas as ocorrências foram alteradas.', false);
+    }
   }
 
   prevAgendaMonth = () => this.setState(st => ({ agendaMonthOffset: st.agendaMonthOffset - 1 }));
@@ -5533,10 +5844,13 @@ class Component extends DCLogic {
 
   // kind: 'event' (muda a data do evento) ou 'task' (muda o prazo da tarefa). A chave 'e…'/'t…'
   // vai pro state só pra apagar a pílula que está sendo arrastada.
-  startAgendaDrag = (kind, id, originDate, e) => {
+  // occDate: em evento que repete, qual ocorrência está sendo arrastada.
+  _agendaDragKey = (kind, id, occDate) => (kind === 'task' ? 't' + id : 'e' + id + '@' + occDate)
+
+  startAgendaDrag = (kind, id, originDate, e, occDate) => {
     e.stopPropagation();
     e.preventDefault();
-    this._agendaDrag = { kind, id, key: (kind === 'task' ? 't' : 'e') + id, originDate, moved: false, startX: e.clientX, startY: e.clientY };
+    this._agendaDrag = { kind, id, occDate, key: this._agendaDragKey(kind, id, occDate), originDate, moved: false, startX: e.clientX, startY: e.clientY };
   }
 
   _agendaDragOver = (drag, x, y) => {
@@ -5574,7 +5888,7 @@ class Component extends DCLogic {
     this.setState({ agendaDragOverDate: null, draggingEventId: null });
     if (!overDate || overDate === drag.originDate) return;
     if (drag.kind === 'task') this.moveTaskToDate(drag.id, overDate);
-    else this.moveEventToDate(drag.id, overDate);
+    else this.moveEventByDrag(drag.id, drag.occDate, this._dDiff(drag.originDate, overDate));
   }
 
   _onAgendaDragEnd = (e) => {
@@ -5585,10 +5899,10 @@ class Component extends DCLogic {
 
   // Toque: segurar ~0,35s na pílula pega ela (vibra, se o aparelho deixar); arrastar o dedo antes
   // disso é rolagem normal da página e cancela. Mouse continua no caminho do onMouseDown acima.
-  _startAgendaTouch = (kind, id, originDate, e) => {
+  _startAgendaTouch = (kind, id, originDate, e, occDate) => {
     if (e.pointerType === 'mouse') return;
     clearTimeout(this._agendaTouchTimer);
-    const pending = { kind, id, key: (kind === 'task' ? 't' : 'e') + id, originDate, startX: e.clientX, startY: e.clientY, lastX: e.clientX, lastY: e.clientY };
+    const pending = { kind, id, occDate, key: this._agendaDragKey(kind, id, occDate), originDate, startX: e.clientX, startY: e.clientY, lastX: e.clientX, lastY: e.clientY };
     this._agendaTouchPending = pending;
     this._agendaTouchTimer = setTimeout(() => {
       if (this._agendaTouchPending !== pending) return;
@@ -5628,14 +5942,25 @@ class Component extends DCLogic {
     this._finishAgendaDrag(drag, t.clientX, t.clientY);
   }
 
-  moveEventToDate = async (eventId, newDate) => {
+  // Arrastar um evento `delta` dias. Evento de vários dias anda inteiro (início e fim), não
+  // importa por qual dia foi pego. Evento que repete: move SÓ a ocorrência arrastada (vira um
+  // evento avulso e a série ganha uma exceção) — mexer na série inteira por arrasto seria fácil
+  // demais de fazer sem querer; pra isso existe o "todas" no formulário.
+  moveEventByDrag = async (eventId, occDate, delta) => {
     const ev = this.state.agendaEvents.find(e => e.id === eventId);
-    if (!ev || ev.date === newDate) return;
-    const agendaEvents = this.state.agendaEvents.map(e => e.id === eventId ? { ...e, date: newDate } : e);
-    this.setState({ agendaEvents });
-    const { error } = await window._sb.from('agenda_events').update({ date: newDate }).eq('id', eventId);
+    if (!ev || !delta) return;
+    const span = this._eventSpanDays(ev);
+    const newStart = this._dAdd(occDate || ev.date, delta);
+    if (ev.recurrence) {
+      const single = { ...ev, id: 'ev' + Date.now(), date: newStart, endDate: span ? this._dAdd(newStart, span) : '', recurrence: '', recurrenceDays: [], recurrenceUntil: '', recurrenceCount: null, exdates: [] };
+      await this._commitEventChanges([{ upsert: single }, { upsert: { ...ev, exdates: [...(ev.exdates || []), occDate] } }], 'Só esta ocorrência foi movida para ' + this.fmtDate(newStart) + '.', false, false);
+      return;
+    }
+    const moved = { ...ev, date: newStart, endDate: span ? this._dAdd(newStart, span) : '' };
+    this.setState({ agendaEvents: this.state.agendaEvents.map(e => e.id === eventId ? moved : e) });
+    const { error } = await window._sb.from('agenda_events').update({ date: moved.date, end_date: moved.endDate || null }).eq('id', eventId);
     if (error) { this.setState({ agendaEvents: this.state.agendaEvents.map(e => e.id === eventId ? ev : e) }); this._toast('Não foi possível mover o evento. Tente novamente.'); return; }
-    this._toast('Evento movido para ' + this.fmtDate(newDate) + '!');
+    this._toast('Evento movido para ' + this.fmtDate(newStart) + '!');
   }
 
   // Arrastar a tarefa na grade = mudar o prazo dela. Mesmo esquema otimista do evento.
@@ -7184,8 +7509,26 @@ class Component extends DCLogic {
     // dia em UTC já tinha virado (achado numa auditoria — afetava o destaque de hoje na Agenda, os
     // vencimentos de Tarefas e o widget "hoje e amanhã" da Home, todo santo dia nessa janela).
     const agendaTodayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' });
+    // Grade + hoje/amanhã (widget da Home) + o dia aberto no modal: é esse intervalo que precisa
+    // das ocorrências. Cada dia recebe a ocorrência que COBRE ele — evento de vários dias aparece
+    // em todos os dias dele (dayIndex 0 = primeiro dia).
+    const agendaGridStart = this._dKey(new Date(Date.UTC(agendaYear, agendaMonthIdx, 1 - agendaFirstDow)));
+    const agendaGridEnd = this._dAdd(agendaGridStart, Math.ceil((agendaFirstDow + agendaDaysInMonth) / 7) * 7 - 1);
+    const agendaRange = [agendaGridStart, agendaGridEnd, agendaTodayStr, this._dAdd(agendaTodayStr, 1)].concat(s.eventModalDate ? [s.eventModalDate] : []).sort();
+    const agendaRangeLo = agendaRange[0], agendaRangeHi = agendaRange[agendaRange.length - 1];
     const agendaEventsByDate = {};
-    s.agendaEvents.forEach(ev => { (agendaEventsByDate[ev.date] = agendaEventsByDate[ev.date] || []).push(ev); });
+    s.agendaEvents.forEach(ev => {
+      const span = this._eventSpanDays(ev);
+      this._eventStartsInRange(ev, agendaRangeLo, agendaRangeHi).forEach(occ => {
+        for (let i = 0; i <= span; i++) {
+          const day = this._dAdd(occ, i);
+          if (day < agendaRangeLo || day > agendaRangeHi) continue;
+          (agendaEventsByDate[day] = agendaEventsByDate[day] || []).push({ ...ev, occDate: occ, dayIndex: i, spanDays: span });
+        }
+      });
+    });
+    // Dia inteiro / continuação de evento de vários dias primeiro, depois por hora.
+    const agendaEvSort = (a, b) => ((b.allDay || b.dayIndex > 0 ? 1 : 0) - (a.allDay || a.dayIndex > 0 ? 1 : 0)) || (a.time || '99:99').localeCompare(b.time || '99:99');
     // Tarefas com prazo entram na mesma grade, com cor própria (âmbar) pra não se confundir com
     // os eventos (azul) — só as ainda pendentes, mesmo critério do "próximos vencimentos" da Home.
     const agendaTasksByDate = {};
@@ -7197,7 +7540,7 @@ class Component extends DCLogic {
     for (let i = 0; i < agendaTotalCells; i++) {
       const cellDate = new Date(agendaYear, agendaMonthIdx, i - agendaFirstDow + 1);
       const dateKey = cellDate.getFullYear() + '-' + String(cellDate.getMonth() + 1).padStart(2, '0') + '-' + String(cellDate.getDate()).padStart(2, '0');
-      const dayEvents = (agendaEventsByDate[dateKey] || []).slice().sort((a, b) => (a.time || '99:99').localeCompare(b.time || '99:99'));
+      const dayEvents = (agendaEventsByDate[dateKey] || []).slice().sort(agendaEvSort);
       const dayTasks = agendaTasksByDate[dateKey] || [];
       const isToday = dateKey === agendaTodayStr;
       const isDragOver = !!s.draggingEventId && s.agendaDragOverDate === dateKey;
@@ -7206,14 +7549,16 @@ class Component extends DCLogic {
       const blockMenu = (e) => { if (this._agendaTouchPending || this._agendaDrag) e.preventDefault(); };
       const dayItemsAll = [
         ...dayEvents.map(ev => ({
-          key: 'e' + ev.id, title: ev.title,
+          key: 'e' + ev.id + '@' + ev.occDate,
+          // Hora na frente no desktop; dia de continuação de evento longo ganha a setinha.
+          title: (ev.dayIndex > 0 ? '↳ ' : '') + (!s.isMobile && ev.time && !ev.allDay && ev.dayIndex === 0 ? ev.time + ' ' : '') + ev.title,
           pillStyle: {
-            fontSize: agendaItemFontSize, color: '#60A5FA', background: '#2563EB1A', borderRadius: '4px',
+            fontSize: agendaItemFontSize, color: ev.allDay || ev.spanDays > 0 ? '#BFDBFE' : '#60A5FA', background: ev.allDay || ev.spanDays > 0 ? '#2563EB40' : '#2563EB1A', borderRadius: '4px',
             padding: '1px 4px', marginTop: '2px', width: '100%', boxSizing: 'border-box', overflow: 'hidden',
-            textOverflow: 'ellipsis', whiteSpace: 'nowrap', cursor: 'grab', opacity: s.draggingEventId === 'e' + ev.id ? 0.35 : 1, ...noTouchUi,
+            textOverflow: 'ellipsis', whiteSpace: 'nowrap', cursor: 'grab', opacity: s.draggingEventId === 'e' + ev.id + '@' + ev.occDate ? 0.35 : 1, ...noTouchUi,
           },
-          onDragStart: (e) => this.startAgendaDrag('event', ev.id, dateKey, e),
-          onTouchStart: (e) => this._startAgendaTouch('event', ev.id, dateKey, e),
+          onDragStart: (e) => this.startAgendaDrag('event', ev.id, dateKey, e, ev.occDate),
+          onTouchStart: (e) => this._startAgendaTouch('event', ev.id, dateKey, e, ev.occDate),
           onContextMenu: blockMenu,
         })),
         ...dayTasks.map(t => ({
@@ -7248,14 +7593,34 @@ class Component extends DCLogic {
         onClick: () => { if (this._agendaJustDragged) return; this.openEventModal(dateKey, null); },
       });
     }
-    const agendaDayEvents = (agendaEventsByDate[s.eventModalDate] || []).slice()
-      .sort((a, b) => (a.time || '99:99').localeCompare(b.time || '99:99'))
-      .map(ev => ({
-        ...ev, hasTime: !!ev.time,
-        isDeleting: s.deletingId === ev.id, notDeleting: s.deletingId !== ev.id,
-        onEdit: () => this.openEventModal(s.eventModalDate, ev),
-        onDelete: () => this.deleteEvent(ev.id),
-      }));
+    const agendaDayEvents = (agendaEventsByDate[s.eventModalDate] || []).slice().sort(agendaEvSort)
+      .map(ev => {
+        const timeLabel = this._eventTimeLabel(ev);
+        const detail = [
+          ev.spanDays > 0 ? this.fmtDate(ev.occDate) + ' → ' + this.fmtDate(this._dAdd(ev.occDate, ev.spanDays)) : '',
+          this._recurrenceLabel(ev),
+        ].filter(Boolean).join(' · ');
+        return {
+          id: ev.id, title: ev.title, timeLabel, hasTime: !!timeLabel, detail, hasDetail: !!detail, isRecurring: !!ev.recurrence,
+          isDeleting: s.deletingId === ev.id, notDeleting: s.deletingId !== ev.id,
+          onEdit: () => this.openEventModal(s.eventModalDate, ev),
+          onDelete: () => this.deleteEvent(ev.id, ev.occDate),
+        };
+      });
+    // Formulário do evento — resumo da repetição, em texto, embaixo das opções.
+    const eventDraftForLabel = this._eventFromForm(s.editEventId || 'draft');
+    const eventRecSummary = s.eventRecurrence && s.eventDate ? this._recurrenceLabel(eventDraftForLabel) : '';
+    const recurrenceDayChips = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'].map((label, i) => {
+      const on = s.eventRecurrenceDays.includes(i);
+      return {
+        label,
+        style: {
+          width: '34px', height: '32px', borderRadius: '8px', cursor: 'pointer', fontFamily: 'inherit', fontSize: '12px', fontWeight: 700,
+          border: on ? '1px solid #3B82F6' : '1px solid #1E2A45', background: on ? '#2563EB33' : '#0D0D1A', color: on ? '#BFDBFE' : '#475569',
+        },
+        onClick: () => this.setState(st => ({ eventRecurrenceDays: st.eventRecurrenceDays.includes(i) ? st.eventRecurrenceDays.filter(x => x !== i) : [...st.eventRecurrenceDays, i] })),
+      };
+    });
     // Tarefas com prazo no dia aberto — pendentes primeiro; concluídas continuam aparecendo
     // (riscadas) pra dar pra desfazer um clique sem querer.
     const agendaDayTasks = s.tasks.filter(t => t.dueDate && t.dueDate === s.eventModalDate)
@@ -7934,8 +8299,8 @@ class Component extends DCLogic {
     // grade do mês, evitando o bug de fuso de toISOString() em new Date(dateStr)).
     const homeAgendaItemsList = (agendaEventsByDate[homeTodayStr] || []).map(ev => ({ ...ev, dayTag: 'Hoje', dayTagColor: '#38BDF8' }))
       .concat((agendaEventsByDate[homeTomorrowStr] || []).map(ev => ({ ...ev, dayTag: 'Amanhã', dayTagColor: '#64748B' })))
-      .sort((a, b) => (a.time || '99:99').localeCompare(b.time || '99:99'))
-      .map(ev => ({ id: ev.id, title: ev.title, dayTag: ev.dayTag, dayTagColor: ev.dayTagColor, hasTime: !!ev.time, timeLabel: ev.time || 'Dia todo' }));
+      .sort((a, b) => (a.dayTag === b.dayTag ? agendaEvSort(a, b) : (a.dayTag === 'Hoje' ? -1 : 1)))
+      .map(ev => ({ id: ev.id, title: ev.title, dayTag: ev.dayTag, dayTagColor: ev.dayTagColor, hasTime: !!ev.time, timeLabel: this._eventTimeLabel(ev) || 'Dia todo' }));
 
     // Home — Ações: junta a watchlist (do banco) com a última cotação recebida
     // (nunca persistida — só vive em memória entre um poll e outro).
@@ -8523,6 +8888,46 @@ class Component extends DCLogic {
       agendaDayTasks, hasAgendaDayTasks: agendaDayTasks.length > 0,
       eventModalTitle: s.editEventId ? 'Editar Evento' : 'Novo Evento',
       eventTitle: s.eventTitle, eventTime: s.eventTime, eventNotes: s.eventNotes,
+      eventDate: s.eventDate, eventEndDate: s.eventEndDate, eventEndTime: s.eventEndTime,
+      eventAllDay: s.eventAllDay, eventNotAllDay: !s.eventAllDay,
+      eventRecurrence: s.eventRecurrence, hasEventRecurrence: !!s.eventRecurrence, isCustomRecurrence: s.eventRecurrence === 'custom',
+      eventRecEnd: s.eventRecEnd, isRecUntil: !!s.eventRecurrence && s.eventRecEnd === 'until', isRecCount: !!s.eventRecurrence && s.eventRecEnd === 'count',
+      eventRecUntil: s.eventRecUntil, eventRecCount: s.eventRecCount, eventRecSummary, recurrenceDayChips,
+      allDayRowStyle: { display: 'flex', alignItems: 'center', gap: '9px', background: 'none', border: 'none', padding: '2px 0', cursor: 'pointer', fontFamily: 'inherit', fontSize: '13px', color: s.eventAllDay ? '#E2E8F0' : '#94A3B8', alignSelf: 'flex-start' },
+      allDayBoxStyle: {
+        width: '18px', height: '18px', borderRadius: '5px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', flexShrink: 0,
+        border: s.eventAllDay ? '1px solid #3B82F6' : '1px solid #334155', background: s.eventAllDay ? '#3B82F6' : 'transparent', color: '#fff',
+      },
+      setEventDate: e => {
+        const v = e.target.value;
+        // Mudou o início: o fim anda junto, mantendo a duração em dias.
+        this.setState(st => {
+          const span = st.eventEndDate && st.eventDate && st.eventEndDate > st.eventDate ? this._dDiff(st.eventDate, st.eventEndDate) : 0;
+          return { eventDate: v, eventEndDate: span && v ? this._dAdd(v, span) : st.eventEndDate };
+        });
+      },
+      setEventEndDate: e => this.setState({ eventEndDate: e.target.value }),
+      setEventEndTime: e => this.setState({ eventEndTime: e.target.value }),
+      toggleEventAllDay: () => this.setState(st => ({ eventAllDay: !st.eventAllDay })),
+      setEventRecurrence: e => {
+        const v = e.target.value;
+        // "Dias específicos" já vem com o dia da semana do início marcado.
+        this.setState(st => ({ eventRecurrence: v, eventRecurrenceDays: v === 'custom' && !st.eventRecurrenceDays.length && st.eventDate ? [this._dParse(st.eventDate).getUTCDay()] : st.eventRecurrenceDays }));
+      },
+      setEventRecEnd: e => this.setState({ eventRecEnd: e.target.value }),
+      setEventRecUntil: e => this.setState({ eventRecUntil: e.target.value }),
+      setEventRecCount: e => this.setState({ eventRecCount: e.target.value }),
+      showEventScope: !!s.eventScopeAsk,
+      eventScopeTitle: s.eventScopeAsk === 'delete' ? 'Excluir evento que se repete' : 'Salvar evento que se repete',
+      scopeBtnStyle: {
+        width: '100%', padding: '11px 14px', borderRadius: '9px', cursor: 'pointer', fontFamily: 'inherit', fontSize: '13px', fontWeight: 600, textAlign: 'left',
+        border: s.eventScopeAsk === 'delete' ? '1px solid #EF444433' : '1px solid #1E2A45', background: s.eventScopeAsk === 'delete' ? '#EF444410' : '#0D0D1A',
+        color: s.eventScopeAsk === 'delete' ? '#FCA5A5' : '#E2E8F0',
+      },
+      scopeThis: () => this.chooseEventScope('this'),
+      scopeFollowing: () => this.chooseEventScope('following'),
+      scopeAll: () => this.chooseEventScope('all'),
+      cancelEventScope: this.cancelEventScope,
       setEventTitle: e => this.setState({ eventTitle: e.target.value }),
       setEventTime: e => this.setState({ eventTime: e.target.value }),
       setEventNotes: e => this.setState({ eventNotes: e.target.value }),

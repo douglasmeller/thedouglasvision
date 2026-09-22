@@ -258,6 +258,7 @@ const TOOLS = [
         recurrence_days: { type: "array", items: { type: "number" }, description: "Só com recurrence=custom: dias da semana, 0=domingo … 6=sábado." },
         recurrence_until: { type: "string", description: "Repete até esse dia YYYY-MM-DD (inclusive). Opcional." },
         recurrence_count: { type: "number", description: "Ou: repete N vezes no total. Opcional." },
+        location: { type: "string", description: "Local/endereço (ex: \"MASP, Av. Paulista 1578, São Paulo\"). Opcional — o endereço é localizado no mapa sozinho." },
         notes: { type: "string" },
       },
       required: ["title", "date"],
@@ -280,6 +281,7 @@ const TOOLS = [
         recurrence_days: { type: "array", items: { type: "number" } },
         recurrence_until: { type: "string", description: "YYYY-MM-DD, ou string vazia." },
         recurrence_count: { type: "number", description: "N vezes, ou 0 pra tirar o limite." },
+        location: { type: "string", description: "Local/endereço, ou string vazia pra tirar." },
         notes: { type: "string" },
       },
       required: ["id"],
@@ -580,11 +582,37 @@ function expandEvents(rows: EventRow[], from: string, to: string) {
       out.push({
         id: ev.id, title: ev.title, date: occ, end_date: span ? dAdd(occ, span) : null,
         time: ev.all_day ? null : ev.time, end_time: ev.all_day ? null : ev.end_time, all_day: !!ev.all_day,
-        notes: ev.notes, repeats: recurrenceText(ev) || null,
+        notes: ev.notes, repeats: recurrenceText(ev) || null, location: ev.location || null,
       });
     }
   }
   return out.sort((a, b) => (a.date + (a.all_day ? "00:00" : a.time || "99:99")).localeCompare(b.date + (b.all_day ? "00:00" : b.time || "99:99")));
+}
+
+// Acha as coordenadas de um endereço (Photon/OpenStreetMap, grátis e sem chave, puxando pra perto
+// de São Paulo) pra o evento aparecer no mapa da Agenda. Falhou ou demorou >3s = sem coordenadas;
+// o local continua gravado como texto e o "Como chegar" do app usa o texto.
+async function geocodeLocation(text: string): Promise<{ lat: number; lon: number } | null> {
+  try {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 3000);
+    const resp = await fetch("https://photon.komoot.io/api/?limit=1&lat=-23.55&lon=-46.63&q=" + encodeURIComponent(text), { signal: ctrl.signal });
+    clearTimeout(timer);
+    if (!resp.ok) return null;
+    const data = await resp.json();
+    const c = data?.features?.[0]?.geometry?.coordinates;
+    return Array.isArray(c) && c.length === 2 ? { lat: Number(c[1]), lon: Number(c[0]) } : null;
+  } catch (_e) {
+    return null;
+  }
+}
+
+async function locationFields(input: EventRow): Promise<EventRow> {
+  if (input.location === undefined) return {};
+  const text = typeof input.location === "string" ? input.location.trim() : "";
+  if (!text) return { location: null, location_lat: null, location_lon: null };
+  const geo = await geocodeLocation(text);
+  return { location: text, location_lat: geo ? geo.lat : null, location_lon: geo ? geo.lon : null };
 }
 
 // Valida e normaliza os campos de duração/repetição vindos de create_event/update_event.
@@ -894,7 +922,7 @@ async function executeTool(sb: SupabaseClient, userId: string, name: string, inp
       if (fields.error) return { error: fields.error };
       const row = {
         id: genId("ev"), user_id: userId, title: input.title, date: input.date,
-        time: null, notes: input.notes || null, ...fields.patch,
+        time: null, notes: input.notes || null, ...fields.patch, ...(await locationFields(input)),
       };
       if (row.end_date && row.end_date < row.date) return { error: "end_date não pode ser antes de date." };
       if (row.time && row.end_time && !row.end_date && row.end_time <= row.time) return { error: "end_time precisa ser depois de time." };
@@ -913,7 +941,7 @@ async function executeTool(sb: SupabaseClient, userId: string, name: string, inp
       }
       const fields = eventFieldsFromInput(input, true);
       if (fields.error) return { error: fields.error };
-      Object.assign(patch, fields.patch);
+      Object.assign(patch, fields.patch, await locationFields(input));
       if (input.notes !== undefined) patch.notes = input.notes || null;
       const { data, error } = await sb.from("agenda_events").update(patch).eq("id", input.id).select();
       if (error) return { error: error.message };
@@ -1232,7 +1260,7 @@ async function buildSnapshot(sb: SupabaseClient) {
     for (const e of expandEvents(eventsData || [], day, day)) {
       const hours = e.all_day ? " (dia inteiro)" : e.time ? ` ${e.time}${e.end_time ? `–${e.end_time}` : ""}` : "";
       const span = e.end_date ? ` (de ${e.date} a ${e.end_date})` : "";
-      upcomingEvents.push(`- ${label}${hours}: ${e.title}${span}${e.repeats ? ` [repete: ${e.repeats}]` : ""}`);
+      upcomingEvents.push(`- ${label}${hours}: ${e.title}${span}${e.location ? ` @ ${e.location}` : ""}${e.repeats ? ` [repete: ${e.repeats}]` : ""}`);
     }
   }
 

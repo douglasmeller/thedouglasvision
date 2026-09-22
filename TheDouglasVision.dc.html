@@ -297,6 +297,13 @@
       .hud-btn-primary:hover::after, .hud-btn-ghost:hover::after, .hud-icon-btn:hover::after,
       button[style*="linear-gradient(135deg, #2563EB"]:hover::after { animation: none; opacity: 0; }
     }
+  .loc-suggestion:hover { background: #2563EB1F; }
+  /* Com #agenda-map na frente pra ganhar do leaflet.css, que é carregado depois deste bloco. */
+  #agenda-map .leaflet-popup-content-wrapper, #agenda-map .leaflet-popup-tip { background: #111118; color: #E2E8F0; border: 1px solid #1E2A45; box-shadow: 0 10px 30px #000000aa; }
+  #agenda-map .leaflet-popup-content a { color: #38BDF8; }
+  #agenda-map .leaflet-popup-close-button { color: #64748B; }
+  .leaflet-container { background: #0D0D1A; font-family: inherit; }
+  #agenda-map .leaflet-tile-pane { filter: invert(1) hue-rotate(185deg) brightness(0.85) contrast(0.9) saturate(0.6); }
   </style>
 </helmet>
 
@@ -1867,11 +1874,17 @@
               <button onClick="{{ nextAgendaMonth }}" style="background: none; border: 1px solid #1E2A45; border-radius: 7px; color: #64748B; cursor: pointer; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
                 <i class="ph ph-caret-right" style="font-size: 15px;"></i>
               </button>
+              <div style="display: flex; align-items: center; gap: 2px; background: #0D0D1A; border: 1px solid #1E2A45; border-radius: 8px; padding: 2px;">
+                <button onClick="{{ showAgendaCalendar }}" style="{{ agendaCalBtnStyle }}"><i class="ph ph-calendar-blank"></i>Calendário</button>
+                <button onClick="{{ showAgendaMap }}" style="{{ agendaMapBtnStyle }}"><i class="ph ph-map-trifold"></i>Mapa</button>
+              </div>
               <div style="display: flex; align-items: center; gap: 14px; font-size: 11px; color: #64748B; margin-left: auto;">
                 <div style="display: flex; align-items: center; gap: 5px;"><span style="width: 8px; height: 8px; border-radius: 2px; background: #60A5FA;"></span>Eventos</div>
                 <div style="display: flex; align-items: center; gap: 5px;"><span style="width: 8px; height: 8px; border-radius: 2px; background: #FBBF24;"></span>Tarefas</div>
               </div>
             </div>
+            <sc-if value="{{ isAgendaCalendar }}" hint-placeholder-val="{{ true }}">
+              <div style="display: flex; flex-direction: column; gap: 4px;">
             <div style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; font-size: 11px; color: #334155; text-transform: uppercase; text-align: center; font-weight: 600;">
               <div>Dom</div><div>Seg</div><div>Ter</div><div>Qua</div><div>Qui</div><div>Sex</div><div>Sáb</div>
             </div>
@@ -1888,6 +1901,36 @@
                 </button>
               </sc-for>
             </div>
+              </div>
+            </sc-if>
+            <sc-if value="{{ isAgendaMap }}" hint-placeholder-val="{{ false }}">
+              <div style="display: flex; flex-direction: column; gap: 10px;">
+                <div style="height: min(62vh, 520px); min-height: 300px; border: 1px solid #1E2A45; border-radius: 12px; overflow: hidden; background: #0D0D1A;">
+                  <div id="agenda-map" style="width: 100%; height: 100%;"></div>
+                </div>
+                <sc-if value="{{ hasAgendaMapList }}" hint-placeholder-val="{{ false }}">
+                  <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 8px;">
+                    <sc-for list="{{ agendaMapList }}" as="mp" hint-placeholder-count="2">
+                      <div onClick="{{ mp.onClick }}" style="display: flex; align-items: center; gap: 10px; background: #0D0D1A; border: 1px solid #1E2A45; border-radius: 10px; padding: 10px 12px; cursor: pointer;">
+                        <i class="ph ph-map-pin" style="font-size: 18px; color: #38BDF8; flex-shrink: 0;"></i>
+                        <div style="flex: 1; min-width: 0;">
+                          <div style="font-size: 13px; color: #E2E8F0; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ mp.title }}</div>
+                          <div style="font-size: 11px; color: #64748B; margin-top: 2px;">{{ mp.when }}</div>
+                          <div style="font-size: 11px; color: #475569; margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ mp.location }}</div>
+                        </div>
+                        <button onClick="{{ mp.onDirections }}" title="Como chegar" style="background: none; border: 1px solid #1E2A45; border-radius: 7px; color: #38BDF8; cursor: pointer; padding: 6px 8px; font-size: 14px; display: flex; flex-shrink: 0;"><i class="ph ph-navigation-arrow"></i></button>
+                      </div>
+                    </sc-for>
+                  </div>
+                </sc-if>
+                <sc-if value="{{ noAgendaMapList }}" hint-placeholder-val="{{ true }}">
+                  <div style="font-size: 12px; color: #475569;">Nenhum evento deste mês com local no mapa. Ao criar um evento, escolha o endereço numa das sugestões do campo "Local".</div>
+                </sc-if>
+                <sc-if value="{{ hasAgendaNoLocation }}" hint-placeholder-val="{{ false }}">
+                  <div style="font-size: 11px; color: #334155;">{{ agendaNoLocationLabel }}</div>
+                </sc-if>
+              </div>
+            </sc-if>
           </div>
         </sc-if>
 
@@ -1911,7 +1954,13 @@
                         <sc-if value="{{ ev.hasDetail }}" hint-placeholder-val="{{ false }}">
                           <div style="font-size: 11px; color: #3B82F6; margin-top: 2px; display: flex; align-items: center; gap: 4px;"><i class="ph ph-repeat" style="font-size: 11px;"></i><span>{{ ev.detail }}</span></div>
                         </sc-if>
+                        <sc-if value="{{ ev.hasLocation }}" hint-placeholder-val="{{ false }}">
+                          <div style="font-size: 11px; color: #94A3B8; margin-top: 2px; display: flex; align-items: flex-start; gap: 4px;"><i class="ph ph-map-pin" style="font-size: 11px; margin-top: 1px;"></i><span>{{ ev.location }}</span></div>
+                        </sc-if>
                       </div>
+                      <sc-if value="{{ ev.hasLocation }}" hint-placeholder-val="{{ false }}">
+                        <button onClick="{{ ev.onDirections }}" style="background: none; border: 1px solid #1A1A28; border-radius: 6px; color: #38BDF8; cursor: pointer; padding: 5px 7px; font-size: 12px; display: flex; align-items: center; line-height: 1; flex-shrink: 0;"><i class="ph ph-navigation-arrow"></i></button>
+                      </sc-if>
                       <button onClick="{{ ev.onEdit }}" style="background: none; border: 1px solid #1A1A28; border-radius: 6px; color: #334155; cursor: pointer; padding: 5px 7px; font-size: 12px; display: flex; align-items: center; line-height: 1; flex-shrink: 0;"><i class="ph ph-pencil-simple"></i></button>
                       <button onClick="{{ ev.onDelete }}" style="background: none; border: 1px solid #1A1A28; border-radius: 6px; color: #EF444455; cursor: pointer; padding: 5px 7px; font-size: 12px; display: flex; align-items: center; line-height: 1; flex-shrink: 0;">
                         <sc-if value="{{ ev.isDeleting }}" hint-placeholder-val="{{ false }}"><span class="btn-spinner" style="border-color: #EF444455; border-top-color: #EF4444;"></span></sc-if>
@@ -2011,9 +2060,36 @@
                     <div style="font-size: 11px; color: #3B82F6; margin-top: 7px; display: flex; align-items: center; gap: 5px;"><i class="ph ph-repeat"></i><span>{{ eventRecSummary }}</span></div>
                   </div>
                 </sc-if>
+                <div style="position: relative;">
+                  <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+                    <label style="display: block; font-size: 11px; color: #475569; margin-bottom: 6px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Local <span style="color: #334155; font-weight: 400; text-transform: none;">(opcional)</span></label>
+                    <sc-if value="{{ hasEventLocation }}" hint-placeholder-val="{{ false }}">
+                      <button onClick="{{ openFormDirections }}" style="background: none; border: none; color: #38BDF8; font-size: 11px; font-weight: 600; cursor: pointer; font-family: inherit; padding: 0 0 6px; display: flex; align-items: center; gap: 4px;"><i class="ph ph-navigation-arrow"></i>Como chegar</button>
+                    </sc-if>
+                  </div>
+                  <input type="text" value="{{ eventLocation }}" onInput="{{ setEventLocation }}" onBlur="{{ closeLocSuggestions }}" onFocus="{{ reopenLocSuggestions }}" autocomplete="off" placeholder="Endereço ou nome do lugar" style="width: 100%; box-sizing: border-box; background: #0D0D1A; border: 1px solid #1E2A45; border-radius: 8px; padding: 10px 11px; color: #E2E8F0; font-size: 13px; font-family: inherit; color-scheme: dark;">
+                  <sc-if value="{{ showLocSuggestions }}" hint-placeholder-val="{{ false }}">
+                    <div style="margin-top: 4px; background: #111118; border: 1px solid #1E2A45; border-radius: 10px; overflow: hidden; box-shadow: 0 12px 30px #000000aa;">
+                      <sc-for list="{{ locSuggestions }}" as="ls" hint-placeholder-count="3">
+                        <div onMouseDown="{{ ls.onPick }}" class="loc-suggestion" style="display: flex; align-items: flex-start; gap: 9px; padding: 9px 12px; cursor: pointer; border-bottom: 1px solid #151525;">
+                          <i class="ph ph-map-pin" style="font-size: 15px; color: #38BDF8; margin-top: 1px; flex-shrink: 0;"></i>
+                          <div style="min-width: 0;">
+                            <div style="font-size: 13px; color: #E2E8F0;">{{ ls.main }}</div>
+                            <sc-if value="{{ ls.hasSub }}" hint-placeholder-val="{{ false }}"><div style="font-size: 11px; color: #64748B; margin-top: 1px;">{{ ls.sub }}</div></sc-if>
+                          </div>
+                        </div>
+                      </sc-for>
+                    </div>
+                  </sc-if>
+                  <sc-if value="{{ hasEventLocCoords }}" hint-placeholder-val="{{ false }}">
+                    <div style="margin-top: 8px; height: 150px; border-radius: 9px; overflow: hidden; border: 1px solid #1E2A45;">
+                      <iframe src="{{ eventMapSrc }}" loading="lazy" title="Mapa do local" style="width: 100%; height: 100%; border: 0; display: block;"></iframe>
+                    </div>
+                  </sc-if>
+                </div>
                 <div>
                   <label style="display: block; font-size: 11px; color: #475569; margin-bottom: 6px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Notas <span style="color: #334155; font-weight: 400; text-transform: none;">(opcional)</span></label>
-                  <textarea class="reading-font" value="{{ eventNotes }}" onInput="{{ setEventNotes }}" rows="2" placeholder="Detalhes, local, contexto…" style="width: 100%; box-sizing: border-box; background: #0D0D1A; border: 1px solid #1E2A45; border-radius: 8px; padding: 11px 14px; color: #E2E8F0; font-size: 13px; font-family: inherit; line-height: 1.5; resize: vertical;"></textarea>
+                  <textarea class="reading-font" value="{{ eventNotes }}" onInput="{{ setEventNotes }}" rows="2" placeholder="Detalhes, contexto…" style="width: 100%; box-sizing: border-box; background: #0D0D1A; border: 1px solid #1E2A45; border-radius: 8px; padding: 11px 14px; color: #E2E8F0; font-size: 13px; font-family: inherit; line-height: 1.5; resize: vertical;"></textarea>
                 </div>
               </div>
               <button onClick="{{ saveEvent }}" style="{{ saveEventBtnStyle }}">
@@ -3324,6 +3400,12 @@ class Component extends DCLogic {
     eventRecUntil: '',
     eventRecCount: '',
     editOccDate: null,
+    eventLocation: '',
+    eventLocLat: null,     // coordenadas só existem quando o endereço veio de uma sugestão
+    eventLocLon: null,
+    locSuggestions: [],
+    locSuggestOpen: false,
+    agendaView: (() => { try { return localStorage.getItem('tdv_agendaView') === 'map' ? 'map' : 'calendar'; } catch (_e) { return 'calendar'; } })(),
     eventScopeAsk: null,   // 'save' | 'delete' — pergunta "só esta / esta e as próximas / todas"
     scopeTargetId: null,
     scopeOccDate: null,
@@ -3493,6 +3575,7 @@ class Component extends DCLogic {
   }
 
   componentDidUpdate() {
+    this._syncAgendaMap();
     // O framework (support.js) chama componentDidUpdate(prevProps) — SÓ as props, nunca o estado
     // anterior. Esta função já foi escrita como (prevProps, prevState): prevState vinha sempre
     // undefined, "prevState.screen" estourava na primeira linha a cada atualização, o framework
@@ -4057,6 +4140,9 @@ class Component extends DCLogic {
     recurrence: ev.recurrence || '', recurrenceDays: ev.recurrence_days || [],
     recurrenceUntil: ev.recurrence_until || '', recurrenceCount: ev.recurrence_count || null,
     exdates: ev.exdates || [],
+    location: ev.location || '',
+    locationLat: ev.location_lat == null ? null : Number(ev.location_lat),
+    locationLon: ev.location_lon == null ? null : Number(ev.location_lon),
   })
 
   _eventRowOut = (ev, uid) => ({
@@ -4069,6 +4155,9 @@ class Component extends DCLogic {
     recurrence_until: ev.recurrence && ev.recurrenceUntil ? ev.recurrenceUntil : null,
     recurrence_count: ev.recurrence && ev.recurrenceCount ? ev.recurrenceCount : null,
     exdates: ev.recurrence ? (ev.exdates || []) : [],
+    location: ev.location || null,
+    location_lat: ev.location && ev.locationLat != null && ev.locationLon != null ? ev.locationLat : null,
+    location_lon: ev.location && ev.locationLat != null && ev.locationLon != null ? ev.locationLon : null,
   })
 
   _noteRowIn = (n) => ({
@@ -5671,6 +5760,7 @@ class Component extends DCLogic {
     editEventId: null, editOccDate: null, eventScopeAsk: null, scopeTargetId: null, scopeOccDate: null,
     eventTitle: '', eventDate: '', eventEndDate: '', eventAllDay: false, eventTime: '', eventEndTime: '', eventNotes: '',
     eventRecurrence: '', eventRecurrenceDays: [], eventRecEnd: 'never', eventRecUntil: '', eventRecCount: '',
+    eventLocation: '', eventLocLat: null, eventLocLon: null, locSuggestions: [], locSuggestOpen: false,
   })
 
   // event pode ser uma OCORRÊNCIA (vinda da grade/lista, com occDate): o formulário abre com as
@@ -5688,6 +5778,7 @@ class Component extends DCLogic {
         eventRecurrence: series.recurrence || '', eventRecurrenceDays: series.recurrenceDays || [],
         eventRecEnd: series.recurrenceUntil ? 'until' : (series.recurrenceCount ? 'count' : 'never'),
         eventRecUntil: series.recurrenceUntil || '', eventRecCount: series.recurrenceCount ? String(series.recurrenceCount) : '',
+        eventLocation: series.location || '', eventLocLat: series.locationLat, eventLocLon: series.locationLon,
       });
     } else {
       this.setState({ ...this._blankEventForm(), showEventModal: true, eventModalDate: dateKey, eventDate: dateKey });
@@ -5708,7 +5799,137 @@ class Component extends DCLogic {
       recurrenceUntil: rec && s.eventRecEnd === 'until' ? s.eventRecUntil : '',
       recurrenceCount: rec && s.eventRecEnd === 'count' ? (parseInt(s.eventRecCount, 10) || null) : null,
       exdates: [],
+      location: s.eventLocation.trim(),
+      locationLat: s.eventLocation.trim() ? s.eventLocLat : null,
+      locationLon: s.eventLocation.trim() ? s.eventLocLon : null,
     };
+  }
+
+  // ─── Local do evento: sugestões de endereço + mapa ─────────────────────────
+  // Sugestões vêm do Photon (busca de endereços do OpenStreetMap, grátis e sem chave), puxadas
+  // pra perto de São Paulo. O mapa do evento é o embed do Google Maps (também sem chave), e
+  // "Como chegar" abre o Google Maps de verdade. A aba Mapa usa Leaflet com o mapa do
+  // OpenStreetMap escurecido — carregado só quando essa aba é aberta.
+  setEventLocation = (e) => {
+    const v = e.target.value;
+    // Digitou por cima: as coordenadas da sugestão antiga não valem mais.
+    this.setState({ eventLocation: v, eventLocLat: null, eventLocLon: null, locSuggestOpen: v.trim().length >= 3 });
+    clearTimeout(this._locTimer);
+    if (v.trim().length < 3) { this.setState({ locSuggestions: [] }); return; }
+    this._locTimer = setTimeout(() => this._searchLocation(v.trim()), 350);
+  }
+
+  _locationLabel = (p) => {
+    const street = [p.street, p.housenumber].filter(Boolean).join(', ');
+    const main = p.name && p.name !== p.street ? p.name : (street || p.name || '');
+    const sub = [p.name && p.name !== p.street ? street : '', p.district || p.locality, p.city, p.state].filter(Boolean)
+      .filter((x, i, a) => a.indexOf(x) === i && x !== main).join(' · ');
+    return { main, sub };
+  }
+
+  _searchLocation = async (q) => {
+    const gen = (this._locGen = (this._locGen || 0) + 1);
+    try {
+      const resp = await fetch('https://photon.komoot.io/api/?limit=5&lat=-23.55&lon=-46.63&q=' + encodeURIComponent(q));
+      const data = await resp.json();
+      if (gen !== this._locGen) return;
+      const seen = new Set();
+      const list = (data.features || []).map(f => {
+        const { main, sub } = this._locationLabel(f.properties || {});
+        return { main, sub, full: [main, sub.split(' · ').join(', ')].filter(Boolean).join(' — '), lon: f.geometry.coordinates[0], lat: f.geometry.coordinates[1] };
+      }).filter(it => it.main && !seen.has(it.full) && seen.add(it.full));
+      this.setState({ locSuggestions: list });
+    } catch (_e) {
+      if (gen === this._locGen) this.setState({ locSuggestions: [] });
+    }
+  }
+
+  chooseLocation = (it) => {
+    clearTimeout(this._locTimer);
+    this._locGen = (this._locGen || 0) + 1;
+    this.setState({ eventLocation: it.full, eventLocLat: it.lat, eventLocLon: it.lon, locSuggestions: [], locSuggestOpen: false });
+  }
+
+  _mapsQuery = (ev) => (ev.locationLat != null && ev.locationLon != null ? ev.locationLat + ',' + ev.locationLon : ev.location)
+  _mapsDirectionsUrl = (ev) => 'https://www.google.com/maps/dir/?api=1&destination=' + encodeURIComponent(this._mapsQuery(ev))
+  openEventDirections = (ev) => { if (ev && ev.location) window.open(this._mapsDirectionsUrl(ev), '_blank', 'noopener'); }
+
+  setAgendaView = (view) => {
+    try { localStorage.setItem('tdv_agendaView', view); } catch (_e) {}
+    this.setState({ agendaView: view });
+  }
+
+  _loadLeaflet = () => {
+    if (window.L) return Promise.resolve(window.L);
+    if (this._leafletPromise) return this._leafletPromise;
+    this._leafletPromise = new Promise((resolve, reject) => {
+      const css = document.createElement('link');
+      css.rel = 'stylesheet'; css.href = 'https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css';
+      document.head.appendChild(css);
+      const js = document.createElement('script');
+      js.src = 'https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js';
+      js.onload = () => resolve(window.L);
+      js.onerror = () => { this._leafletPromise = null; reject(new Error('leaflet')); };
+      document.head.appendChild(js);
+    });
+    return this._leafletPromise;
+  }
+
+  // Chamado a cada atualização (componentDidUpdate): cria o mapa quando a aba Mapa aparece, troca
+  // os marcadores só quando os pontos mudam de verdade e desmonta quando a aba some.
+  _syncAgendaMap = () => {
+    const s = this.state;
+    const el = s.screen === 'agenda' && s.agendaView === 'map' ? document.getElementById('agenda-map') : null;
+    if (!el) {
+      if (this._agendaMap) { this._agendaMap.remove(); this._agendaMap = null; this._agendaMapSig = null; }
+      return;
+    }
+    if (!window.L) { this._loadLeaflet().then(() => this._syncAgendaMap()).catch(() => this._toast('Não foi possível carregar o mapa. Verifique a internet.')); return; }
+    const L = window.L;
+    if (!this._agendaMap || this._agendaMap.getContainer() !== el) {
+      if (this._agendaMap) this._agendaMap.remove();
+      this._agendaMap = L.map(el, { zoomControl: true, attributionControl: true }).setView([-23.55, -46.63], 11);
+      // Mapa oficial do OpenStreetMap (sem chave), escurecido por CSS pra combinar com o app —
+      // o escuro pronto da CARTO passou a exigir chave.
+      L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19, attribution: '© OpenStreetMap',
+      }).addTo(this._agendaMap);
+      this._agendaMapLayer = L.layerGroup().addTo(this._agendaMap);
+      this._agendaMapMarkers = {};
+      this._agendaMapSig = null;
+    }
+    const points = this._agendaMapPoints || [];
+    const sig = JSON.stringify(points.map(p => [p.key, p.items.length]));
+    if (sig === this._agendaMapSig) return;
+    this._agendaMapSig = sig;
+    this._agendaMapLayer.clearLayers();
+    this._agendaMapMarkers = {};
+    const esc = (t) => String(t || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    points.forEach(p => {
+      const m = L.circleMarker([p.lat, p.lon], { radius: 8 + Math.min(p.items.length - 1, 4) * 2, color: '#38BDF8', weight: 2, fillColor: '#2563EB', fillOpacity: 0.55 });
+      // Repetição no mesmo lugar vira uma linha só por título ("22 vezes neste mês · de 01/09 a 30/09").
+      const byTitle = {};
+      p.items.forEach(it => { (byTitle[it.title] = byTitle[it.title] || []).push(it); });
+      const rows = Object.keys(byTitle).map(title => {
+        const its = byTitle[title];
+        const when = its.length === 1 ? its[0].when : its.length + ' vezes neste mês · de ' + this.fmtDate(its[0].day).slice(0, 5) + ' a ' + this.fmtDate(its[its.length - 1].day).slice(0, 5);
+        return '<div style="margin-bottom:6px;"><div style="font-weight:600;">' + esc(title) + '</div><div style="font-size:11px;opacity:.75;">' + esc(when) + '</div></div>';
+      }).join('');
+      m.bindPopup('<div style="font-family:inherit;min-width:180px;">' + rows + '<div style="font-size:11px;opacity:.7;margin:2px 0 8px;">' + esc(p.location) + '</div>'
+        + '<a href="' + esc(p.directionsUrl) + '" target="_blank" rel="noopener" style="font-weight:600;">Como chegar ↗</a></div>');
+      m.addTo(this._agendaMapLayer);
+      this._agendaMapMarkers[p.key] = m;
+    });
+    if (points.length === 1) this._agendaMap.setView([points[0].lat, points[0].lon], 15);
+    else if (points.length > 1) this._agendaMap.fitBounds(points.map(p => [p.lat, p.lon]), { padding: [40, 40], maxZoom: 15 });
+    setTimeout(() => { if (this._agendaMap) this._agendaMap.invalidateSize(); }, 0);
+  }
+
+  focusAgendaMapPoint = (key) => {
+    const m = this._agendaMapMarkers && this._agendaMapMarkers[key];
+    if (!m || !this._agendaMap) return;
+    this._agendaMap.setView(m.getLatLng(), Math.max(this._agendaMap.getZoom(), 15));
+    m.openPopup();
   }
 
   _eventFormError = (ev) => {
@@ -7604,11 +7825,39 @@ class Component extends DCLogic {
         ].filter(Boolean).join(' · ');
         return {
           id: ev.id, title: ev.title, timeLabel, hasTime: !!timeLabel, detail, hasDetail: !!detail, isRecurring: !!ev.recurrence,
+          location: ev.location, hasLocation: !!ev.location, onDirections: () => this.openEventDirections(ev),
           isDeleting: s.deletingId === ev.id, notDeleting: s.deletingId !== ev.id,
           onEdit: () => this.openEventModal(s.eventModalDate, ev),
           onDelete: () => this.deleteEvent(ev.id, ev.occDate),
         };
       });
+    // Aba Mapa: eventos do mês exibido que têm coordenadas, agrupados por lugar (vários eventos no
+    // mesmo endereço viram um marcador só). Guardado na instância pro _syncAgendaMap usar depois
+    // do render.
+    const agendaMonthPrefix = agendaYear + '-' + String(agendaMonthIdx + 1).padStart(2, '0');
+    const agendaMapGroups = {};
+    let agendaNoLocationCount = 0;
+    Object.keys(agendaEventsByDate).filter(k => k.startsWith(agendaMonthPrefix)).sort().forEach(day => {
+      agendaEventsByDate[day].slice().sort(agendaEvSort).forEach(ev => {
+        if (ev.dayIndex > 0) return;
+        if (ev.locationLat == null || ev.locationLon == null) { agendaNoLocationCount++; return; }
+        const key = ev.locationLat.toFixed(5) + ',' + ev.locationLon.toFixed(5);
+        const g = agendaMapGroups[key] = agendaMapGroups[key] || { key, lat: ev.locationLat, lon: ev.locationLon, location: ev.location, directionsUrl: this._mapsDirectionsUrl(ev), items: [] };
+        const t = this._eventTimeLabel(ev);
+        g.items.push({ title: ev.title, day, when: this.fmtDate(day) + (t ? ' · ' + t : '') });
+      });
+    });
+    this._agendaMapPoints = Object.values(agendaMapGroups);
+    const agendaMapList = this._agendaMapPoints.slice().sort((a, b) => a.items[0].day.localeCompare(b.items[0].day)).map(p => ({
+      key: p.key, title: p.items.map(i => i.title).filter((x, i, a) => a.indexOf(x) === i).join(', '),
+      when: p.items.length > 1 ? p.items.length + ' ocorrências · a partir de ' + this.fmtDate(p.items[0].day) : p.items[0].when,
+      location: p.location, onClick: () => this.focusAgendaMapPoint(p.key),
+      onDirections: (e) => { if (e && e.stopPropagation) e.stopPropagation(); window.open(p.directionsUrl, '_blank', 'noopener'); },
+    }));
+    const agendaViewBtn = (on) => ({
+      padding: '6px 11px', fontSize: '12px', fontWeight: 600, fontFamily: 'inherit', cursor: 'pointer', border: 'none', borderRadius: '6px',
+      display: 'flex', alignItems: 'center', gap: '5px', background: on ? '#2563EB33' : 'transparent', color: on ? '#BFDBFE' : '#64748B',
+    });
     // Formulário do evento — resumo da repetição, em texto, embaixo das opções.
     const eventDraftForLabel = this._eventFromForm(s.editEventId || 'draft');
     const eventRecSummary = s.eventRecurrence && s.eventDate ? this._recurrenceLabel(eventDraftForLabel) : '';
@@ -8891,6 +9140,21 @@ class Component extends DCLogic {
       eventModalTitle: s.editEventId ? 'Editar Evento' : 'Novo Evento',
       eventTitle: s.eventTitle, eventTime: s.eventTime, eventNotes: s.eventNotes,
       eventDate: s.eventDate, eventEndDate: s.eventEndDate, eventEndTime: s.eventEndTime,
+      eventLocation: s.eventLocation, setEventLocation: this.setEventLocation,
+      hasEventLocation: !!s.eventLocation.trim(),
+      hasEventLocCoords: !!s.eventLocation.trim() && s.eventLocLat != null,
+      eventMapSrc: s.eventLocation.trim() && s.eventLocLat != null ? 'https://maps.google.com/maps?q=' + encodeURIComponent(s.eventLocLat + ',' + s.eventLocLon) + '&z=15&output=embed' : 'about:blank',
+      openFormDirections: () => this.openEventDirections({ location: s.eventLocation.trim(), locationLat: s.eventLocLat, locationLon: s.eventLocLon }),
+      showLocSuggestions: s.locSuggestOpen && s.locSuggestions.length > 0,
+      locSuggestions: s.locSuggestions.map(it => ({ ...it, hasSub: !!it.sub, onPick: (e) => { e.preventDefault(); this.chooseLocation(it); } })),
+      closeLocSuggestions: () => setTimeout(() => this.setState({ locSuggestOpen: false }), 150),
+      reopenLocSuggestions: () => { if (this.state.locSuggestions.length) this.setState({ locSuggestOpen: true }); },
+      isAgendaCalendar: s.agendaView !== 'map', isAgendaMap: s.agendaView === 'map',
+      showAgendaCalendar: () => this.setAgendaView('calendar'), showAgendaMap: () => this.setAgendaView('map'),
+      agendaCalBtnStyle: agendaViewBtn(s.agendaView !== 'map'), agendaMapBtnStyle: agendaViewBtn(s.agendaView === 'map'),
+      agendaMapList, hasAgendaMapList: agendaMapList.length > 0, noAgendaMapList: agendaMapList.length === 0,
+      agendaNoLocationLabel: agendaNoLocationCount ? agendaNoLocationCount + (agendaNoLocationCount === 1 ? ' evento' : ' eventos') + ' deste mês sem local no mapa (endereço digitado à mão, sem escolher uma sugestão).' : '',
+      hasAgendaNoLocation: agendaNoLocationCount > 0,
       eventAllDay: s.eventAllDay, eventNotAllDay: !s.eventAllDay,
       eventRecurrence: s.eventRecurrence, hasEventRecurrence: !!s.eventRecurrence, isCustomRecurrence: s.eventRecurrence === 'custom',
       eventRecEnd: s.eventRecEnd, isRecUntil: !!s.eventRecurrence && s.eventRecEnd === 'until', isRecCount: !!s.eventRecurrence && s.eventRecEnd === 'count',

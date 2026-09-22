@@ -1880,7 +1880,7 @@
                 <button onClick="{{ d.onClick }}" data-agenda-date="{{ d.dateKey }}" style="{{ d.cellStyle }}">
                   <span style="font-size: {{ d.dayNumSize }}; font-weight: 600; color: {{ d.dayNumColor }};">{{ d.dayNum }}</span>
                   <sc-for list="{{ d.dayItems }}" as="item" hint-placeholder-count="2">
-                    <span onMouseDown="{{ item.onDragStart }}" style="{{ item.pillStyle }}">{{ item.title }}</span>
+                    <span onMouseDown="{{ item.onDragStart }}" onPointerDown="{{ item.onTouchStart }}" onContextMenu="{{ item.onContextMenu }}" style="{{ item.pillStyle }}">{{ item.title }}</span>
                   </sc-for>
                   <sc-if value="{{ d.hasExtra }}" hint-placeholder-val="{{ false }}">
                     <span style="font-size: 9px; color: #475569; margin-top: 2px;">+{{ d.extraCount }}</span>
@@ -1914,6 +1914,20 @@
                         <sc-if value="{{ ev.isDeleting }}" hint-placeholder-val="{{ false }}"><span class="btn-spinner" style="border-color: #EF444455; border-top-color: #EF4444;"></span></sc-if>
                         <sc-if value="{{ ev.notDeleting }}" hint-placeholder-val="{{ true }}"><i class="ph ph-trash"></i></sc-if>
                       </button>
+                    </div>
+                  </sc-for>
+                </div>
+              </sc-if>
+              <sc-if value="{{ hasAgendaDayTasks }}" hint-placeholder-val="{{ false }}">
+                <div style="display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px;">
+                  <div style="font-size: 10px; font-weight: 600; color: #B45309; text-transform: uppercase; letter-spacing: 1px;">Tarefas com prazo neste dia</div>
+                  <sc-for list="{{ agendaDayTasks }}" as="tk" hint-placeholder-count="1">
+                    <div style="display: flex; align-items: center; gap: 9px; background: #0D0D1A; border: 1px solid #F59E0B2E; border-radius: 8px; padding: 8px 10px;">
+                      <button onClick="{{ tk.onToggle }}" style="{{ tk.checkStyle }}">
+                        <sc-if value="{{ tk.done }}" hint-placeholder-val="{{ false }}"><i class="ph ph-check" style="font-weight: 700;"></i></sc-if>
+                      </button>
+                      <div style="flex: 1; min-width: 0;"><div style="{{ tk.titleStyle }}">{{ tk.title }}</div></div>
+                      <button onClick="{{ tk.onEdit }}" style="background: none; border: 1px solid #1A1A28; border-radius: 6px; color: #334155; cursor: pointer; padding: 5px 7px; font-size: 12px; display: flex; align-items: center; line-height: 1; flex-shrink: 0;"><i class="ph ph-pencil-simple"></i></button>
                     </div>
                   </sc-for>
                 </div>
@@ -3483,6 +3497,11 @@ class Component extends DCLogic {
     // mesmo espírito dos outros listeners globais desta função.
     document.addEventListener('mousemove', this._onAgendaDragMove);
     document.addEventListener('mouseup', this._onAgendaDragEnd);
+    // No celular o arrastar começa com um toque longo (ver _startAgendaTouch). touchmove precisa
+    // de passive:false — é o único jeito de impedir a página de rolar enquanto o item é arrastado.
+    document.addEventListener('touchmove', this._onAgendaTouchMove, { passive: false });
+    document.addEventListener('touchend', this._onAgendaTouchEnd);
+    document.addEventListener('touchcancel', this._onAgendaTouchEnd);
     // Idem pro arrastar nota -> pasta em Anotações (ver startNoteDrag).
     document.addEventListener('mousemove', this._onNoteDragMove);
     document.addEventListener('mouseup', this._onNoteDragEnd);
@@ -3621,6 +3640,9 @@ class Component extends DCLogic {
     document.removeEventListener('selectionchange', this._onSelectionChange);
     document.removeEventListener('mousemove', this._onAgendaDragMove);
     document.removeEventListener('mouseup', this._onAgendaDragEnd);
+    document.removeEventListener('touchmove', this._onAgendaTouchMove);
+    document.removeEventListener('touchend', this._onAgendaTouchEnd);
+    document.removeEventListener('touchcancel', this._onAgendaTouchEnd);
     document.removeEventListener('mousemove', this._onNoteDragMove);
     document.removeEventListener('mouseup', this._onNoteDragEnd);
     this._stopHudClock();
@@ -5509,44 +5531,101 @@ class Component extends DCLogic {
     return cell ? cell.getAttribute('data-agenda-date') : null;
   }
 
-  startAgendaDrag = (eventId, originDate, e) => {
+  // kind: 'event' (muda a data do evento) ou 'task' (muda o prazo da tarefa). A chave 'e…'/'t…'
+  // vai pro state só pra apagar a pílula que está sendo arrastada.
+  startAgendaDrag = (kind, id, originDate, e) => {
     e.stopPropagation();
     e.preventDefault();
-    this._agendaDrag = { eventId, originDate, moved: false, startX: e.clientX, startY: e.clientY };
+    this._agendaDrag = { kind, id, key: (kind === 'task' ? 't' : 'e') + id, originDate, moved: false, startX: e.clientX, startY: e.clientY };
+  }
+
+  _agendaDragOver = (drag, x, y) => {
+    const overDate = this._agendaCellFromPoint(x, y);
+    // Só atualiza o state quando a célula sob o dedo/cursor realmente muda — mousemove dispara dezenas
+    // de vezes por segundo, e cada setState aqui recalcula o renderVals() inteiro do app; sem essa
+    // checagem, arrastar por cima da grade travava a UI de tanto re-render.
+    if (overDate !== this.state.agendaDragOverDate || this.state.draggingEventId !== drag.key) {
+      this.setState({ agendaDragOverDate: overDate, draggingEventId: drag.key });
+    }
   }
 
   _onAgendaDragMove = (e) => {
     const drag = this._agendaDrag;
-    if (!drag) return;
+    if (!drag || drag.touch) return;
     if (!drag.moved) {
       const dx = e.clientX - drag.startX, dy = e.clientY - drag.startY;
       if (Math.abs(dx) < 4 && Math.abs(dy) < 4) return;
       drag.moved = true;
     }
-    const overDate = this._agendaCellFromPoint(e.clientX, e.clientY);
-    // Só atualiza o state quando a célula sob o cursor realmente muda — mousemove dispara dezenas
-    // de vezes por segundo, e cada setState aqui recalcula o renderVals() inteiro do app; sem essa
-    // checagem, arrastar o mouse por cima da grade travava a UI de tanto re-render.
-    if (overDate !== this.state.agendaDragOverDate || this.state.draggingEventId !== drag.eventId) {
-      this.setState({ agendaDragOverDate: overDate, draggingEventId: drag.eventId });
+    this._agendaDragOver(drag, e.clientX, e.clientY);
+  }
+
+  _finishAgendaDrag = (drag, x, y) => {
+    this._agendaDrag = null;
+    const overDate = drag.moved ? this._agendaCellFromPoint(x, y) : null;
+    if (drag.moved) {
+      // A célula solta ainda recebe o click nativo do navegador logo em seguida (mesmo com
+      // stopPropagation/preventDefault no mousedown) — sem essa trava, todo drag também abria o
+      // modal do dia como se tivesse sido um clique comum. No toque o click "fantasma" pode vir
+      // um pouco depois, por isso a trava dura mais.
+      this._agendaJustDragged = true;
+      setTimeout(() => { this._agendaJustDragged = false; }, drag.touch ? 400 : 0);
     }
+    this.setState({ agendaDragOverDate: null, draggingEventId: null });
+    if (!overDate || overDate === drag.originDate) return;
+    if (drag.kind === 'task') this.moveTaskToDate(drag.id, overDate);
+    else this.moveEventToDate(drag.id, overDate);
   }
 
   _onAgendaDragEnd = (e) => {
     const drag = this._agendaDrag;
-    if (!drag) return;
-    this._agendaDrag = null;
-    const overDate = drag.moved ? this._agendaCellFromPoint(e.clientX, e.clientY) : null;
-    if (drag.moved) {
-      // A célula solta ainda recebe o click nativo do navegador logo em seguida (mesmo com
-      // stopPropagation/preventDefault no mousedown) — sem essa trava, todo drag também abria o
-      // modal do dia como se tivesse sido um clique comum. setTimeout(0) libera de novo só depois
-      // desse click síncrono já ter sido processado (ou ignorado).
-      this._agendaJustDragged = true;
-      setTimeout(() => { this._agendaJustDragged = false; }, 0);
+    if (!drag || drag.touch) return;
+    this._finishAgendaDrag(drag, e.clientX, e.clientY);
+  }
+
+  // Toque: segurar ~0,35s na pílula pega ela (vibra, se o aparelho deixar); arrastar o dedo antes
+  // disso é rolagem normal da página e cancela. Mouse continua no caminho do onMouseDown acima.
+  _startAgendaTouch = (kind, id, originDate, e) => {
+    if (e.pointerType === 'mouse') return;
+    clearTimeout(this._agendaTouchTimer);
+    const pending = { kind, id, key: (kind === 'task' ? 't' : 'e') + id, originDate, startX: e.clientX, startY: e.clientY, lastX: e.clientX, lastY: e.clientY };
+    this._agendaTouchPending = pending;
+    this._agendaTouchTimer = setTimeout(() => {
+      if (this._agendaTouchPending !== pending) return;
+      this._agendaTouchPending = null;
+      this._agendaDrag = { ...pending, moved: true, touch: true };
+      try { if (navigator.vibrate) navigator.vibrate(15); } catch (_e) {}
+      this._agendaDragOver(this._agendaDrag, pending.lastX, pending.lastY);
+    }, 350);
+  }
+
+  _onAgendaTouchMove = (e) => {
+    const t = e.touches && e.touches[0];
+    if (!t) return;
+    const pending = this._agendaTouchPending;
+    if (pending) {
+      pending.lastX = t.clientX; pending.lastY = t.clientY;
+      if (Math.abs(t.clientX - pending.startX) > 10 || Math.abs(t.clientY - pending.startY) > 10) {
+        clearTimeout(this._agendaTouchTimer);
+        this._agendaTouchPending = null;
+      }
+      return;
     }
-    this.setState({ agendaDragOverDate: null, draggingEventId: null });
-    if (overDate && overDate !== drag.originDate) this.moveEventToDate(drag.eventId, overDate);
+    const drag = this._agendaDrag;
+    if (!drag || !drag.touch) return;
+    e.preventDefault();
+    drag.lastX = t.clientX; drag.lastY = t.clientY;
+    this._agendaDragOver(drag, t.clientX, t.clientY);
+  }
+
+  _onAgendaTouchEnd = (e) => {
+    clearTimeout(this._agendaTouchTimer);
+    this._agendaTouchPending = null;
+    const drag = this._agendaDrag;
+    if (!drag || !drag.touch) return;
+    const t = e.changedTouches && e.changedTouches[0];
+    if (e.type === 'touchcancel' || !t) { this._agendaDrag = null; this.setState({ agendaDragOverDate: null, draggingEventId: null }); return; }
+    this._finishAgendaDrag(drag, t.clientX, t.clientY);
   }
 
   moveEventToDate = async (eventId, newDate) => {
@@ -5557,6 +5636,24 @@ class Component extends DCLogic {
     const { error } = await window._sb.from('agenda_events').update({ date: newDate }).eq('id', eventId);
     if (error) { this.setState({ agendaEvents: this.state.agendaEvents.map(e => e.id === eventId ? ev : e) }); this._toast('Não foi possível mover o evento. Tente novamente.'); return; }
     this._toast('Evento movido para ' + this.fmtDate(newDate) + '!');
+  }
+
+  // Arrastar a tarefa na grade = mudar o prazo dela. Mesmo esquema otimista do evento.
+  moveTaskToDate = async (taskId, newDate) => {
+    const task = this.state.tasks.find(t => t.id === taskId);
+    if (!task || task.dueDate === newDate) return;
+    this.setState({ tasks: this.state.tasks.map(t => t.id === taskId ? { ...t, dueDate: newDate } : t) });
+    const ok = await this._dbCheck(window._sb.from('tasks').update({ due_date: newDate }).eq('id', taskId), 'Não foi possível mudar o prazo da tarefa. Tente novamente.');
+    if (!ok) { this.setState({ tasks: this.state.tasks.map(t => t.id === taskId ? task : t) }); return; }
+    this._toast('Prazo movido para ' + this.fmtDate(newDate) + '!');
+  }
+
+  // Editar uma tarefa a partir do dia na Agenda: fecha o modal do dia antes, senão o da tarefa
+  // abriria por baixo dele (os dois ficam no mesmo z-index e o do evento vem depois no HTML).
+  editTaskFromAgenda = (task) => {
+    if (!task) return;
+    this.closeEventModal();
+    this.openTaskModal(task);
   }
 
   // ─── Anotações — autosave o tempo todo, sem botão de salvar (espírito dontpad) ─
@@ -7103,25 +7200,32 @@ class Component extends DCLogic {
       const dayEvents = (agendaEventsByDate[dateKey] || []).slice().sort((a, b) => (a.time || '99:99').localeCompare(b.time || '99:99'));
       const dayTasks = agendaTasksByDate[dateKey] || [];
       const isToday = dateKey === agendaTodayStr;
-      const isDragOver = s.draggingEventId && s.agendaDragOverDate === dateKey;
+      const isDragOver = !!s.draggingEventId && s.agendaDragOverDate === dateKey;
+      // Pílula arrastável: sem seleção de texto nem menu do sistema no toque longo do celular.
+      const noTouchUi = { userSelect: 'none', WebkitUserSelect: 'none', WebkitTouchCallout: 'none' };
+      const blockMenu = (e) => { if (this._agendaTouchPending || this._agendaDrag) e.preventDefault(); };
       const dayItemsAll = [
         ...dayEvents.map(ev => ({
           key: 'e' + ev.id, title: ev.title,
           pillStyle: {
             fontSize: agendaItemFontSize, color: '#60A5FA', background: '#2563EB1A', borderRadius: '4px',
             padding: '1px 4px', marginTop: '2px', width: '100%', boxSizing: 'border-box', overflow: 'hidden',
-            textOverflow: 'ellipsis', whiteSpace: 'nowrap', cursor: 'grab', opacity: s.draggingEventId === ev.id ? 0.35 : 1,
+            textOverflow: 'ellipsis', whiteSpace: 'nowrap', cursor: 'grab', opacity: s.draggingEventId === 'e' + ev.id ? 0.35 : 1, ...noTouchUi,
           },
-          onDragStart: (e) => this.startAgendaDrag(ev.id, dateKey, e),
+          onDragStart: (e) => this.startAgendaDrag('event', ev.id, dateKey, e),
+          onTouchStart: (e) => this._startAgendaTouch('event', ev.id, dateKey, e),
+          onContextMenu: blockMenu,
         })),
         ...dayTasks.map(t => ({
           key: 't' + t.id, title: t.title,
           pillStyle: {
             fontSize: agendaItemFontSize, color: '#FBBF24', background: '#F59E0B1F', borderRadius: '4px',
             padding: '1px 4px', marginTop: '2px', width: '100%', boxSizing: 'border-box', overflow: 'hidden',
-            textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+            textOverflow: 'ellipsis', whiteSpace: 'nowrap', cursor: 'grab', opacity: s.draggingEventId === 't' + t.id ? 0.35 : 1, ...noTouchUi,
           },
-          onDragStart: () => {},
+          onDragStart: (e) => this.startAgendaDrag('task', t.id, dateKey, e),
+          onTouchStart: (e) => this._startAgendaTouch('task', t.id, dateKey, e),
+          onContextMenu: blockMenu,
         })),
       ];
       agendaDays.push({
@@ -7151,6 +7255,21 @@ class Component extends DCLogic {
         isDeleting: s.deletingId === ev.id, notDeleting: s.deletingId !== ev.id,
         onEdit: () => this.openEventModal(s.eventModalDate, ev),
         onDelete: () => this.deleteEvent(ev.id),
+      }));
+    // Tarefas com prazo no dia aberto — pendentes primeiro; concluídas continuam aparecendo
+    // (riscadas) pra dar pra desfazer um clique sem querer.
+    const agendaDayTasks = s.tasks.filter(t => t.dueDate && t.dueDate === s.eventModalDate)
+      .slice().sort((a, b) => (a.done ? 1 : 0) - (b.done ? 1 : 0))
+      .map(t => ({
+        id: t.id, title: t.title, done: t.done,
+        titleStyle: { fontSize: '13px', color: t.done ? '#475569' : '#E2E8F0', textDecoration: t.done ? 'line-through' : 'none', overflowWrap: 'break-word' },
+        checkStyle: {
+          width: '18px', height: '18px', borderRadius: '5px', flexShrink: 0, cursor: 'pointer', padding: 0,
+          display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px',
+          border: t.done ? '1px solid #F59E0B' : '1px solid #F59E0B77', background: t.done ? '#F59E0B' : 'transparent', color: '#111118',
+        },
+        onToggle: () => this.toggleTaskDone(t.id),
+        onEdit: () => this.editTaskFromAgenda(this.state.tasks.find(x => x.id === t.id)),
       }));
 
     // Anotações — lista + editor (contenteditable fora do binding de template, ver openNote/newNote).
@@ -8401,6 +8520,7 @@ class Component extends DCLogic {
       showEventModal: s.showEventModal,
       eventModalDateLabel: s.eventModalDate ? this.fmtDate(s.eventModalDate) : '',
       agendaDayEvents, hasAgendaDayEvents: agendaDayEvents.length > 0,
+      agendaDayTasks, hasAgendaDayTasks: agendaDayTasks.length > 0,
       eventModalTitle: s.editEventId ? 'Editar Evento' : 'Novo Evento',
       eventTitle: s.eventTitle, eventTime: s.eventTime, eventNotes: s.eventNotes,
       setEventTitle: e => this.setState({ eventTitle: e.target.value }),

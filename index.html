@@ -4502,8 +4502,8 @@ class Component extends DCLogic {
       const accessToken = await this._getAccessToken();
       if (!accessToken) throw new Error('Não consegui confirmar o seu login. Recarregue a página (F5).');
       // O roteador rápido (Groq) ficou instável demais no modo ao vivo — de volta a ir direto no
-      // Claude sempre, igual o chat de texto normal. jarvis-live-chat continua existindo (deployada,
-      // sem uso) caso valha revisitar depois, só não é mais chamada daqui.
+      // Claude sempre, igual o chat de texto normal. (A jarvis-live-chat foi desativada em 22/09 —
+      // hoje só responde 410 e o código saiu do repositório; está no histórico do git se precisar.)
       // Sem resposta nenhuma do servidor em 60s = erro visível, em vez de carregando pra sempre.
       const ctrl = new AbortController();
       const connectTimer = setTimeout(() => ctrl.abort(), 60000);
@@ -7014,10 +7014,12 @@ class Component extends DCLogic {
     if (this.state.refreshingNews) return;
     this.setState({ refreshingNews: true });
     try {
-      const { data: { session } } = await window._sb.auth.getSession();
+      // Mesmo token "sem travar" do Jarvis (ver _getAccessToken).
+      const accessToken = await this._getAccessToken();
+      if (!accessToken) { this._toast('Não consegui confirmar o seu login. Recarregue a página (F5).'); return; }
       const resp = await fetch('https://evkpskwjzbyzpvvodnwf.supabase.co/functions/v1/news-digest', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.access_token },
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + accessToken },
         body: JSON.stringify({}),
       });
       const data = await resp.json();
@@ -7056,11 +7058,11 @@ class Component extends DCLogic {
   fetchStockQuotes = async () => {
     if (this.state.stockWatchlist.length === 0) { this.setState({ stockQuotes: [] }); return; }
     try {
-      const { data: { session } } = await window._sb.auth.getSession();
-      if (!session) return;
+      const accessToken = await this._getAccessToken();
+      if (!accessToken) return;
       const resp = await fetch('https://evkpskwjzbyzpvvodnwf.supabase.co/functions/v1/stock-quotes', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.access_token },
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + accessToken },
         body: JSON.stringify({}),
       });
       const data = await resp.json();
@@ -7100,11 +7102,11 @@ class Component extends DCLogic {
     const myGen = (this._stockChartGen = (this._stockChartGen || 0) + 1);
     this.setState({ stockChartLoading: true, stockChartError: '' });
     try {
-      const { data: { session } } = await window._sb.auth.getSession();
-      if (!session) return;
+      const accessToken = await this._getAccessToken();
+      if (!accessToken) { if (myGen === this._stockChartGen) this.setState({ stockChartError: 'Não consegui confirmar o seu login. Recarregue a página (F5).', stockChartLoading: false }); return; }
       const resp = await fetch('https://evkpskwjzbyzpvvodnwf.supabase.co/functions/v1/stock-quotes', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.access_token },
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + accessToken },
         body: JSON.stringify({ ticker: stockChartTicker, range, interval }),
       });
       const data = await resp.json();

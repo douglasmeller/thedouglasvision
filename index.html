@@ -3585,12 +3585,57 @@ class Component extends DCLogic {
   _SCREENS = ['home', 'dashboard', 'lancamentos', 'planejamento', 'categorias', 'tarefas', 'agenda', 'notas', 'noticias', 'jarvis', 'configuracoes'];
 
   _screenFromPath = (pathname) => {
-    const seg = (pathname || '/').replace(/^\/+|\/+$/g, '');
+    const seg = (pathname || '/').replace(/^\/+|\/+$/g, '').split('/')[0];
     if (!seg) return 'home';
     return this._SCREENS.includes(seg) ? seg : null; // null = rota desconhecida, não mexe em nada
   }
 
+  // Onde o Sr. Douglas está DENTRO de Anotações também vive no endereço:
+  //   /notas/nota/<id>   nota aberta
+  //   /notas/pasta/<id>  dentro de uma pasta
+  // Sem isso, um F5 devolvia sempre a lista da raiz (a URL só sabia dizer "estou em Anotações").
+  _notePartsFromPath = (pathname) => {
+    const partes = (pathname || '/').replace(/^\/+|\/+$/g, '').split('/');
+    if (partes[0] !== 'notas' || !partes[2]) return {};
+    const id = decodeURIComponent(partes[2]);
+    if (partes[1] === 'nota') return { noteId: id };
+    if (partes[1] === 'pasta') return { folderId: id };
+    return {};
+  }
+
+  _noteIdFromPath = (pathname) => this._notePartsFromPath(pathname).noteId || null
+  _folderIdFromPath = (pathname) => this._notePartsFromPath(pathname).folderId || null
+
   _pathFromScreen = (screen) => screen === 'home' ? '/' : '/' + screen;
+
+  // F5 dentro de uma nota: o endereço traz o id dela, então ela reabre sozinha. A entrada do
+  // histórico é marcada ANTES (replaceState) pra o openNote não empilhar uma entrada a mais —
+  // senão o Voltar logo depois de um F5 cairia numa entrada vazia.
+  _openNoteFromUrl = (noteList, folderList) => {
+    const { noteId, folderId } = this._notePartsFromPath(window.location.pathname);
+    if (folderId) {
+      // Pasta apagada (ou de outro aparelho): volta pra raiz em vez de deixar a tela vazia.
+      const existe = (folderList || []).some(f => f.id === folderId);
+      if (!existe) { window.history.replaceState({ screen: 'notas' }, '', '/notas'); return false; }
+      this.setState({ currentFolderId: folderId });
+      return true;
+    }
+    if (!noteId) return false;
+    const nota = (noteList || []).find(n => n.id === noteId);
+    if (!nota) { window.history.replaceState({ screen: 'notas' }, '', '/notas'); return false; }
+    window.history.replaceState({ screen: 'notas', noteEditor: true }, '', window.location.pathname);
+    // Abrir a nota já leva pra pasta dela, pra fechar a nota cair na pasta certa e não na raiz.
+    if (nota.folderId) this.setState({ currentFolderId: nota.folderId });
+    this.openNote(nota);
+    return true;
+  }
+
+  _pathForState = () => {
+    const s = this.state;
+    if (s.screen === 'notas' && s.editingNoteId) return '/notas/nota/' + encodeURIComponent(s.editingNoteId);
+    if (s.screen === 'notas' && s.currentFolderId) return '/notas/pasta/' + encodeURIComponent(s.currentFolderId);
+    return this._pathFromScreen(s.screen);
+  }
 
   // Chamado a cada re-render (componentDidUpdate) — só empurra uma entrada nova no
   // histórico quando a URL realmente ficou desatualizada em relação ao screen atual,
@@ -3599,8 +3644,14 @@ class Component extends DCLogic {
     const s = this.state;
     const isApp = s.screen !== 'login' && !s.loading && !this._isRecoveryFlow;
     if (!isApp) return;
-    const path = this._pathFromScreen(s.screen);
-    if (window.location.pathname !== path) window.history.pushState({ screen: s.screen }, '', path);
+    const path = this._pathForState();
+    if (window.location.pathname === path) return;
+    const atual = window.history.state;
+    // Abrir e fechar nota já empilham entrada própria (ver _enterNoteHistory/_leaveNoteHistory).
+    // Quando a entrada atual JÁ é a da nota, aqui só corrige o endereço dela — empilhar de novo
+    // criaria uma entrada fantasma e o Voltar pareceria não fazer nada.
+    if (atual && atual.noteEditor && s.screen === 'notas') window.history.replaceState(atual, '', path);
+    else window.history.pushState({ screen: s.screen, noteEditor: !!(s.screen === 'notas' && s.editingNoteId) }, '', path);
   }
 
   componentDidUpdate() {
@@ -3693,7 +3744,12 @@ class Component extends DCLogic {
         return;
       }
       const screen = this._screenFromPath(window.location.pathname);
-      if (screen) this.setState({ screen, sidebarOpen: false });
+      if (!screen) return;
+      // A pasta aberta faz parte do endereço, então Voltar/Avançar também anda entre pastas.
+      const pasta = this._folderIdFromPath(window.location.pathname);
+      const patch = { screen, sidebarOpen: false };
+      if (screen === 'notas') patch.currentFolderId = pasta || null;
+      this.setState(patch);
     });
     // Barra de formatação flutuante do editor de notas — aparece perto de qualquer seleção de
     // texto não vazia (duplo clique, arrastar o mouse, Shift+seta), igual Notion/Google Docs.
@@ -4079,7 +4135,12 @@ class Component extends DCLogic {
       screen: this._screenFromPath(window.location.pathname) || this._load('defaultScreen') || 'home',
       cfgDefaultScreen: this._load('defaultScreen') || 'home', loading: false, loginError: '',
       lastSyncAt: Date.now(),
-    }, () => { this._autoRecurring(); this._autoRecurringExpenses(); if (stockList.length > 0) this.fetchStockQuotes(); this.loadJarvisHistory(); this._loadNoteTrash(); });
+    }, () => {
+      this._autoRecurring(); this._autoRecurringExpenses();
+      if (stockList.length > 0) this.fetchStockQuotes();
+      this.loadJarvisHistory(); this._loadNoteTrash();
+      this._openNoteFromUrl(noteList, folderList);
+    });
   }
 
   _txnRowIn = (t) => ({

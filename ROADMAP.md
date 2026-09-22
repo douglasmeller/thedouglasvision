@@ -107,6 +107,13 @@ negrito/itálico e conferir o HTML gravado; exportar PDF com cada fonte e confer
   Arial, Courier). O HTML de impressão também ganhou regras próprias de negrito, itálico, títulos,
   parágrafos e listas — sem isso o reset do app deixava tudo espremido no PDF.
 
+**Emendado em 22/09 (pedido na hora):** F5 dentro de uma nota (ou dentro de uma pasta) jogava o
+Sr. Douglas de volta pra lista da raiz — a URL só sabia dizer "estou em Anotações". Agora o lugar
+exato vive no endereço: `/notas/nota/<id>` e `/notas/pasta/<id>`. F5 reabre a nota (já dentro da
+pasta dela), nota ou pasta apagada cai na raiz sem tela vazia, e o Voltar do navegador passou a
+andar entre pastas também. 12 testes novos, e os 8 caminhos antigos do botão Voltar seguem
+passando.
+
 ---
 
 ### Fase 3 — Jarvis sabe em qual tela o Sr. Douglas está
@@ -145,6 +152,14 @@ recuo das listas. Ou seja: o Jarvis escreveu um HTML que, dentro deste app, não
   outro lugar cai no mesmo problema hoje). Melhor ainda: normalizar na entrada, convertendo `<h2>`
   em `.tdv-h2` ao carregar/salvar, pra que exportação, busca e conversor de Markdown enxerguem tudo
   igual (o conversor já aceita `H2` além de `.tdv-h2`, mas o resto do editor não).
+
+**Jarvis mexendo na nota, ao vivo (pedido de 22/09):** hoje, quando o Jarvis altera a nota aberta,
+só dá pra ver o resultado com F5. A nota aberta deve entrar em modo "o Jarvis está trabalhando":
+conteúdo desfocado, efeito de código/binário correndo por cima, barra de carregamento estilo filme
+de hacker, tudo nas cores do Jarvis e do sistema — e, ao terminar, o texto novo aparece sozinho.
+Dá pra fazer sem inventar canal novo: o chat já recebe um evento `tool` com o nome da ferramenta e
+um `done` com `dataChanged`; basta ligar esses eventos ao editor aberto e recarregar a nota do banco
+no fim.
 
 **Botão "J" na barra de formatação:** letra "J" azul na fonte do Jarvis, do lado dos botões de cor
 e negrito. Um clique = "dá uma ajeitada básica nesta nota" (títulos, listas, espaçamento, sem

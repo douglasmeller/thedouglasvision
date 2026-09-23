@@ -14,7 +14,7 @@ dia conforme novos pedidos chegavam.
 **Fase 3 — Jarvis sabe onde o Sr. Douglas está.** ✅ Feita em 22/09.
 **Fase 4 — Jarvis formata anotação de verdade.** ✅ Feita em 22/09.
 **Fase 5 — Tabela com mais linhas e colunas.** ✅ Feita em 22/09.
-**Fase 6 — Tarefas recorrentes.**
+**Fase 6 — Tarefas recorrentes.** ✅ Feita em 23/09.
 **Fase 7 — Agenda: visão por semana e por dia, tudo numa tela só** (pedido de 22/09).
 **Fase 8 — Efeito visual na ligação ao vivo com o Jarvis.** ✅ Feita em 23/09.
 **Fase 9 — Hover "piscada" deve ficar aceso enquanto o mouse estiver em cima.** ✅ Feita em 23/09.
@@ -242,15 +242,39 @@ devolver sempre o mesmo valor: 500 ids gerados, todos únicos.
 
 ---
 
-### Fase 6 — Tarefas recorrentes
-Tarefa que se repete (toda semana, todo mês, dias úteis…), como já existe na Agenda. O melhor
-caminho é reaproveitar a mesma regra de repetição da Agenda (`recurrence`, `recurrence_days`,
-`recurrence_until`, `recurrence_count`, `exdates`), que já está pronta, testada e igual nos dois
-lados (app e Edge Function).
-**A decidir antes de codar:** o que acontece ao concluir uma ocorrência — a tarefa "renasce" no
-próximo prazo (modelo do Todoist) ou cada ocorrência vira uma tarefa própria no banco? A primeira é
-mais simples e não enche a tabela; a segunda deixa o histórico do que foi feito em cada data.
-Precisa também aparecer na grade da Agenda e nas tools do Jarvis (create_task/update_task).
+### Fase 6 — Tarefas recorrentes — FEITA (23/09)
+**Decisão tomada:** modelo Todoist/Things — uma linha só por tarefa, que avança pro próximo prazo
+ao concluir, em vez de criar uma linha nova por ocorrência (isso lotaria a tabela e a Agenda
+ficaria cheia de pílulas repetidas da mesma tarefa). Pra não perder o "deixa o histórico" que o
+modelo alternativo daria de graça, cada conclusão fica registrada numa tabela leve à parte
+(`task_completions`: id da tarefa, prazo daquela ocorrência, quando foi concluída).
+
+**Banco:** `tasks` ganhou os mesmos campos de repetição já usados nos eventos da Agenda
+(`recurrence`, `recurrence_days`, `recurrence_until`, `recurrence_count`), mais
+`recurrence_done_count` (quantas vezes já rodou, pra saber quando o "N vezes" esgota).
+
+**Cálculo do próximo prazo:** reaproveita a MESMA máquina de repetição da Agenda
+(`_eventStartsInRange`/`eventStartsInRange`, idêntica no app e na Edge Function) — a tarefa é
+tratada como um evento de um dia só, sem criar nenhuma lógica de data nova nem duplicar código.
+
+**Concluir:** marca a ocorrência atual como feita no histórico e avança `due_date` pro próximo,
+mantendo `done: false` (a tarefa "reaparece" pra próxima data, como Todoist/Things fazem). Quando a
+repetição esgota (bateu o "N vezes" ou passou da data final), a tarefa fica marcada como concluída
+de vez, igual uma tarefa comum. **Desmarcar nunca desfaz o avanço** — só risca de volta a ocorrência
+atual (voltar pra uma ocorrência anterior seria ambíguo, e nenhum app de tarefa recorrente oferece
+isso). Trocar a regra de repetição numa tarefa já em andamento zera o contador de vezes (é uma
+repetição nova a partir dali).
+
+**Jarvis:** `create_task`/`update_task` aceitam os mesmos campos de repetição; marcar `done: true`
+numa tarefa recorrente pelo Jarvis se comporta exatamente igual ao clique no app (avança ou esgota),
+com o mesmo registro no histórico. `list_tasks` devolve um resumo em texto da repetição
+(`repeats`), pra ele nunca sugerir recriar uma tarefa que já existe recorrente.
+
+**Testado:** 17 casos no app + 17 na Edge Function (criar com/sem prazo, `custom` sem dias, avançar
+duas vezes seguidas, esgotar por contagem, esgotar por data final, desmarcar não volta a data,
+trocar a regra zera o contador, tarefa comum sem repetição continua igual, `list_tasks` mostra o
+texto certo). Confirmado no navegador com clique de verdade no checkbox — avançou a data
+corretamente e a lista reordenou sozinha.
 
 
 ---

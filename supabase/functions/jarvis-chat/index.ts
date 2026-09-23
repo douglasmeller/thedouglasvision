@@ -206,22 +206,26 @@ const TOOLS = [
   // ─── Tarefas ──────────────────────────────────────────────────────────────
   {
     name: "create_task",
-    description: "Cria uma tarefa na aba Tarefas.",
+    description: "Cria uma tarefa na aba Tarefas. Pode se repetir (toda semana, todo mês...) — concluir uma ocorrência recorrente avança pro próximo prazo em vez de ficar marcada pra sempre.",
     input_schema: {
       type: "object",
       properties: {
         title: { type: "string" },
         notes: { type: "string" },
-        due_date: { type: "string", description: "Prazo, YYYY-MM-DD. Opcional." },
+        due_date: { type: "string", description: "Prazo, YYYY-MM-DD. Obrigatório se a tarefa repete (é o ponto de partida da repetição)." },
         priority: { type: "string", enum: ["high", "medium", "low"] },
         list_name: { type: "string", description: "Nome da lista/agrupamento. Opcional." },
+        recurrence: { type: "string", enum: ["daily", "weekdays", "weekly", "custom", "monthly", "yearly"], description: "Repetição: daily=todo dia, weekdays=seg a sex, weekly=toda semana no mesmo dia da semana de due_date, custom=dias em recurrence_days, monthly=todo mês no mesmo dia, yearly=todo ano. Omita se não repete." },
+        recurrence_days: { type: "array", items: { type: "number" }, description: "Só com recurrence=custom: dias da semana, 0=domingo … 6=sábado." },
+        recurrence_until: { type: "string", description: "Repete até esse dia YYYY-MM-DD (inclusive). Opcional." },
+        recurrence_count: { type: "number", description: "Ou: repete N vezes no total. Opcional." },
       },
       required: ["title"],
     },
   },
   {
     name: "update_task",
-    description: "Edita uma tarefa existente pelo id (use list_tasks pra achar). Serve também pra marcar como concluída (done: true).",
+    description: "Edita uma tarefa existente pelo id (use list_tasks pra achar). Marcar done:true numa tarefa que repete avança ela pro próximo prazo (não fica riscada pra sempre) — a não ser que a repetição já tenha terminado.",
     input_schema: {
       type: "object",
       properties: {
@@ -232,6 +236,10 @@ const TOOLS = [
         due_date: { type: "string", description: "YYYY-MM-DD, ou string vazia pra remover o prazo." },
         priority: { type: "string", enum: ["high", "medium", "low"] },
         list_name: { type: "string" },
+        recurrence: { type: "string", description: "daily | weekdays | weekly | custom | monthly | yearly, ou string vazia pra parar de repetir." },
+        recurrence_days: { type: "array", items: { type: "number" } },
+        recurrence_until: { type: "string", description: "YYYY-MM-DD, ou string vazia." },
+        recurrence_count: { type: "number", description: "N vezes, ou 0 pra tirar o limite." },
       },
       required: ["id"],
     },
@@ -630,6 +638,43 @@ async function locationFields(input: EventRow): Promise<EventRow> {
   return { location: text, location_lat: geo ? geo.lat : null, location_lon: geo ? geo.lon : null };
 }
 
+// Mesma validação/normalização de repetição do evento, mas sem os campos exclusivos de Agenda
+// (hora, dia inteiro, vários dias) — usada por create_task/update_task.
+function taskRecurrenceFromInput(input: EventRow, partial: boolean): { patch?: EventRow; error?: string } {
+  const patch: EventRow = {};
+  const has = (k: string) => input[k] !== undefined;
+  if (has("recurrence")) {
+    if (input.recurrence && !RECURRENCES.includes(input.recurrence)) return { error: "recurrence precisa ser daily, weekdays, weekly, custom, monthly ou yearly." };
+    patch.recurrence = input.recurrence || null;
+    if (!input.recurrence) { patch.recurrence_days = null; patch.recurrence_until = null; patch.recurrence_count = null; patch.recurrence_done_count = 0; }
+  }
+  if (has("recurrence_days")) {
+    const days = Array.isArray(input.recurrence_days) ? input.recurrence_days.map(Number).filter((n: number) => Number.isInteger(n) && n >= 0 && n <= 6) : [];
+    patch.recurrence_days = days.length ? [...new Set(days)].sort() : null;
+  }
+  if (has("recurrence_until")) {
+    if (input.recurrence_until && !isValidDate(input.recurrence_until)) return { error: "recurrence_until precisa estar no formato YYYY-MM-DD." };
+    patch.recurrence_until = input.recurrence_until || null;
+  }
+  if (has("recurrence_count")) {
+    const n = Number(input.recurrence_count);
+    patch.recurrence_count = n >= 1 ? Math.floor(n) : null;
+  }
+  if (!partial && patch.recurrence === "custom" && !patch.recurrence_days) return { error: "recurrence=custom precisa de recurrence_days (0=domingo … 6=sábado)." };
+  return { patch };
+}
+
+// Calcula o PRÓXIMO prazo de uma tarefa recorrente depois de uma data — mesma máquina de
+// repetição da Agenda (eventStartsInRange), passando a tarefa como se fosse um evento de um dia
+// só. 400 dias de janela cobre até o passo anual.
+function nextTaskDate(task: EventRow, afterKey: string): string | null {
+  if (!task.recurrence || !task.due_date) return null;
+  const fake = { date: task.due_date, end_date: null, exdates: [], recurrence: task.recurrence, recurrence_days: task.recurrence_days, recurrence_until: task.recurrence_until, recurrence_count: null };
+  const from = dAdd(afterKey, 1);
+  const [proximo] = eventStartsInRange(fake, from, dAdd(afterKey, 400));
+  return proximo || null;
+}
+
 // Valida e normaliza os campos de duração/repetição vindos de create_event/update_event.
 // `partial` = update: só mexe no que veio. Devolve { patch } ou { error }.
 function eventFieldsFromInput(input: EventRow, partial: boolean): { patch?: EventRow; error?: string } {
@@ -875,9 +920,13 @@ async function executeTool(sb: SupabaseClient, userId: string, name: string, inp
       if (!input.title || typeof input.title !== "string") return { error: "title é obrigatório." };
       if (input.due_date && !isValidDate(input.due_date)) return { error: "due_date precisa estar no formato YYYY-MM-DD." };
       if (input.priority && !["high", "medium", "low"].includes(input.priority)) return { error: "priority precisa ser 'high', 'medium' ou 'low'." };
+      const recFields = taskRecurrenceFromInput(input, false);
+      if (recFields.error) return { error: recFields.error };
+      if (recFields.patch?.recurrence && !input.due_date) return { error: "due_date é obrigatório pra criar uma tarefa que repete — é o ponto de partida." };
       const row = {
         id: genId("k"), user_id: userId, title: input.title, notes: input.notes || null, done: false,
         due_date: input.due_date || null, priority: input.priority || null, list_name: input.list_name || null,
+        ...recFields.patch,
       };
       const { data, error } = await sb.from("tasks").insert(row).select();
       if (error) return { error: error.message };
@@ -886,13 +935,11 @@ async function executeTool(sb: SupabaseClient, userId: string, name: string, inp
 
     case "update_task": {
       if (!input.id) return { error: "id é obrigatório." };
-      const patch: Record<string, unknown> = {};
+      const recFields = taskRecurrenceFromInput(input, true);
+      if (recFields.error) return { error: recFields.error };
+      const patch: Record<string, unknown> = { ...recFields.patch };
       if (input.title !== undefined) patch.title = input.title;
       if (input.notes !== undefined) patch.notes = input.notes || null;
-      if (input.done !== undefined) {
-        patch.done = !!input.done;
-        patch.completed_at = input.done ? new Date().toISOString() : null;
-      }
       if (input.due_date !== undefined) {
         if (input.due_date && !isValidDate(input.due_date)) return { error: "due_date precisa estar no formato YYYY-MM-DD." };
         patch.due_date = input.due_date || null;
@@ -902,6 +949,32 @@ async function executeTool(sb: SupabaseClient, userId: string, name: string, inp
         patch.priority = input.priority || null;
       }
       if (input.list_name !== undefined) patch.list_name = input.list_name || null;
+      // Concluir uma tarefa recorrente não risca ela pra sempre — avança pro próximo prazo, igual
+      // o checkbox do app (mesmo espírito de Todoist/Things: uma linha só, sem lotar a tabela a
+      // cada ocorrência). Só marca "done" de vez quando a repetição chegou no fim.
+      if (input.done === true) {
+        const { data: atual } = await sb.from("tasks").select("*").eq("id", input.id).maybeSingle();
+        const rec = patch.recurrence !== undefined ? patch.recurrence : atual?.recurrence;
+        if (atual && rec) {
+          const doneCount = (atual.recurrence_done_count || 0) + 1;
+          const limite = patch.recurrence_count !== undefined ? patch.recurrence_count : atual.recurrence_count;
+          const esgotou = limite && doneCount >= limite;
+          const dueDate = patch.due_date !== undefined ? patch.due_date : atual.due_date;
+          const taskParaCalcular = { ...atual, ...patch, due_date: dueDate };
+          const proximo = esgotou ? null : nextTaskDate(taskParaCalcular, dueDate);
+          if (proximo) {
+            patch.due_date = proximo; patch.done = false; patch.completed_at = new Date().toISOString(); patch.recurrence_done_count = doneCount;
+          } else {
+            patch.done = true; patch.completed_at = new Date().toISOString(); patch.recurrence_done_count = doneCount;
+          }
+          const { error: logErr } = await sb.from("task_completions").insert({ task_id: input.id, user_id: userId, due_date: dueDate });
+          if (logErr) console.error("task_completions falhou:", logErr.message);
+        } else {
+          patch.done = true; patch.completed_at = new Date().toISOString();
+        }
+      } else if (input.done === false) {
+        patch.done = false; patch.completed_at = null;
+      }
       const { data, error } = await sb.from("tasks").update(patch).eq("id", input.id).select();
       if (error) return { error: error.message };
       if (!data || data.length === 0) return { error: "Nenhuma tarefa com esse id foi encontrada (ou não pertence a você)." };
@@ -917,7 +990,7 @@ async function executeTool(sb: SupabaseClient, userId: string, name: string, inp
     }
 
     case "list_tasks": {
-      let q = sb.from("tasks").select("id, title, notes, done, due_date, priority, list_name")
+      let q = sb.from("tasks").select("id, title, notes, done, due_date, priority, list_name, recurrence, recurrence_days, recurrence_until, recurrence_count")
         .order("due_date", { ascending: true, nullsFirst: false }).limit(input.limit || 30);
       const status = input.status || "pending";
       if (status === "pending") q = q.eq("done", false);
@@ -925,7 +998,9 @@ async function executeTool(sb: SupabaseClient, userId: string, name: string, inp
       if (input.search) q = q.ilike("title", `%${input.search}%`);
       const { data, error } = await q;
       if (error) return { error: error.message };
-      return { tasks: data };
+      // recurrenceText espera o campo 'date' (nome usado pelos eventos) — a tarefa chama isso de due_date.
+      const tasks = (data || []).map((t: EventRow) => ({ ...t, repeats: t.recurrence ? recurrenceText({ ...t, date: t.due_date }) : null }));
+      return { tasks };
     }
 
     // ─── Agenda ─────────────────────────────────────────────────────────────

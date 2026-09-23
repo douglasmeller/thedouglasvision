@@ -1859,6 +1859,9 @@
                         <sc-if value="{{ tk.hasListName }}" hint-placeholder-val="{{ false }}">
                           <span style="font-size: 10px; padding: 2px 7px; border-radius: 20px; background: #33415522; color: #64748B; font-weight: 600;">{{ tk.listName }}</span>
                         </sc-if>
+                        <sc-if value="{{ tk.isRecurring }}" hint-placeholder-val="{{ false }}">
+                          <span title="{{ tk.recurrenceLabel }}" style="font-size: 10px; padding: 2px 7px; border-radius: 20px; background: #2563EB22; color: #60A5FA; font-weight: 600; display: flex; align-items: center; gap: 3px;"><i class="ph ph-repeat" style="font-size: 10px;"></i>{{ tk.recurrenceLabel }}</span>
+                        </sc-if>
                       </div>
                     </div>
                     <div style="display: flex; gap: 4px; flex-shrink: 0;">
@@ -1907,6 +1910,50 @@
                   <label style="display: block; font-size: 11px; color: #475569; margin-bottom: 6px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Lista <span style="color: #334155; font-weight: 400; text-transform: none;">(opcional)</span></label>
                   <input type="text" value="{{ taskListName }}" onInput="{{ setTaskListName }}" placeholder="Ex: Pessoal, Trabalho" style="width: 100%; box-sizing: border-box; background: #0D0D1A; border: 1px solid #1E2A45; border-radius: 8px; padding: 11px 14px; color: #E2E8F0; font-size: 14px; font-family: inherit;">
                 </div>
+                <div>
+                  <label style="display: block; font-size: 11px; color: #475569; margin-bottom: 6px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Repetir</label>
+                  <select value="{{ taskRecurrence }}" onChange="{{ setTaskRecurrence }}" style="width: 100%; box-sizing: border-box; background: #0D0D1A; border: 1px solid #1E2A45; border-radius: 8px; padding: 11px 14px; color: #E2E8F0; font-size: 14px; font-family: inherit; color-scheme: dark; cursor: pointer;">
+                    <option value="">Não repete</option>
+                    <option value="daily">Todo dia</option>
+                    <option value="weekdays">Dias úteis (seg a sex)</option>
+                    <option value="weekly">Toda semana</option>
+                    <option value="custom">Dias da semana específicos</option>
+                    <option value="monthly">Todo mês</option>
+                    <option value="yearly">Todo ano</option>
+                  </select>
+                </div>
+                <sc-if value="{{ isCustomTaskRecurrence }}" hint-placeholder-val="{{ false }}">
+                  <div style="display: flex; gap: 5px; flex-wrap: wrap;">
+                    <sc-for list="{{ taskRecurrenceDayChips }}" as="dc" hint-placeholder-count="7">
+                      <button onClick="{{ dc.onClick }}" style="{{ dc.style }}">{{ dc.label }}</button>
+                    </sc-for>
+                  </div>
+                </sc-if>
+                <sc-if value="{{ hasTaskRecurrence }}" hint-placeholder-val="{{ false }}">
+                  <div>
+                    <label style="display: block; font-size: 11px; color: #475569; margin-bottom: 6px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Termina a repetição</label>
+                    <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                      <div style="flex: 1; min-width: 130px;">
+                        <select value="{{ taskRecEnd }}" onChange="{{ setTaskRecEnd }}" style="width: 100%; box-sizing: border-box; background: #0D0D1A; border: 1px solid #1E2A45; border-radius: 8px; padding: 11px 14px; color: #E2E8F0; font-size: 14px; font-family: inherit; color-scheme: dark; cursor: pointer;">
+                          <option value="never">Nunca</option>
+                          <option value="until">Em uma data</option>
+                          <option value="count">Depois de N vezes</option>
+                        </select>
+                      </div>
+                      <sc-if value="{{ isTaskRecUntil }}" hint-placeholder-val="{{ false }}">
+                        <div style="flex: 1; min-width: 130px;">
+                          <input type="date" value="{{ taskRecUntil }}" min="{{ taskDueDate }}" onInput="{{ setTaskRecUntil }}" style="width: 100%; box-sizing: border-box; background: #0D0D1A; border: 1px solid #1E2A45; border-radius: 8px; padding: 11px 14px; color: #E2E8F0; font-size: 14px; font-family: inherit; color-scheme: dark;">
+                        </div>
+                      </sc-if>
+                      <sc-if value="{{ isTaskRecCount }}" hint-placeholder-val="{{ false }}">
+                        <div style="width: 96px;">
+                          <input type="number" min="1" max="999" value="{{ taskRecCount }}" onInput="{{ setTaskRecCount }}" placeholder="Ex: 10" style="width: 100%; box-sizing: border-box; background: #0D0D1A; border: 1px solid #1E2A45; border-radius: 8px; padding: 11px 14px; color: #E2E8F0; font-size: 14px; font-family: inherit; color-scheme: dark;">
+                        </div>
+                      </sc-if>
+                    </div>
+                    <div style="font-size: 11px; color: #3B82F6; margin-top: 7px; display: flex; align-items: center; gap: 5px;"><i class="ph ph-repeat"></i><span>{{ taskRecSummary }}</span></div>
+                  </div>
+                </sc-if>
                 <div>
                   <label style="display: block; font-size: 11px; color: #475569; margin-bottom: 6px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Notas <span style="color: #334155; font-weight: 400; text-transform: none;">(opcional)</span></label>
                   <textarea class="reading-font" value="{{ taskNotes }}" onInput="{{ setTaskNotes }}" rows="3" placeholder="Detalhes, links, contexto…" style="width: 100%; box-sizing: border-box; background: #0D0D1A; border: 1px solid #1E2A45; border-radius: 8px; padding: 11px 14px; color: #E2E8F0; font-size: 13px; font-family: inherit; line-height: 1.5; resize: vertical;"></textarea>
@@ -3514,6 +3561,11 @@ class Component extends DCLogic {
     taskDueDate: '',
     taskPriority: '',
     taskListName: '',
+    taskRecurrence: '',
+    taskRecurrenceDays: [],
+    taskRecEnd: 'never',
+    taskRecUntil: '',
+    taskRecCount: '',
     savingTask: false,
     taskFilter: 'pending', // 'pending' | 'done' | 'all'
 
@@ -4344,12 +4396,20 @@ class Component extends DCLogic {
   _taskRowIn = (t) => ({
     id: t.id, title: t.title, notes: t.notes || '', done: !!t.done,
     dueDate: t.due_date, priority: t.priority || '', listName: t.list_name || '',
+    recurrence: t.recurrence || '', recurrenceDays: t.recurrence_days || [],
+    recurrenceUntil: t.recurrence_until || '', recurrenceCount: t.recurrence_count || null,
+    recurrenceDoneCount: t.recurrence_done_count || 0,
   })
 
   _taskRowOut = (task, uid) => ({
     id: task.id, user_id: uid, title: task.title, notes: task.notes || null, done: task.done,
     due_date: task.dueDate || null, priority: task.priority || null, list_name: task.listName || null,
     completed_at: task.done ? new Date().toISOString() : null,
+    recurrence: task.recurrence || null,
+    recurrence_days: task.recurrence === 'custom' && task.recurrenceDays && task.recurrenceDays.length ? task.recurrenceDays : null,
+    recurrence_until: task.recurrence && task.recurrenceUntil ? task.recurrenceUntil : null,
+    recurrence_count: task.recurrence && task.recurrenceCount ? task.recurrenceCount : null,
+    recurrence_done_count: task.recurrenceDoneCount || 0,
   })
 
   _eventRowIn = (ev) => ({
@@ -5868,39 +5928,79 @@ class Component extends DCLogic {
 
   // ─── Tarefas ─────────────────────────────────────────────────────────────
 
+  _blankTaskRecurrence = () => ({
+    taskRecurrence: '', taskRecurrenceDays: [], taskRecEnd: 'never', taskRecUntil: '', taskRecCount: '',
+  })
+
   openTaskModal = (task) => {
     if (task) {
       this.setState({
         showTaskModal: true, editTaskId: task.id, taskTitle: task.title, taskNotes: task.notes || '',
         taskDueDate: task.dueDate || '', taskPriority: task.priority || '', taskListName: task.listName || '',
+        taskRecurrence: task.recurrence || '', taskRecurrenceDays: task.recurrenceDays || [],
+        taskRecEnd: task.recurrenceUntil ? 'until' : (task.recurrenceCount ? 'count' : 'never'),
+        taskRecUntil: task.recurrenceUntil || '', taskRecCount: task.recurrenceCount ? String(task.recurrenceCount) : '',
       });
     } else {
       this.setState({
         showTaskModal: true, editTaskId: null, taskTitle: '', taskNotes: '',
-        taskDueDate: '', taskPriority: '', taskListName: '',
+        taskDueDate: '', taskPriority: '', taskListName: '', ...this._blankTaskRecurrence(),
       });
     }
   }
 
-  closeTaskModal = () => this.setState({ showTaskModal: false });
+  closeTaskModal = () => this.setState({ showTaskModal: false, ...this._blankTaskRecurrence() });
+
+  setTaskRecurrence = (e) => {
+    const v = e.target.value;
+    // "Dias específicos" já vem com o dia da semana do prazo marcado — mesmo comportamento já
+    // usado no formulário de evento da Agenda.
+    this.setState(st => ({ taskRecurrence: v, taskRecurrenceDays: v === 'custom' && !st.taskRecurrenceDays.length && st.taskDueDate ? [this._dParse(st.taskDueDate).getUTCDay()] : st.taskRecurrenceDays }));
+  }
+  setTaskRecEnd = (e) => this.setState({ taskRecEnd: e.target.value })
+  setTaskRecUntil = (e) => this.setState({ taskRecUntil: e.target.value })
+  setTaskRecCount = (e) => this.setState({ taskRecCount: e.target.value })
+
+  // Calcula o PRÓXIMO prazo depois de uma data — reaproveita a mesma máquina de repetição já
+  // testada da Agenda (_eventStartsInRange), passando a tarefa como se fosse um evento de um dia
+  // só (sem endDate). 400 dias de janela cobre até o passo anual.
+  _nextTaskDate = (task, afterKey) => {
+    if (!task.recurrence || !task.dueDate) return null;
+    const fake = { date: task.dueDate, endDate: '', exdates: [], recurrence: task.recurrence, recurrenceDays: task.recurrenceDays || [], recurrenceUntil: task.recurrenceUntil || '', recurrenceCount: null };
+    const from = this._dAdd(afterKey, 1);
+    const [proximo] = this._eventStartsInRange(fake, from, this._dAdd(afterKey, 400));
+    return proximo || null;
+  }
 
   saveTask = async () => {
     const s = this.state;
     if (s.savingTask) return;
     const title = s.taskTitle.trim();
     if (!title) return;
+    const rec = s.taskRecurrence || '';
+    if (rec && !s.taskDueDate) { this._toast('Escolha um prazo — a repetição precisa de uma data pra começar.'); return; }
+    if (rec === 'custom' && !s.taskRecurrenceDays.length) { this._toast('Escolha pelo menos um dia da semana pra repetir.'); return; }
+    if (rec && s.taskRecEnd === 'until' && (!s.taskRecUntil || s.taskRecUntil < s.taskDueDate)) { this._toast('A data final da repetição precisa ser depois do prazo.'); return; }
+    if (rec && s.taskRecEnd === 'count' && !(parseInt(s.taskRecCount, 10) >= 1)) { this._toast('Diga quantas vezes a tarefa se repete.'); return; }
     const prevTask = s.editTaskId ? s.tasks.find(t => t.id === s.editTaskId) : null;
+    // Trocar a regra de repetição numa tarefa que já editou zera o contador de vezes — é uma
+    // repetição nova a partir de agora, não continuação da antiga.
+    const mudouRegra = prevTask && (prevTask.recurrence !== rec || (rec === 'custom' && JSON.stringify((prevTask.recurrenceDays || []).slice().sort()) !== JSON.stringify(s.taskRecurrenceDays.slice().sort())));
     const task = {
       id: s.editTaskId || this._genId('k'),
       title, notes: s.taskNotes.trim(), dueDate: s.taskDueDate || null,
       priority: s.taskPriority || null, listName: s.taskListName.trim() || null,
       done: prevTask ? prevTask.done : false,
+      recurrence: rec, recurrenceDays: rec === 'custom' ? s.taskRecurrenceDays.slice().sort() : [],
+      recurrenceUntil: rec && s.taskRecEnd === 'until' ? s.taskRecUntil : '',
+      recurrenceCount: rec && s.taskRecEnd === 'count' ? (parseInt(s.taskRecCount, 10) || null) : null,
+      recurrenceDoneCount: mudouRegra || !rec ? 0 : (prevTask ? prevTask.recurrenceDoneCount : 0),
     };
     this.setState({ savingTask: true });
     const { error } = await window._sb.from('tasks').upsert(this._taskRowOut(task, s.user.id));
     if (error) { this.setState({ savingTask: false }); this._toast('Não foi possível salvar a tarefa. Tente novamente.'); return; }
     const tasks = s.editTaskId ? s.tasks.map(t => t.id === s.editTaskId ? task : t) : [...s.tasks, task];
-    this.setState({ tasks, showTaskModal: false, savingTask: false });
+    this.setState({ tasks, showTaskModal: false, savingTask: false, ...this._blankTaskRecurrence() });
     this._toast(s.editTaskId ? 'Tarefa atualizada!' : 'Tarefa criada!');
     if (!s.editTaskId) this._playHudTone(720, 0.08, 'sine');
   }
@@ -5913,9 +6013,42 @@ class Component extends DCLogic {
     this._toast('Tarefa excluída.');
   }
 
+  // Grava no histórico leve (task_completions) que uma ocorrência foi feita numa data — não
+  // bloqueia o resto se falhar (é só registro, não é dado essencial pra tarefa funcionar).
+  _logTaskCompletion = async (taskId, dueDate) => {
+    const { error } = await window._sb.from('task_completions').insert({ task_id: taskId, user_id: this.state.user.id, due_date: dueDate || null });
+    if (error) console.warn('task_completions: não gravou', error);
+  }
+
   toggleTaskDone = async (id) => {
     const task = this.state.tasks.find(t => t.id === id);
     if (!task) return;
+    // Concluir uma tarefa recorrente não risca ela pra sempre — avança pro próximo prazo (igual
+    // Todoist/Things), pra não precisar recriar a tarefa toda vez. Desmarcar NUNCA desfaz esse
+    // avanço (só risca de volta a ocorrência atual): "voltar" pra ocorrência anterior seria
+    // ambíguo, e nenhum app de tarefa recorrente oferece isso.
+    if (!task.done && task.recurrence) {
+      const doneCount = (task.recurrenceDoneCount || 0) + 1;
+      const esgotou = task.recurrenceCount && doneCount >= task.recurrenceCount;
+      const proximo = esgotou ? null : this._nextTaskDate(task, task.dueDate);
+      if (proximo) {
+        const updated = { ...task, dueDate: proximo, done: false, recurrenceDoneCount: doneCount };
+        this.setState({ tasks: this.state.tasks.map(t => t.id === id ? updated : t) });
+        const ok = await this._dbCheck(window._sb.from('tasks').update({ due_date: proximo, done: false, completed_at: new Date().toISOString(), recurrence_done_count: doneCount }).eq('id', id), 'Não foi possível atualizar a tarefa. Tente novamente.');
+        if (!ok) { this.setState({ tasks: this.state.tasks.map(t => t.id === id ? task : t) }); return; }
+        this._logTaskCompletion(id, task.dueDate);
+        this._toast('Concluída! Próxima: ' + this.fmtDate(proximo) + '.');
+        return;
+      }
+      // Sem próxima data (chegou no fim, ou bateu o "N vezes"): conclui de vez, igual tarefa comum.
+      const updated = { ...task, done: true, recurrenceDoneCount: doneCount };
+      this.setState({ tasks: this.state.tasks.map(t => t.id === id ? updated : t) });
+      const ok = await this._dbCheck(window._sb.from('tasks').update({ done: true, completed_at: new Date().toISOString(), recurrence_done_count: doneCount }).eq('id', id), 'Não foi possível atualizar a tarefa. Tente novamente.');
+      if (!ok) { this.setState({ tasks: this.state.tasks.map(t => t.id === id ? task : t) }); return; }
+      this._logTaskCompletion(id, task.dueDate);
+      this._toast('Última ocorrência concluída — a repetição terminou.');
+      return;
+    }
     const updated = { ...task, done: !task.done };
     this.setState({ tasks: this.state.tasks.map(t => t.id === id ? updated : t) });
     const ok = await this._dbCheck(window._sb.from('tasks').update({ done: updated.done, completed_at: updated.done ? new Date().toISOString() : null }).eq('id', id), 'Não foi possível atualizar a tarefa. Tente novamente.');
@@ -9604,6 +9737,7 @@ class Component extends DCLogic {
             dueDateColor: isOverdue ? '#EF4444' : isDueToday ? '#F97316' : '#64748B',
             hasPriority: !!pr, priorityLabel: pr ? pr.label : '', priorityColor: pr ? pr.color : '',
             hasListName: !!t.listName, hasNotes: !!(t.notes && t.notes.trim()),
+            isRecurring: !!t.recurrence, recurrenceLabel: t.recurrence ? this._recurrenceLabel({ date: t.dueDate, recurrence: t.recurrence, recurrenceDays: t.recurrenceDays, recurrenceUntil: t.recurrenceUntil, recurrenceCount: t.recurrenceCount }) : '',
             isDeleting: s.deletingId === t.id, notDeleting: s.deletingId !== t.id,
             titleColor: t.done ? '#334155' : '#CBD5E1',
             titleDecor: t.done ? 'line-through' : 'none',
@@ -9671,6 +9805,22 @@ class Component extends DCLogic {
       taskModalTitle: s.editTaskId ? 'Editar Tarefa' : 'Nova Tarefa',
       taskTitle: s.taskTitle, taskNotes: s.taskNotes, taskDueDate: s.taskDueDate,
       taskPriority: s.taskPriority, taskListName: s.taskListName,
+      taskRecurrence: s.taskRecurrence, hasTaskRecurrence: !!s.taskRecurrence, isCustomTaskRecurrence: s.taskRecurrence === 'custom',
+      taskRecEnd: s.taskRecEnd, isTaskRecUntil: !!s.taskRecurrence && s.taskRecEnd === 'until', isTaskRecCount: !!s.taskRecurrence && s.taskRecEnd === 'count',
+      taskRecUntil: s.taskRecUntil, taskRecCount: s.taskRecCount,
+      taskRecSummary: s.taskRecurrence && s.taskDueDate ? this._recurrenceLabel({ date: s.taskDueDate, recurrence: s.taskRecurrence, recurrenceDays: s.taskRecurrenceDays, recurrenceUntil: s.taskRecEnd === 'until' ? s.taskRecUntil : '', recurrenceCount: s.taskRecEnd === 'count' ? parseInt(s.taskRecCount, 10) : null }) : '',
+      taskRecurrenceDayChips: ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'].map((label, i) => {
+        const on = s.taskRecurrenceDays.includes(i);
+        return {
+          label,
+          style: {
+            width: '34px', height: '32px', borderRadius: '8px', cursor: 'pointer', fontFamily: 'inherit', fontSize: '12px', fontWeight: 700,
+            border: on ? '1px solid #3B82F6' : '1px solid #1E2A45', background: on ? '#2563EB33' : '#0D0D1A', color: on ? '#BFDBFE' : '#475569',
+          },
+          onClick: () => this.setState(st => ({ taskRecurrenceDays: st.taskRecurrenceDays.includes(i) ? st.taskRecurrenceDays.filter(x => x !== i) : [...st.taskRecurrenceDays, i] })),
+        };
+      }),
+      setTaskRecurrence: this.setTaskRecurrence, setTaskRecEnd: this.setTaskRecEnd, setTaskRecUntil: this.setTaskRecUntil, setTaskRecCount: this.setTaskRecCount,
       setTaskTitle: e => this.setState({ taskTitle: e.target.value }),
       setTaskNotes: e => this.setState({ taskNotes: e.target.value }),
       setTaskDueDate: e => this.setState({ taskDueDate: e.target.value }),

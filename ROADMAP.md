@@ -13,7 +13,7 @@ dia conforme novos pedidos chegavam.
 **Fase 2 — Editor de anotações: leitura e escrita.** ✅ Feita em 22/09.
 **Fase 3 — Jarvis sabe onde o Sr. Douglas está.** ✅ Feita em 22/09.
 **Fase 4 — Jarvis formata anotação de verdade.** ✅ Feita em 22/09.
-**Fase 5 — Tabela com mais linhas e colunas.**
+**Fase 5 — Tabela com mais linhas e colunas.** ✅ Feita em 22/09.
 **Fase 6 — Tarefas recorrentes.**
 **Fase 7 — Agenda: visão por semana e por dia, tudo numa tela só** (pedido de 22/09).
 **Fase 8 — Efeito visual na ligação ao vivo com o Jarvis** (pedido de 22/09, ele curtiu o efeito da fase 4).
@@ -218,12 +218,27 @@ conferência visual no navegador (é sobre respiro visual, tem que ser visto).
   título da nota na mensagem — assim fica na trilha de auditoria como qualquer outro pedido.
 - 23 testes novos no app + 5 na Edge Function.
 
-### Fase 5 — Tabela: mais linhas e colunas
-Hoje `noteInsertTable` cria uma tabela fixa e não há como crescer. Adicionar controles pra inserir e
-remover linha/coluna com a tabela selecionada (botões que aparecem ao clicar dentro dela), mantendo
-o que o exportador de Markdown/PDF já sabe ler.
-**Cuidado:** o motor de template não reconhece `drop`, e a tabela vive dentro do `contenteditable` —
-os controles têm que ser manipulação de DOM na mão, como o checklist e o arrastar da Agenda.
+### Fase 5 — Tabela: mais linhas e colunas — FEITA (22/09)
+Barra flutuante com 4 botões (+coluna, −coluna, +linha, −linha) que aparece perto da célula onde o
+cursor está — clicando OU navegando por seta, sem precisar arrastar nada. Segue a mesma técnica já
+usada pro menu "/" e pra barra de seleção: `_noteMenuPos` ancora no wrapper do editor, então o
+transform da animação `.fade-in` não desloca ela (bug já resolvido antes pras outras duas).
+Manipulação de DOM na mão com os métodos nativos de `<table>` (`insertRow`/`insertCell`/
+`deleteRow`/`deleteCell`) — mesmo espírito do checklist e do arrastar da Agenda, já que o motor de
+template não reconhece `drop` e a tabela vive dentro do `contenteditable`. Nunca deixa zerar (pelo
+menos 1 linha e 1 coluna sempre sobram). 21 testes com DOM real (jsdom) + confirmado no navegador
+com cliques de verdade nos 4 botões, ida e volta simétrica (3×3 → +col → +linha → −col → −linha →
+3×3 de novo).
+
+**Achado no caminho — ids podiam colidir:** enquanto testava, um evento da Agenda sumia sem explicação
+depois de criar um segundo rápido demais. Causa: o id era `'ev' + Date.now()` — se dois registros
+nascem no MESMO milissegundo (raro na mão, mas aconteceu direto num teste automatizado rodando
+rápido), os dois ganhavam o id idêntico, e o segundo SUBSTITUÍA o primeiro na lista em vez de somar
+(o código usa o id pra decidir "criar" ou "atualizar"). Esse mesmo padrão (`'x' + Date.now()`) existia
+solto em 17 lugares — transações, metas, despesas recorrentes, tarefas, eventos, notas, pastas,
+tickers da watchlist, categorias. Unificado num helper só (`_genId`, com sufixo aleatório —
+praticamente impossível de colidir) e trocado em todos os 17 pontos. Testado forçando `Date.now()` a
+devolver sempre o mesmo valor: 500 ids gerados, todos únicos.
 
 ---
 

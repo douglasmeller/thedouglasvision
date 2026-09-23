@@ -2455,6 +2455,17 @@
                   </sc-if>
                 </div>
               </div>
+              <sc-if value="{{ tableControlsOpen }}" hint-placeholder-val="{{ false }}">
+                <div style="{{ tableControlsStyle }}">
+                  <div class="modal-in hud-tile hud-tile-cyan" style="display: flex; align-items: center; gap: 4px; padding: 5px; box-shadow: 0 14px 36px #000000AA, 0 0 18px #38BDF81A;">
+                    <button onMouseDown="{{ preventFocusLoss }}" onClick="{{ noteTableAddColumn }}" title="Adicionar coluna" class="hud-icon-btn" style="width: 27px; height: 27px; font-size: 12px;"><i class="ph ph-arrow-line-right"></i><i class="ph ph-plus" style="font-size: 9px; margin-left: -3px;"></i></button>
+                    <button onMouseDown="{{ preventFocusLoss }}" onClick="{{ noteTableRemoveColumn }}" title="Remover coluna" class="hud-icon-btn hud-icon-btn-danger" style="width: 27px; height: 27px; font-size: 12px;"><i class="ph ph-arrow-line-right"></i><i class="ph ph-minus" style="font-size: 9px; margin-left: -3px;"></i></button>
+                    <div style="width: 1px; height: 16px; background: #1B2438; margin: 0 2px; flex-shrink: 0;"></div>
+                    <button onMouseDown="{{ preventFocusLoss }}" onClick="{{ noteTableAddRow }}" title="Adicionar linha" class="hud-icon-btn" style="width: 27px; height: 27px; font-size: 12px;"><i class="ph ph-arrow-line-down"></i><i class="ph ph-plus" style="font-size: 9px; margin-left: -3px;"></i></button>
+                    <button onMouseDown="{{ preventFocusLoss }}" onClick="{{ noteTableRemoveRow }}" title="Remover linha" class="hud-icon-btn hud-icon-btn-danger" style="width: 27px; height: 27px; font-size: 12px;"><i class="ph ph-arrow-line-down"></i><i class="ph ph-minus" style="font-size: 9px; margin-left: -3px;"></i></button>
+                  </div>
+                </div>
+              </sc-if>
               <sc-if value="{{ hasJarvisNoteUndo }}" hint-placeholder-val="{{ false }}">
                 <div class="hud-tile" style="display: flex; align-items: center; gap: 10px; padding: 9px 13px; border-color: #38BDF83A;">
                   <i class="ph ph-sparkle" style="font-size: 15px; color: #38BDF8; flex-shrink: 0;"></i>
@@ -3435,6 +3446,8 @@ class Component extends DCLogic {
     noteSearch: '',
     noteSort: 'recent', // 'recent' | 'name' | 'created' — lembrado por dispositivo (localStorage)
     noteExportOpen: false,
+    tableControlsOpen: false,  // controles de +/- linha/coluna da tabela, quando o cursor está numa célula
+    tableControlsPos: null,
     jarvisOnNote: false,      // Jarvis escrevendo na nota aberta agora
     jarvisNoteFading: false,  // true = terminou, efeito está dissolvendo (não sumiu de repente)
     jarvisNoteUndo: null,     // { id, title, content } da versão de antes, pro botão Desfazer
@@ -3830,7 +3843,16 @@ class Component extends DCLogic {
     document.addEventListener('selectionchange', this._onSelectionChange = () => {
       const el = document.getElementById('note-editor-el');
       const sel = window.getSelection();
-      const inEditor = el && sel && sel.rangeCount > 0 && !sel.isCollapsed && el.contains(sel.anchorNode);
+      const inEditorAtAll = el && sel && sel.rangeCount > 0 && el.contains(sel.anchorNode);
+      // Controles de tabela seguem o cursor mesmo sem nada selecionado — clicar ou navegar por
+      // seta dentro de uma célula já deve mostrar +/- linha/coluna, sem precisar arrastar texto.
+      if (inEditorAtAll) {
+        const node = sel.anchorNode.nodeType === 1 ? sel.anchorNode : sel.anchorNode.parentElement;
+        const cell = node && node.closest && node.closest('td, th');
+        if (cell && el.contains(cell)) this._syncTableControls(cell);
+        else if (this.state.tableControlsOpen) { this.setState({ tableControlsOpen: false }); this._activeTableCell = null; }
+      }
+      const inEditor = inEditorAtAll && !sel.isCollapsed;
       if (!inEditor || this.state.slashMenuOpen) {
         if (this.state.selectionToolbarOpen) this.setState({ selectionToolbarOpen: false });
         return;
@@ -3861,6 +3883,7 @@ class Component extends DCLogic {
         else if (s.noteExportOpen) this.setState({ noteExportOpen: false });
         else if (s.showMoveModal) this.closeMoveModal();
         else if (s.selectionToolbarOpen) this.setState({ selectionToolbarOpen: false });
+        else if (s.tableControlsOpen) { this.setState({ tableControlsOpen: false }); this._activeTableCell = null; }
         else if (s.showTxnModal) this.setState({ showTxnModal: false, editTxnId: null });
         else if (s.showCatModal) this.setState({ showCatModal: false, editCatId: null });
         else if (s.showGoalModal) this.setState({ showGoalModal: false });
@@ -4001,7 +4024,7 @@ class Component extends DCLogic {
       const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
       const day = Math.min(origDay, lastDay);
       return {
-        id: 't' + Date.now() + Math.random().toString(36).slice(2, 7),
+        id: this._genId('t'),
         type: orig.type, amount: orig.amount, description: orig.description,
         categoryId: orig.categoryId,
         date: curKey + '-' + String(day).padStart(2, '0'),
@@ -4052,6 +4075,13 @@ class Component extends DCLogic {
   mKey(d) {
     return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
   }
+
+  // Id novo pra qualquer registro criado no cliente (transação, tarefa, evento, nota...).
+  // Date.now() sozinho colide quando dois registros nascem no mesmo milissegundo — achado de
+  // verdade num teste da Agenda (dois eventos salvos rápido o bastante saíram com o MESMO id, e o
+  // segundo SUBSTITUIU o primeiro na lista em vez de somar, porque o código usa o id pra saber se é
+  // "criar" ou "atualizar"). O sufixo aleatório torna a colisão praticamente impossível.
+  _genId = (prefix) => prefix + Date.now() + Math.random().toString(36).slice(2, 7)
 
   fmt(n, currency) {
     const cur = currency || this.state.cfgCurrency || 'BRL';
@@ -5418,7 +5448,7 @@ class Component extends DCLogic {
     const closingDay = s.cardSettings?.closingDay || 1;
     const prevTxn = s.editTxnId ? s.transactions.find(t => t.id === s.editTxnId) : null;
     const txn = {
-      id: s.editTxnId || 't' + Date.now(),
+      id: s.editTxnId || this._genId('t'),
       type: s.txnType, amount, description: s.txnDescription.trim(),
       categoryId: s.txnCategoryId, date: s.txnDate,
       recurring: s.txnRecurring,
@@ -5489,7 +5519,7 @@ class Component extends DCLogic {
     const closingDay = this.state.cardSettings?.closingDay || 1;
     const isCredit = txn.paymentMethod === 'credit_card';
     const newTxn = {
-      ...txn, id: 't' + Date.now(), date: today, planned: false,
+      ...txn, id: this._genId('t'), date: today, planned: false,
       invoiceKey: isCredit ? this._invoiceKeyFor(today, closingDay) : null,
       invoicePaid: false,
     };
@@ -5529,7 +5559,7 @@ class Component extends DCLogic {
     if (editGoalId) {
       goal = { id: editGoalId, name, target, icon: goalIcon, color: goalColor, deadline: goalDeadline || null };
     } else {
-      goal = { id: 'g' + Date.now(), name, target, current: 0, icon: goalIcon, color: goalColor, deadline: goalDeadline || null };
+      goal = { id: this._genId('g'), name, target, current: 0, icon: goalIcon, color: goalColor, deadline: goalDeadline || null };
     }
     this.setState({ savingGoal: true });
     const row = { id: goal.id, user_id: user.id, name: goal.name, target: goal.target, current: goal.current ?? 0, icon: goal.icon, color: goal.color, deadline: goal.deadline };
@@ -5633,7 +5663,7 @@ class Component extends DCLogic {
     if (s.editExpenseId) {
       exp = { id: s.editExpenseId, name, installment, amount, freq, day, categoryId: s.expCategoryId || null, targetTotal, endDate, lastGeneratedMonth: (s.recurringExpenses.find(e => e.id === s.editExpenseId) || {}).lastGeneratedMonth || null };
     } else {
-      exp = { id: 'e' + Date.now(), name, installment, amount, freq, day, categoryId: s.expCategoryId || null, targetTotal, endDate, lastGeneratedMonth: null };
+      exp = { id: this._genId('e'), name, installment, amount, freq, day, categoryId: s.expCategoryId || null, targetTotal, endDate, lastGeneratedMonth: null };
     }
     this.setState({ savingExpense: true });
     const { error } = await window._sb.from('recurring_expenses').upsert(this._expenseRowOut(exp, s.user.id));
@@ -5674,7 +5704,7 @@ class Component extends DCLogic {
       a = Math.min(a, remaining);
     }
     const txn = {
-      id: 't' + Date.now(), type: 'expense', amount: a, description: exp.name,
+      id: this._genId('t'), type: 'expense', amount: a, description: exp.name,
       categoryId: exp.categoryId, date: new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' }),
       recurring: true, recurringFreq: exp.freq, planned: false, recurringExpenseId: exp.id,
     };
@@ -5721,7 +5751,7 @@ class Component extends DCLogic {
       const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
       const day = Math.min(exp.day || 1, lastDay);
       toCreate.push({
-        id: 't' + Date.now() + Math.random().toString(36).slice(2, 7),
+        id: this._genId('t'),
         type: 'expense', amount, description: exp.name, categoryId: exp.categoryId,
         date: curKey + '-' + String(day).padStart(2, '0'),
         recurring: true, recurringFreq: 'monthly', planned: true, recurringExpenseId: exp.id,
@@ -5773,7 +5803,7 @@ class Component extends DCLogic {
     const total = items.reduce((a, t) => a + t.amount, 0);
     const cardName = s.cardSettings?.name || 'Cartão de Crédito';
     const paymentTxn = {
-      id: 't' + Date.now(), type: 'expense', amount: total,
+      id: this._genId('t'), type: 'expense', amount: total,
       description: 'Fatura ' + cardName + ' — ' + invoiceKey,
       categoryId: null, date: new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' }),
       recurring: false, recurringFreq: null, planned: false, notes: null,
@@ -5822,7 +5852,7 @@ class Component extends DCLogic {
     if (!title) return;
     const prevTask = s.editTaskId ? s.tasks.find(t => t.id === s.editTaskId) : null;
     const task = {
-      id: s.editTaskId || 'k' + Date.now(),
+      id: s.editTaskId || this._genId('k'),
       title, notes: s.taskNotes.trim(), dueDate: s.taskDueDate || null,
       priority: s.taskPriority || null, listName: s.taskListName.trim() || null,
       done: prevTask ? prevTask.done : false,
@@ -6165,7 +6195,7 @@ class Component extends DCLogic {
     const s = this.state;
     if (s.savingEvent) return;
     const series = s.editEventId ? s.agendaEvents.find(e => e.id === s.editEventId) : null;
-    const draft = this._eventFromForm(series ? series.id : 'ev' + Date.now());
+    const draft = this._eventFromForm(series ? series.id : this._genId('ev'));
     const err = this._eventFormError(draft);
     if (err) { this._toast(err); return; }
     if (series && series.recurrence) {
@@ -6204,7 +6234,7 @@ class Component extends DCLogic {
     if (scope === 'following' && occ <= series.date) scope = 'all';
     // A série antiga passa a terminar na véspera da ocorrência escolhida.
     const truncated = { ...series, recurrenceUntil: this._dAdd(occ, -1), recurrenceCount: null, exdates: (series.exdates || []).filter(d => d < occ) };
-    const newId = 'ev' + Date.now();
+    const newId = this._genId('ev');
     if (mode === 'delete') {
       this.setState({ deletingId: series.id });
       if (scope === 'this') await this._commitEventChanges([{ upsert: { ...series, exdates: [...(series.exdates || []), occ] } }], 'Ocorrência excluída.', false, false);
@@ -6358,7 +6388,7 @@ class Component extends DCLogic {
     const span = this._eventSpanDays(ev);
     const newStart = this._dAdd(occDate || ev.date, delta);
     if (ev.recurrence) {
-      const single = { ...ev, id: 'ev' + Date.now(), date: newStart, endDate: span ? this._dAdd(newStart, span) : '', recurrence: '', recurrenceDays: [], recurrenceUntil: '', recurrenceCount: null, exdates: [] };
+      const single = { ...ev, id: this._genId('ev'), date: newStart, endDate: span ? this._dAdd(newStart, span) : '', recurrence: '', recurrenceDays: [], recurrenceUntil: '', recurrenceCount: null, exdates: [] };
       await this._commitEventChanges([{ upsert: single }, { upsert: { ...ev, exdates: [...(ev.exdates || []), occDate] } }], 'Só esta ocorrência foi movida para ' + this.fmtDate(newStart) + '.', false, false);
       return;
     }
@@ -6579,7 +6609,7 @@ class Component extends DCLogic {
     // (ex: saiu sem apertar Escape), ele reaparecia flutuando por cima da nota nova, apontando
     // pra um texto que nem existe mais nela (achados numa auditoria).
     this._enterNoteHistory();
-    this.setState({ editingNoteId: note.id, noteTitle: note.title, noteContent: note.content, noteSaveStatus: 'idle', slashMenuOpen: false, selectionToolbarOpen: false, noteExportOpen: false }, () => {
+    this.setState({ editingNoteId: note.id, noteTitle: note.title, noteContent: note.content, noteSaveStatus: 'idle', slashMenuOpen: false, selectionToolbarOpen: false, noteExportOpen: false, tableControlsOpen: false }, () => {
       const el = document.getElementById('note-editor-el');
       if (el) { el.innerHTML = note.content || ''; this._migrateOldChecklistRows(el); }
     });
@@ -6588,9 +6618,9 @@ class Component extends DCLogic {
   newNote = async () => {
     const s = this.state;
     const nowIso = new Date().toISOString();
-    const note = { id: 'nt' + Date.now(), title: '', content: '', updatedAt: nowIso, createdAt: nowIso, folderId: s.currentFolderId, pinned: false };
+    const note = { id: this._genId('nt'), title: '', content: '', updatedAt: nowIso, createdAt: nowIso, folderId: s.currentFolderId, pinned: false };
     this._enterNoteHistory();
-    this.setState({ notes: [note, ...s.notes], editingNoteId: note.id, noteTitle: '', noteContent: '', noteSaveStatus: 'idle', slashMenuOpen: false, selectionToolbarOpen: false }, () => {
+    this.setState({ notes: [note, ...s.notes], editingNoteId: note.id, noteTitle: '', noteContent: '', noteSaveStatus: 'idle', slashMenuOpen: false, selectionToolbarOpen: false, tableControlsOpen: false }, () => {
       const el = document.getElementById('note-editor-el');
       if (el) el.innerHTML = '';
       const titleEl = document.getElementById('note-title-input');
@@ -6620,7 +6650,7 @@ class Component extends DCLogic {
 
   closeNoteEditor = () => {
     this._flushNoteSave();
-    this.setState({ editingNoteId: null, slashMenuOpen: false, selectionToolbarOpen: false, noteExportOpen: false });
+    this.setState({ editingNoteId: null, slashMenuOpen: false, selectionToolbarOpen: false, noteExportOpen: false, tableControlsOpen: false }); this._activeTableCell = null;
     this._leaveNoteHistory();
   }
 
@@ -6960,7 +6990,7 @@ class Component extends DCLogic {
       this.setState({ noteFolders: s.noteFolders.map(f => f.id === s.editFolderId ? { ...f, name } : f), showFolderModal: false });
       await this._dbCheck(window._sb.from('note_folders').update({ name }).eq('id', s.editFolderId), 'Não foi possível renomear a pasta. Tente novamente.');
     } else {
-      const folder = { id: 'nf' + Date.now(), name, parentFolderId: s.folderModalParentId };
+      const folder = { id: this._genId('nf'), name, parentFolderId: s.folderModalParentId };
       this.setState({ noteFolders: [...s.noteFolders, folder], showFolderModal: false });
       const ok = await this._dbCheck(window._sb.from('note_folders').insert(this._folderRowOut(folder, s.user.id)), 'Não foi possível criar a pasta. Tente novamente.');
       if (!ok) this.setState({ noteFolders: this.state.noteFolders.filter(f => f.id !== folder.id) });
@@ -7634,6 +7664,73 @@ class Component extends DCLogic {
     this.noteExec('insertHTML', table);
   }
 
+  // ─── Tabela: crescer/encolher com o cursor dentro dela ─────────────────────
+  // this._activeTableCell é a célula onde o cursor está agora (instância, não state — só serve
+  // pra saber ONDE mexer quando um botão é clicado, não precisa de re-render por si só).
+  _tableCellStyle = 'border:1px solid #1E2A45;padding:6px 10px;min-width:60px;'
+
+  _syncTableControls = (cell) => {
+    this._activeTableCell = cell;
+    const table = cell.closest('table');
+    if (!table) { this.setState({ tableControlsOpen: false }); return; }
+    const rect = cell.getBoundingClientRect();
+    this.setState({ tableControlsOpen: true, tableControlsPos: this._noteMenuPos(rect, 168, true, 40) });
+  }
+
+  noteTableAddColumn = () => {
+    const cell = this._activeTableCell;
+    const table = cell && cell.closest('table');
+    if (!table) return;
+    const idx = cell.cellIndex;
+    Array.from(table.rows).forEach(row => {
+      const ref = row.cells[idx];
+      const novo = document.createElement(ref && ref.tagName === 'TH' ? 'th' : 'td');
+      novo.style.cssText = this._tableCellStyle;
+      novo.innerHTML = '&nbsp;';
+      if (ref) ref.after(novo); else row.appendChild(novo);
+    });
+    this.handleNoteInput({ target: document.getElementById('note-editor-el') });
+  }
+
+  noteTableRemoveColumn = () => {
+    const cell = this._activeTableCell;
+    const table = cell && cell.closest('table');
+    // Nunca deixa a tabela zerada — pelo menos 1 coluna sempre sobra (aí é excluir a tabela
+    // toda, não algo que esses botões fazem).
+    if (!table || table.rows[0].cells.length <= 1) return;
+    const idx = cell.cellIndex;
+    Array.from(table.rows).forEach(row => { if (row.cells[idx]) row.deleteCell(idx); });
+    this._activeTableCell = null;
+    this.setState({ tableControlsOpen: false });
+    this.handleNoteInput({ target: document.getElementById('note-editor-el') });
+  }
+
+  noteTableAddRow = () => {
+    const cell = this._activeTableCell;
+    const row = cell && cell.closest('tr');
+    const table = cell && cell.closest('table');
+    if (!table || !row) return;
+    const cols = row.cells.length;
+    const novaLinha = table.insertRow(row.rowIndex + 1);
+    for (let i = 0; i < cols; i++) {
+      const c = novaLinha.insertCell(i);
+      c.style.cssText = this._tableCellStyle;
+      c.innerHTML = '&nbsp;';
+    }
+    this.handleNoteInput({ target: document.getElementById('note-editor-el') });
+  }
+
+  noteTableRemoveRow = () => {
+    const cell = this._activeTableCell;
+    const row = cell && cell.closest('tr');
+    const table = cell && cell.closest('table');
+    if (!table || !row || table.rows.length <= 1) return;
+    table.deleteRow(row.rowIndex);
+    this._activeTableCell = null;
+    this.setState({ tableControlsOpen: false });
+    this.handleNoteInput({ target: document.getElementById('note-editor-el') });
+  }
+
   // ─── Notícias ────────────────────────────────────────────────────────────
   // Tela é só leitura — quem gera o conteúdo é a Edge Function news-digest
   // (via cron todo dia, ou forçado na hora por este botão).
@@ -7672,7 +7769,7 @@ class Component extends DCLogic {
     const ticker = this.state.newStockTicker.trim().toUpperCase();
     if (!ticker) return;
     if (this.state.stockWatchlist.some(w => w.ticker === ticker)) { this.setState({ newStockTicker: '' }); return; }
-    const row = { id: 'sw' + Date.now(), ticker };
+    const row = { id: this._genId('sw'), ticker };
     const { error } = await window._sb.from('stock_watchlist').insert(this._stockRowOut(row, this.state.user.id));
     if (error) { this._toast('Não foi possível adicionar ' + ticker + '.'); return; }
     this.setState({ stockWatchlist: [...this.state.stockWatchlist, row], newStockTicker: '' }, () => this.fetchStockQuotes());
@@ -7791,7 +7888,7 @@ class Component extends DCLogic {
     if (!amount || amount <= 0 || !s.quickCategoryId) return;
     const cat = this.getCat(s.quickCategoryId);
     const txn = {
-      id: 't' + Date.now(),
+      id: this._genId('t'),
       type: s.quickType, amount, description: cat.name,
       categoryId: s.quickCategoryId,
       date: new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' }),
@@ -7866,7 +7963,7 @@ class Component extends DCLogic {
     const { catName, catIcon, catColor, catBudget, editCatId, user, savingCat } = this.state;
     if (savingCat || !catName.trim()) return;
     const budget = catBudget && parseFloat(catBudget) > 0 ? parseFloat(catBudget) : null;
-    const cat = { id: editCatId || 'c' + Date.now(), name: catName.trim(), icon: catIcon, color: catColor, budget };
+    const cat = { id: editCatId || this._genId('c'), name: catName.trim(), icon: catIcon, color: catColor, budget };
     this.setState({ savingCat: true });
     const { error } = await window._sb.from('categories').upsert({ ...cat, user_id: user.id });
     if (error) { this.setState({ savingCat: false }); this._toast('Não foi possível salvar a categoria. Tente novamente.'); return; }
@@ -9630,6 +9727,10 @@ class Component extends DCLogic {
       currentNotePinTitle: (s.notes.find(n => n.id === s.editingNoteId) || {}).pinned ? 'Desafixar' : 'Fixar no topo',
       toggleCurrentNotePin: () => this.toggleNotePin(s.editingNoteId),
       noteExportOpen: s.noteExportOpen,
+      tableControlsOpen: s.tableControlsOpen,
+      tableControlsStyle: { position: 'absolute', top: (s.tableControlsPos ? s.tableControlsPos.top : 0) + 'px', left: (s.tableControlsPos ? s.tableControlsPos.left : 0) + 'px', zIndex: 250 },
+      noteTableAddColumn: this.noteTableAddColumn, noteTableRemoveColumn: this.noteTableRemoveColumn,
+      noteTableAddRow: this.noteTableAddRow, noteTableRemoveRow: this.noteTableRemoveRow,
       jarvisOnNote: s.jarvisOnNote,
       jarvisOverlayClass: s.jarvisNoteFading ? 'jarvis-overlay jarvis-overlay-fading' : 'jarvis-overlay',
       // O desfoque some junto com o overlay (ao começar a dissolver), não só quando ele é

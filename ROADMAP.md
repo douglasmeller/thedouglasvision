@@ -514,6 +514,19 @@ Verificação com o código REAL do componente rodando fora do navegador (Node) 
 ## Jarvis — pequenos ajustes
 - **Shift+Enter no chat (feito, 20/09)**: o campo do Jarvis era um `<input type="text">`, que por definição não aceita quebra de linha — Shift+Enter não fazia nada em lugar nenhum. Os quatro campos (Home, tela do Jarvis, bolinha e janela flutuante) viraram `<textarea rows="1">` que cresce sozinho conforme o texto, até um teto de 150px (~9 linhas), quando passa a rolar por dentro. Enter sozinho continua enviando; Shift+Enter desce a linha, a caixa cresce e o chat acompanha o cursor. Depois de enviar, a caixa volta pra uma linha. As mensagens já eram renderizadas quebrando por `
 ` (`_parseJarvisContent`), então a mensagem multilinha chega e aparece certa.
+- **Ditado por voz cortava no meio da frase (feito, 23/09)**: o botão de microfone usava
+  `rec.continuous = false`, que faz o navegador encerrar o reconhecimento sozinho ao detectar
+  QUALQUER pausa na fala — não era um limite de caracteres, mas o Sr. Douglas sentia exatamente
+  isso ("ele me corta quando bate um determinado limite"). Virou `continuous: true` (mesmo modo já
+  usado e testado na ligação ao vivo), que atravessa pausas sem encerrar. De quebra: mesmo em modo
+  contínuo, alguns navegadores (Safari no iPhone é o caso conhecido, já visto antes na ligação ao
+  vivo) encerram uma sessão sozinhos depois de um tempo — agora isso é transparente: se acontecer
+  sem o Sr. Douglas ter apertado o botão de parar, reabre sozinho SEM perder o que já foi dito, e o
+  texto novo emenda no que já estava no campo. Só para de vez quando ele aperta o botão de novo.
+  12 testes com o código real, simulando o navegador cortando a sessão no meio da frase (uma vez e
+  duas vezes seguidas) e confirmando que o texto emenda certinho, além do caminho de parar de
+  propósito, erros e navegador sem suporte.
+
 
 ---
 *Itens marcados "(feito)" já foram implementados. O resto ainda é intenção — nada além disso foi construído.*

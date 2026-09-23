@@ -4655,8 +4655,15 @@ class Component extends DCLogic {
   // Ditado por voz (Web Speech API) — preenche o campo de texto, o envio continua manual
   // (não envia sozinho: como o Jarvis executa ações sem confirmar, um erro de reconhecimento
   // não pode virar uma exclusão/edição acidental).
+  //
+  // `continuous: false` (como era antes) faz o navegador encerrar o reconhecimento sozinho ao
+  // detectar QUALQUER pausa na fala — não é um limite de caracteres, mas o Sr. Douglas sentia
+  // exatamente isso: parava de ditar no meio da frase toda vez que fazia uma pausa curta pra
+  // pensar. Vira `continuous: true` (mesmo modo já usado e testado na ligação ao vivo), que
+  // atravessa pausas sem encerrar — só para quando ele mesmo aperta o botão de novo.
   toggleJarvisListening = () => {
     if (this.state.jarvisListening) {
+      this._jarvisListenManualStop = true;
       if (this._jarvisRecognition) this._jarvisRecognition.stop();
       return;
     }
@@ -4665,21 +4672,40 @@ class Component extends DCLogic {
       this._toast('Reconhecimento de voz não é suportado neste navegador.');
       return;
     }
+    this._jarvisListenManualStop = false;
+    this._jarvisDictatedSoFar = '';
+    this.setState({ jarvisListening: true });
+    this._startJarvisDictation();
+  }
+
+  // Mesmo em modo contínuo, alguns navegadores (Safari no iPhone é o caso conhecido — ver a
+  // mesma ressalva na ligação ao vivo) encerram uma sessão sozinhos depois de um tempo. Se isso
+  // acontecer enquanto o Sr. Douglas ainda não mandou parar, reabre na hora SEM perder o que já
+  // foi ditado — guarda o texto atual e a sessão nova continua a partir dele.
+  _startJarvisDictation = () => {
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     const rec = new SR();
     rec.lang = 'pt-BR';
-    rec.continuous = false;
+    rec.continuous = true;
     rec.interimResults = true;
     rec.onresult = (e) => {
       let transcript = '';
       for (let i = 0; i < e.results.length; i++) transcript += e.results[i][0].transcript;
       this._jarvisInputWasVoice = true; // marca essa mensagem como ditada — só isso libera a resposta falada (ver sendJarvisMessage)
-      this.setState({ jarvisInput: transcript }, () => this._growAllJarvisInputs());
+      const completo = (this._jarvisDictatedSoFar + ' ' + transcript).trim();
+      this.setState({ jarvisInput: completo }, () => this._growAllJarvisInputs());
     };
-    rec.onerror = () => this.setState({ jarvisListening: false });
-    rec.onend = () => this.setState({ jarvisListening: false });
+    rec.onerror = (e) => {
+      if (e.error === 'no-speech' || e.error === 'aborted') return; // não é erro de verdade — ignora
+      this.setState({ jarvisListening: false });
+    };
+    rec.onend = () => {
+      if (this._jarvisListenManualStop || !this.state.jarvisListening) { this.setState({ jarvisListening: false }); return; }
+      this._jarvisDictatedSoFar = this.state.jarvisInput;
+      this._startJarvisDictation();
+    };
     this._jarvisRecognition = rec;
-    this.setState({ jarvisListening: true });
-    rec.start();
+    try { rec.start(); } catch (e) { this.setState({ jarvisListening: false }); }
   }
 
   toggleJarvisBubble = () => {

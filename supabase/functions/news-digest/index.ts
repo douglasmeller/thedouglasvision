@@ -97,7 +97,7 @@ async function fetchFeedItems(feed: { name: string; url: string }) {
     const items = parseFeed(xml, feed.name, feed.url);
     const cutoff = Date.now() - 24 * 3600 * 1000;
     const recent = items.filter((it) => it.published_at && new Date(it.published_at).getTime() >= cutoff);
-    return (recent.length > 0 ? recent : items.slice(0, 2)).slice(0, 6);
+    return (recent.length > 0 ? recent : items.slice(0, 2)).slice(0, 8);
   } catch (_e) {
     return [];
   }

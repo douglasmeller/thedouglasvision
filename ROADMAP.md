@@ -337,6 +337,13 @@ Não mexe no outro nível de hover (a linha neon dos botões de ação, `tdvTrac
 de entrada com duração própria, do jeito que já foi pedido antes: "o neon deve sumir depois de
 passar"). Conferida a regra certinha na folha de estilo, batendo com os botões certos.
 
+**Complemento (23/09):** os dois botões da tela de ligação ("Tocar para interromper" e "Encerrar")
+continuavam pílulas genéricas de chat — destoavam do resto da tela, que ganhou radar/chuva de
+binário/ondas na fase 8. Redesenhados com a mesma mira nos cantos já usada nos cartões de
+Anotações (`.hud-tile`), cantos angulares em vez de pílula, texto monoespaçado maiúsculo, e um
+brilho ambiente pulsando devagar no botão de interromper (o de encerrar fica estático de propósito
+— não convém chamar atenção pra uma ação de encerrar a ligação).
+
 ---
 
 ### Fase 10 — Checkbox das anotações com a cara do TDV

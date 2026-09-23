@@ -152,6 +152,30 @@
        se espalhando — mais rico que um único anel respirando. */
     @keyframes jarvisRipple { 0% { transform: scale(0.85); opacity: 0.65; } 100% { transform: scale(1.6); opacity: 0; } }
     .jarvis-speak-ripple { position: absolute; inset: -6px; border-radius: 50%; border: 1.5px solid currentColor; animation: jarvisRipple 1.8s ease-out infinite; }
+
+    /* Botões da tela de ligação: mesma mira nos cantos das Anotações (.hud-tile), em vez da
+       pílula genérica de chat que tinham antes — pedido do Sr. Douglas depois de ver a tela. */
+    .jarvis-live-btn {
+      position: relative; display: flex; align-items: center; gap: 9px;
+      padding: 12px 22px; border-radius: 4px; cursor: pointer; background: #05050ACC;
+      font-family: 'Share Tech Mono', monospace; font-size: 12.5px; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 1.5px;
+      transition: box-shadow 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+    }
+    .jarvis-live-btn::before, .jarvis-live-btn::after {
+      content: ''; position: absolute; width: 9px; height: 9px; pointer-events: none;
+      opacity: 0.75; transition: opacity 0.2s ease, width 0.2s ease, height 0.2s ease;
+    }
+    .jarvis-live-btn::before { top: -1px; left: -1px; border-top: 1.5px solid; border-left: 1.5px solid; }
+    .jarvis-live-btn::after { bottom: -1px; right: -1px; border-bottom: 1.5px solid; border-right: 1.5px solid; }
+    .jarvis-live-btn:hover::before, .jarvis-live-btn:hover::after { width: 15px; height: 15px; opacity: 1; }
+    @keyframes jarvisLiveBtnPulse { 0%, 100% { box-shadow: 0 0 0 currentColor; } 50% { box-shadow: 0 0 13px currentColor; } }
+    .jarvis-live-btn-cyan { border: 1px solid #38BDF855; color: #7DD3FC; animation: jarvisLiveBtnPulse 2.6s ease-in-out infinite; }
+    .jarvis-live-btn-cyan::before, .jarvis-live-btn-cyan::after { border-color: #38BDF8; }
+    .jarvis-live-btn-cyan:hover { border-color: #38BDF8; color: #BFDBFE; }
+    .jarvis-live-btn-danger { border: 1px solid #EF444466; color: #FCA5A5; }
+    .jarvis-live-btn-danger::before, .jarvis-live-btn-danger::after { border-color: #EF4444; }
+    .jarvis-live-btn-danger:hover { border-color: #EF4444; color: #FECACA; box-shadow: 0 0 16px #EF444455; }
     /* Sem guarda de prefers-reduced-motion aqui de propósito — em celulares com
        "reduzir movimento" ligado no sistema, esse giro sumia mesmo sendo bem sutil
        (não é o tipo de animação brusca que esse ajuste existe pra evitar). */
@@ -3363,7 +3387,7 @@
           <!-- Interromper é por toque: o microfone não fica aberto enquanto ele fala (ver
                _liveProcessSpeakQueue), então não dá mais pra cortar ele falando por cima. -->
           <sc-if value="{{ jarvisLiveSpeaking }}" hint-placeholder-val="{{ false }}">
-            <button onClick="{{ liveInterrupt }}" class="hud-btn-ghost" style="flex-shrink: 0;">
+            <button onClick="{{ liveInterrupt }}" class="jarvis-live-btn jarvis-live-btn-cyan" style="flex-shrink: 0;">
               <i class="ph ph-hand-palm" style="font-size: 15px;"></i>Tocar para interromper
             </button>
           </sc-if>
@@ -3373,8 +3397,8 @@
         </div>
         <!-- Fixo embaixo de propósito — nunca deve depender de rolar até ele: se o transcript
              ficar comprido ou a tela for baixa (celular), o botão de encerrar continua alcançável. -->
-        <button onClick="{{ stopJarvisLiveMode }}" style="position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 301; display: flex; align-items: center; gap: 8px; padding: 14px 30px; background: #1A0808; border: 1px solid #EF4444; border-radius: 30px; color: #EF4444; font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit; box-shadow: 0 4px 16px #000000aa;">
-          <i class="ph ph-phone-x" style="font-size: 16px;"></i> Encerrar
+        <button onClick="{{ stopJarvisLiveMode }}" class="jarvis-live-btn jarvis-live-btn-danger" style="position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 301; padding: 14px 28px; font-size: 13px; box-shadow: 0 4px 16px #000000aa;">
+          <i class="ph ph-phone-x" style="font-size: 16px;"></i>Encerrar
         </button>
       </div>
     </sc-if>

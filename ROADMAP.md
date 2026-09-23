@@ -16,8 +16,8 @@ dia conforme novos pedidos chegavam.
 **Fase 5 — Tabela com mais linhas e colunas.** ✅ Feita em 22/09.
 **Fase 6 — Tarefas recorrentes.**
 **Fase 7 — Agenda: visão por semana e por dia, tudo numa tela só** (pedido de 22/09).
-**Fase 8 — Efeito visual na ligação ao vivo com o Jarvis** (pedido de 22/09, ele curtiu o efeito da fase 4).
-**Fase 9 — Hover "piscada" deve ficar aceso enquanto o mouse estiver em cima** (pedido de 22/09).
+**Fase 8 — Efeito visual na ligação ao vivo com o Jarvis.** ✅ Feita em 23/09.
+**Fase 9 — Hover "piscada" deve ficar aceso enquanto o mouse estiver em cima.** ✅ Feita em 23/09.
 **Fase 10 — Checkbox das anotações com a cara do TDV** (pedido de 22/09).
 **Fase 11 — Jarvis com busca na web** (pedido de 22/09).
 
@@ -277,56 +277,41 @@ Google usa 3 dias).
 
 ---
 
-### Fase 8 — Efeito visual na ligação ao vivo (modo "ligação" do Jarvis)
-**Pedido (22/09):** o Sr. Douglas gostou muito do efeito visual da fase 4 (nota desfocada + chuva
-de binário + varredura enquanto o Jarvis reescreve) e pediu algo parecido pra quando ele está numa
-**ligação** com o Jarvis (`startJarvisLiveMode` / tela de ligação ao vivo).
+### Fase 8 — Efeito visual na ligação ao vivo — FEITA (23/09)
+Cada estado (`jarvisLiveStatus`) ganhou uma assinatura própria, no anel ao redor do avatar:
+- **Ouvindo:** um arco varre o anel sem parar, tipo radar captando a voz — reaproveita a mesma
+  técnica do neon dos botões (`conic-gradient` + máscara só na faixa da borda), só que em loop
+  contínuo em vez de um traço único.
+- **Pensando:** a MESMA chuva de binário da fase 4, só que num halo circular em volta do avatar em
+  vez de cobrir um bloco de texto. `_syncJarvisRain` foi generalizado num `_syncRainCanvas(canvasId,
+  isActiveFn)` reaproveitável — a nota (fase 4) e a ligação (fase 8) usam o mesmo motor, cada uma
+  com seu próprio canvas e sua própria condição de "ainda ativo", sem uma atrapalhar a outra.
+- **Falando:** três anéis saindo do centro em cascata (`animation-delay` escalonado em 0s/0,6s/1,2s),
+  no lugar do único anel "respirando" que existia antes — lê mais como som se espalhando.
 
-**Ideia inicial:** a tela de ligação já tem um estado de "status" (ouvindo / pensando / falando —
-ver `jarvisLiveStatus`). Cada estado pode ganhar sua própria assinatura visual, no mesmo espírito
-da fase 4 (cores do Jarvis/sistema, nada de cor genérica):
-- **Ouvindo:** um anel/onda pulsando no ritmo (visual, não precisa ser o volume real do microfone
-  pra não complicar).
-- **Pensando/processando:** a MESMA chuva de binário + varredura da fase 4, reaproveitando o canvas
-  já construído lá (`_syncJarvisRain` é genérico o bastante pra apontar pra outro elemento).
-- **Falando:** algo que acompanhe a fala — sem waveform de áudio real por enquanto (over-engenharia
-  pra esse estágio), mas um pulso/glow sincronizado com o ritmo de texto revelado já dá o efeito.
-
-**Reaproveita da fase 4:** o canvas de chuva de binário e o `.jarvis-scanline`/`.jarvis-bar-*` já
-existem — é questão de generalizar pra aceitar um elemento alvo diferente (hoje aponta pro id fixo
-`jarvis-rain`) e criar a versão "ouvindo"/"falando" que ainda não existe.
-
-**A decidir antes de codar:** se o efeito ocupa a tela de ligação inteira ou fica concentrado no
-avatar/círculo central do Jarvis (que já existe hoje); e se roda também na bolha flutuante (menor,
-pode pesar mais) ou só na tela cheia de ligação.
+**Testado:** 12 casos novos com o código real (os três estados batem com o `sc-if` certo; a chuva
+liga só com ligação ativa E status "pensando", desliga sozinha ao mudar de estado ou encerrar a
+ligação, e as duas chuvas — nota e ligação — rodam juntas sem uma atropelar a outra). O `voice_sim.js`
+já existente (simula 3 rodadas completas de ligação) continua passando integralmente. Confirmado
+visualmente no navegador nos três estados.
 
 
 ---
 
-### Fase 9 — Hover "piscada" deve ficar aceso, não piscar e apagar
-**Pedido (22/09):** "quando passar o mouse por cima de botões que hoje tem o hover que pisca, a luz
-mais clara deve permanecer enquanto eu estiver com o mouse em cima, não deve piscar e apagar como é
-hoje".
+### Fase 9 — Hover "piscada" deve ficar aceso, não piscar e apagar — FEITA (23/09)
+**Causa achada:** a "piscada" era uma animação de tempo fixo (`tdvBlink`, 0,3s) que disparava ao
+entrar o mouse e terminava sozinha, MESMO com o mouse ainda em cima — o CSS não tem noção de
+"enquanto hover" numa animação de keyframes com duração fixa, daí a sensação de "pisca e apaga".
 
-**Causa (achada no código):** a "piscada" é uma animação de tempo fixo —
-```css
-button:not(...):hover { animation: tdvBlink 0.3s ease; }
-@keyframes tdvBlink { 0%,100% { filter: brightness(1); } 30% { filter: brightness(1.5); } 65% { filter: brightness(0.97); } }
-```
-Ela dispara ao entrar o mouse e termina sozinha em 0,3s — MESMO que o mouse continue em cima. Depois
-disso o botão volta pro brilho normal (`brightness(1)`), dando exatamente a sensação de "piscou e
-apagou" que o Sr. Douglas descreveu, porque o CSS não tem noção de "enquanto hover" numa animação de
-keyframes com duração fixa.
-
-**Correção:** trocar a animação de tempo fixo por uma transição comum de `filter`, que sobe ao
-entrar o mouse e SÓ desce quando ele sai — fica aceso o tempo todo que estiver em cima:
+**Corrigido:** virou uma transição comum de `filter`, que sobe ao entrar o mouse e só desce quando
+ele sai de verdade:
 ```css
 button:not(...) { transition: filter 0.15s ease; }
-button:not(...):hover { filter: brightness(1.35); }
+button:not(...):hover { filter: brightness(1.4); }
 ```
-Não mexe no outro nível de hover (a linha neon que dá a volta no contorno dos botões de ação,
-`tdvTrace` — esse é um efeito de entrada com duração própria, e é assim que já foi pedido antes:
-"o neon deve sumir depois de passar", não ficar preso aceso).
+Não mexe no outro nível de hover (a linha neon dos botões de ação, `tdvTrace` — continua um efeito
+de entrada com duração própria, do jeito que já foi pedido antes: "o neon deve sumir depois de
+passar"). Conferida a regra certinha na folha de estilo, batendo com os botões certos.
 
 ---
 

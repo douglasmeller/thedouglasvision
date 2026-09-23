@@ -129,6 +129,29 @@
     .jarvis-ring-outer { inset: -6px; border: 1.5px solid transparent; border-top-color: currentColor; border-right-color: currentColor; opacity: 0.7; animation: jarvisRingSpin 5s linear infinite; }
     .jarvis-ring-inner { inset: -2.5px; border: 1px dashed currentColor; opacity: 0.4; animation: jarvisRingSpinRev 9s linear infinite; }
     .jarvis-ring-pulse { inset: -6px; border: 1.5px solid currentColor; opacity: 0.5; animation: jarvisRingBreathe 2.4s ease-in-out infinite; }
+
+    /* ═══ Assinatura visual por estado na ligação ao vivo (fase 8, pedido de 22/09 — o Sr.
+       Douglas curtiu o efeito da fase 4 e pediu algo parecido pra "ouvindo/pensando/falando"). ═══
+       Ouvindo: um arco varre o anel devagar e sem parar, como um radar captando a voz — mesma
+       técnica do neon dos botões (conic-gradient + máscara só na borda), só que em loop contínuo
+       em vez de um traço único. */
+    @keyframes jarvisListenSweep { to { --tdv-ang: 360deg; } }
+    .jarvis-listen-sweep {
+      position: absolute; inset: -9px; border-radius: 50%; padding: 2px; box-sizing: border-box;
+      background: conic-gradient(from var(--tdv-ang), transparent 0deg, currentColor 35deg, transparent 80deg);
+      -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+      -webkit-mask-composite: xor;
+      mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+      mask-composite: exclude;
+      opacity: 0.85; animation: jarvisListenSweep 2.2s linear infinite;
+    }
+    /* Pensando: a mesma chuva de binário da fase 4 (nota sendo reescrita), só que num halo
+       circular em volta do avatar em vez de cobrir um bloco de texto. */
+    .jarvis-think-halo { position: absolute; inset: -16px; border-radius: 50%; overflow: hidden; opacity: 0.6; }
+    /* Falando: três anéis saindo do centro em cascata (animation-delay escalonado), como o som
+       se espalhando — mais rico que um único anel respirando. */
+    @keyframes jarvisRipple { 0% { transform: scale(0.85); opacity: 0.65; } 100% { transform: scale(1.6); opacity: 0; } }
+    .jarvis-speak-ripple { position: absolute; inset: -6px; border-radius: 50%; border: 1.5px solid currentColor; animation: jarvisRipple 1.8s ease-out infinite; }
     /* Sem guarda de prefers-reduced-motion aqui de propósito — em celulares com
        "reduzir movimento" ligado no sistema, esse giro sumia mesmo sendo bem sutil
        (não é o tipo de animação brusca que esse ajuste existe pra evitar). */
@@ -306,12 +329,17 @@
       78%  { opacity: 1; }
       100% { --tdv-ang: 360deg; opacity: 0; }
     }
-    @keyframes tdvBlink { 0%, 100% { filter: brightness(1); } 30% { filter: brightness(1.5); } 65% { filter: brightness(0.97); } }
-
-    /* Piscada: qualquer botão que NÃO seja do grupo da linha neon (senão os dois efeitos
-       rodariam juntos no mesmo botão e a distinção entre os dois níveis se perderia). */
+    /* Brilho: qualquer botão que NÃO seja do grupo da linha neon (senão os dois efeitos
+       rodariam juntos no mesmo botão e a distinção entre os dois níveis se perderia). Fica aceso
+       o tempo TODO que o mouse estiver em cima — antes era uma animação de duração fixa (0,3s)
+       que disparava e voltava sozinha ao normal mesmo com o mouse parado ali, dando a sensação
+       de "pisca e apaga" (pedido do Sr. Douglas pra corrigir, 22/09). Uma transição comum resolve:
+       sobe ao entrar, só desce quando o mouse sai de verdade. */
+    button:not(:disabled):not(.no-tech):not(.hud-btn-primary):not(.hud-btn-ghost):not(.hud-icon-btn):not([style*="linear-gradient(135deg, #2563EB"]) {
+      transition: filter 0.15s ease;
+    }
     button:not(:disabled):not(.no-tech):not(.hud-btn-primary):not(.hud-btn-ghost):not(.hud-icon-btn):not([style*="linear-gradient(135deg, #2563EB"]):hover {
-      animation: tdvBlink 0.3s ease;
+      filter: brightness(1.4);
     }
 
     .hud-btn-primary, .hud-btn-ghost, .hud-icon-btn,
@@ -333,7 +361,7 @@
     .hud-icon-btn-danger::after { background: conic-gradient(from var(--tdv-ang), transparent 0deg, #EF4444 45deg, #FCA5A5 70deg, transparent 105deg); }
 
     @media (prefers-reduced-motion: reduce) {
-      button:not(:disabled):hover { animation: none; }
+      button:not(:disabled) { transition: none; }
       .hud-btn-primary:hover::after, .hud-btn-ghost:hover::after, .hud-icon-btn:hover::after,
       button[style*="linear-gradient(135deg, #2563EB"]:hover::after { animation: none; opacity: 0; }
     }
@@ -3267,10 +3295,20 @@
           <div class="jarvis-ring-wrap" style="width: 140px; height: 140px; color: {{ jarvisAccentColor }}; flex-shrink: 0;">
             <span class="jarvis-ring jarvis-ring-outer"></span>
             <span class="jarvis-ring jarvis-ring-inner"></span>
-            <sc-if value="{{ jarvisLiveSpeaking }}" hint-placeholder-val="{{ false }}">
-              <span class="jarvis-ring jarvis-ring-pulse"></span>
+            <!-- Assinatura por estado (fase 8): ouvindo = radar varrendo o anel; pensando = a
+                 mesma chuva de binário da fase 4, num halo; falando = três anéis em cascata. -->
+            <sc-if value="{{ jarvisLiveListening }}" hint-placeholder-val="{{ true }}">
+              <span class="jarvis-listen-sweep"></span>
             </sc-if>
-            <div style="width: 100%; height: 100%; border-radius: 50%; overflow: hidden; background: {{ jarvisAvatarBg }}; box-shadow: 0 0 30px {{ jarvisGlowColor }}; padding: 3px; box-sizing: border-box;">
+            <sc-if value="{{ jarvisLiveThinking }}" hint-placeholder-val="{{ false }}">
+              <div class="jarvis-think-halo"><canvas id="jarvis-rain-live" style="width: 100%; height: 100%;"></canvas></div>
+            </sc-if>
+            <sc-if value="{{ jarvisLiveSpeaking }}" hint-placeholder-val="{{ false }}">
+              <span class="jarvis-ring jarvis-speak-ripple" style="animation-delay: 0s;"></span>
+              <span class="jarvis-ring jarvis-speak-ripple" style="animation-delay: 0.6s;"></span>
+              <span class="jarvis-ring jarvis-speak-ripple" style="animation-delay: 1.2s;"></span>
+            </sc-if>
+            <div style="width: 100%; height: 100%; border-radius: 50%; overflow: hidden; background: {{ jarvisAvatarBg }}; box-shadow: 0 0 30px {{ jarvisGlowColor }}; padding: 3px; box-sizing: border-box; position: relative;">
               <img src="{{ jarvisLogoSrc }}" alt="" style="width: 100%; height: 100%; object-fit: contain; border-radius: 50%;">
             </div>
           </div>
@@ -3728,6 +3766,7 @@ class Component extends DCLogic {
   componentDidUpdate() {
     this._syncAgendaMap();
     this._syncJarvisRain();
+    this._syncJarvisLiveRain();
     // O framework (support.js) chama componentDidUpdate(prevProps) — SÓ as props, nunca o estado
     // anterior. Esta função já foi escrita como (prevProps, prevState): prevState vinha sempre
     // undefined, "prevState.screen" estourava na primeira linha a cada atualização, o framework
@@ -6417,16 +6456,22 @@ class Component extends DCLogic {
     this.openTaskModal(task);
   }
 
-  // Chuva de 0 e 1 no canvas enquanto o Jarvis reescreve. Nasce e morre junto com a sobreposição;
-  // quando ela some, o laço para (nada de rAF rodando pra sempre em segundo plano).
-  _syncJarvisRain = () => {
-    const cv = this.state.jarvisOnNote ? document.getElementById('jarvis-rain') : null;
+  // Chuva de 0 e 1 num canvas — usada em dois lugares (nota sendo reescrita, fase 4; e "Jarvis
+  // pensando" na ligação ao vivo, fase 8), cada um com seu próprio id de canvas e sua própria
+  // condição de "ainda ativo". _rainState guarda o laço de cada canvas separado, então os dois
+  // podem existir ao mesmo tempo sem um atropelar o outro (mesmo não sendo esperado na prática —
+  // nascem e morrem junto com a tela que os mostra).
+  _rainState = {}
+
+  _syncRainCanvas = (canvasId, isActiveFn) => {
+    const st = this._rainState[canvasId] || (this._rainState[canvasId] = {});
+    const cv = isActiveFn() ? document.getElementById(canvasId) : null;
     if (!cv) {
-      if (this._rainFrame) { cancelAnimationFrame(this._rainFrame); this._rainFrame = null; this._rainCanvas = null; }
+      if (st.frame) { cancelAnimationFrame(st.frame); st.frame = null; st.canvas = null; }
       return;
     }
-    if (this._rainCanvas === cv) return;
-    this._rainCanvas = cv;
+    if (st.canvas === cv) return;
+    st.canvas = cv;
     const ctx = cv.getContext('2d');
     if (!ctx) return;
     const passo = 12;
@@ -6440,8 +6485,8 @@ class Component extends DCLogic {
     medir();
     let ultimo = 0;
     const frame = (t) => {
-      if (!this.state.jarvisOnNote || !cv.isConnected) { this._rainFrame = null; this._rainCanvas = null; return; }
-      this._rainFrame = requestAnimationFrame(frame);
+      if (!isActiveFn() || !cv.isConnected) { st.frame = null; st.canvas = null; return; }
+      st.frame = requestAnimationFrame(frame);
       if (t - ultimo < 42) return;   // ~24 quadros por segundo: cadência de terminal, não de jogo
       ultimo = t;
       if (Math.abs(cv.getBoundingClientRect().width - larg) > 2) medir();
@@ -6455,8 +6500,11 @@ class Component extends DCLogic {
         colunas[i] = y > alt + Math.random() * 120 ? 0 : y + passo;
       }
     };
-    this._rainFrame = requestAnimationFrame(frame);
+    st.frame = requestAnimationFrame(frame);
   }
+
+  _syncJarvisRain = () => this._syncRainCanvas('jarvis-rain', () => this.state.jarvisOnNote)
+  _syncJarvisLiveRain = () => this._syncRainCanvas('jarvis-rain-live', () => this.state.jarvisLiveMode && this.state.jarvisLiveStatus === 'thinking')
 
   // ─── Jarvis mexendo na nota aberta ────────────────────────────────────────
   // O chat já avisa quando uma ferramenta roda (evento "tool") e quando o turno acabou mexendo em

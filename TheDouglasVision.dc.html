@@ -2,7 +2,11 @@
 <html>
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<!-- interactive-widget=resizes-content: quando o teclado do celular abre, o navegador encolhe a
+     área de conteúdo (o que já move dvh/flex certinho) E a área de referência de "position: fixed"
+     junto — sem isso os dois discordam sobre onde é "embaixo" e a barra de navegação fixa acaba
+     pousando em cima da caixa do Jarvis / botão de ligação quando o teclado está aberto. -->
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content">
 <meta name="theme-color" content="#0D0D1A">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -2911,7 +2915,7 @@
 
     <!-- ── Undo Toast ── -->
     <sc-if value="{{ showUndo }}" hint-placeholder-val="{{ false }}">
-      <div style="position: fixed; bottom: 80px; left: 16px; right: 16px; z-index: 140; background: #1E293B; border: 1px solid #334155; border-radius: 12px; padding: 14px 16px; display: flex; align-items: center; gap: 12px; box-shadow: 0 8px 32px #00000077; animation: fadeIn 0.2s ease both;">
+      <div style="position: fixed; bottom: calc(80px + env(safe-area-inset-bottom, 0px)); left: 16px; right: 16px; z-index: 140; background: #1E293B; border: 1px solid #334155; border-radius: 12px; padding: 14px 16px; display: flex; align-items: center; gap: 12px; box-shadow: 0 8px 32px #00000077; animation: fadeIn 0.2s ease both;">
         <i class="ph ph-trash" style="font-size: 16px; color: #F87171; flex-shrink: 0;"></i>
         <span style="flex: 1; font-size: 13px; color: #CBD5E1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">"{{ undoDescription }}" removido</span>
         <button onClick="{{ undoDelete }}" style="flex-shrink: 0; background: none; border: 1px solid #475569; border-radius: 7px; color: #94A3B8; font-size: 12px; font-weight: 600; padding: 5px 12px; cursor: pointer; font-family: inherit; transition: color 0.15s;">Desfazer</button>
@@ -3492,7 +3496,7 @@
 
     <!-- ── Toast ── -->
     <sc-if value="{{ showToast }}" hint-placeholder-val="{{ false }}">
-      <div style="position: fixed; bottom: 80px; left: 16px; right: 16px; z-index: 140; max-width: 420px; margin: 0 auto; background: #1E293B; border: 1px solid #334155; border-radius: 12px; padding: 14px 16px; display: flex; align-items: center; gap: 12px; box-shadow: 0 8px 32px #00000077; animation: fadeIn 0.2s ease both;">
+      <div style="position: fixed; bottom: calc(80px + env(safe-area-inset-bottom, 0px)); left: 16px; right: 16px; z-index: 140; max-width: 420px; margin: 0 auto; background: #1E293B; border: 1px solid #334155; border-radius: 12px; padding: 14px 16px; display: flex; align-items: center; gap: 12px; box-shadow: 0 8px 32px #00000077; animation: fadeIn 0.2s ease both;">
         <i class="ph ph-info" style="font-size: 16px; color: #F97316; flex-shrink: 0;"></i>
         <span style="flex: 1; font-size: 13px; color: #CBD5E1;">{{ toastMsg }}</span>
       </div>
@@ -9410,7 +9414,11 @@ class Component extends DCLogic {
       showOverlay: isMobile && sidebarOpen,
       toggleSidebar: () => this.setState(st => ({ sidebarOpen: !st.sidebarOpen })),
       closeSidebar: () => this.setState({ sidebarOpen: false }),
-      contentStyle: { flex: 1, overflowY: 'auto', overflowX: 'hidden', paddingBottom: isMobile ? '72px' : '0' },
+      // 72px reserva a altura da barra inferior (56px) + folga — mas em iPhones com home indicator
+      // (e Android com gesto) a barra também ganha padding-bottom de env(safe-area-inset-bottom),
+      // que esse flat 72px não cobria: a barra ficava mais alta que a reserva e comia o rodapé do
+      // conteúdo (ex.: caixa do Jarvis, botão de ligação). Soma o mesmo env() aqui também.
+      contentStyle: { flex: 1, overflowY: 'auto', overflowX: 'hidden', paddingBottom: isMobile ? 'calc(72px + env(safe-area-inset-bottom, 0px))' : '0' },
       showUndo: !!s.undoTxn,
       undoDescription: s.undoTxn?.description || '',
       undoDelete: this.undoDelete,

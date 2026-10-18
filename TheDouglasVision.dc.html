@@ -4824,7 +4824,17 @@ class Component extends DCLogic {
   sendJarvisMessage = async () => {
     const s = this.state;
     const text = s.jarvisInput.trim();
-    if (!text || s.jarvisLoading) return;
+    if (!text) return;
+    // "Ainda respondendo" nunca pode virar um botão morto: o envio era ignorado em silêncio sempre
+    // que jarvisLoading ficava preso em true (resposta que nunca fechou o ciclo), e o Sr. Douglas
+    // ficava digitando sem nenhum sinal e sem nada chegar ao servidor. Agora: se faz menos de 75s
+    // que a última mensagem saiu, avisa; passou disso, a marca está velha — destrava e envia.
+    if (s.jarvisLoading) {
+      const idade = Date.now() - (this._jarvisSendAt || 0);
+      if (idade < 75000) { this._toast('Ainda estou respondendo à mensagem anterior — um instante.'); return; }
+      this.setState({ jarvisLoading: false });
+    }
+    this._jarvisSendAt = Date.now();
     if (s.jarvisListening && this._jarvisRecognition) this._jarvisRecognition.stop();
     if (s.jarvisLiveMode) { this._liveClearSpeakQueue(); this._liveSpeaking = false; this._liveStreamDone = false; }
     // "Trava" essa chamada na geração atual do modo ao vivo — se o Sr. Douglas interromper

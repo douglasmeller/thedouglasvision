@@ -22,7 +22,7 @@ dia conforme novos pedidos chegavam.
 **Fase 11 — Jarvis com busca na web** (pedido de 22/09).
 
 Depois disso continuam na fila, esperando decisão do Sr. Douglas:
-- **Cofre de Senhas** — falta escolher a forma de recuperação (ver "Novos setores → Cofre de senhas").
+- ~~**Cofre de Senhas**~~ — ✅ feito em 18/10 (ver "Novos setores → Cofre de senhas").
 - **Transcritor de reuniões** — falta escolher o serviço de transcrição e o custo.
 
 ---
@@ -385,7 +385,7 @@ Ordem sugerida — bug antes de feature, e o que é função central antes do qu
 3. **Shift+Enter no chat do Jarvis** — feito em 20/09, ver "Jarvis — pequenos ajustes".
 4. **Agenda — refinamento grande** — feito em 22/09 (tarefas ligadas, toque, duração, repetição, local e mapa). Ver "Novos setores → Agenda".
 5. **Anotações mais completas** — feito em 18/09 (busca, fixar, lixeira, ordenação, exportar, links entre notas).
-6. **Cofre de Senhas** — ver "Novos setores → Cofre de senhas". Precisa de conversa de arquitetura antes de código.
+6. **Cofre de Senhas** — ✅ feito em 18/10, ver "Novos setores → Cofre de senhas".
 7. **Transcritor de áudio para reuniões** — ver "Novos setores → Transcritor de reuniões". Precisa de decisão de serviço/custo antes de código.
 
 ## Jarvis
@@ -468,9 +468,13 @@ Ordem sugerida — bug antes de feature, e o que é função central antes do qu
 - **Cofre de Senhas** (reforçado em 17/09): novo setor pra guardar todas as senhas, organizável por pastas "e tudo mais". Exigências explícitas do Douglas: tem que ser **BEM seguro**; é **obrigatório digitar a senha do app de novo** pra entrar nessa sessão (segunda barreira — não basta já estar logado no TDV). Nome da página: **"Cofre de Senhas"**.
   - **Decidido com o Douglas (17/09)**: a senha do cofre é a **mesma do app** (sem senha-mestra separada), e **tem que existir recuperação** se a senha for esquecida (ele discordou de "irrecuperável").
   - Arquitetura que atende as duas coisas (cifragem em envelope): uma chave aleatória própria do cofre (AES-GCM, gerada no navegador) cifra todas as entradas; essa chave fica guardada "embrulhada" por uma chave derivada da senha do app (PBKDF2/Argon2). O banco só guarda texto cifrado + a chave embrulhada. Trocar a senha do app sabendo a antiga = só re-embrulhar a chave, nada é re-cifrado nem perdido.
-  - **Em aberto — como recuperar quando a senha é resetada por e-mail** (a senha antiga some, então a chave precisa estar embrulhada também de um segundo jeito): (1) chave de recuperação mostrada uma vez pra guardar fora do TDV (recomendado — ninguém além dele abre o cofre); (2) cópia da chave guardada no servidor e liberada pelo reset de e-mail (cômodo, mas o cofre fica tão seguro quanto o e-mail, e o servidor passa a poder ler); (3) as duas. Aguardando a escolha do Douglas.
-  - Ainda a decidir junto: tempo até o cofre trancar sozinho por inatividade; se o Jarvis pode ou não ter acesso ao cofre (recomendação: não).
-  - Funções esperadas: pastas, gerador de senha forte, copiar com um clique (limpando da área de transferência depois de alguns segundos), mostrar/ocultar, campos de site/usuário/observação, busca.
+  - **FEITO em 18/10.** Recuperação escolhida (recomendação seguida): **chave de recuperação** de 160 bits (32 letras/números em grupos de 4) mostrada **uma única vez** na criação, com "guardei" obrigatório; não fica salva em lugar nenhum. Ela também pode ser regenerada nos ajustes do cofre (a antiga morre na hora).
+  - **Como funciona (cifragem em envelope, tudo no navegador/WebCrypto):** chave aleatória do cofre (AES-GCM 256) cifra cada entrada; essa chave fica embrulhada duas vezes em `vault_meta` — pela senha do app (PBKDF2-SHA256, 600 mil iterações, sal próprio) e pela chave de recuperação. `vault_items` guarda só `payload` cifrado (nome, pasta, site, usuário, senha, observações — tudo dentro), amarrado ao id da linha (additionalData): trocar o texto cifrado entre linhas não abre. RLS por `auth.uid()` nas duas tabelas.
+  - **Abrir:** pede a senha do app de novo SEMPRE (conferida no servidor com um cliente descartável, sem mexer na sessão) e ainda precisa desembrulhar a chave. Se a senha do app foi redefinida por e-mail, a senha nova confere mas não desembrulha → o cofre pede a chave de recuperação e se re-embrulha com a senha nova (nada é re-cifrado, nada se perde). Erros seguidos geram espera progressiva.
+  - **Trancar:** a chave só vive em memória — tranca ao clicar, ao sair da aba, ao sair do app, em F5 e por inatividade (padrão 5 min; 1/5/15/30/60 nos ajustes). **O Jarvis não tem acesso nenhum** (nada em claro sai do navegador).
+  - **Telas:** pastas aninhadas com trilha (apagar pasta sobe o conteúdo um nível, re-cifrando), busca sem acento (nome/site/usuário/observação — nunca o texto da senha), mostrar/ocultar, copiar usuário/senha (some da área de transferência em 20s), gerador (8–64 caracteres, sorteio sem viés) com medidor de força.
+  - **Testes:** `vault_sim` com o código real e WebCrypto de verdade (68 verificações: criação, abrir, adulteração, troca de senha do app, chave antiga/nova, pasta, inatividade, sem rede) + conferido no navegador (desktop e celular).
+  - Fora desta rodada: compartilhar entrada, importar de outro gerenciador, 2º fator pro cofre, anexos.
 - **Transcritor de reuniões** (pedido de 17/09): gravar o áudio de uma reunião e transformar em texto. Natural casar com o que já existe: salvar a transcrição como nota em Anotações (numa pasta "Reuniões"), e pedir pro Jarvis resumir, listar decisões e virar os próximos passos em Tarefas.
   - Decisão a tomar antes de código: **qual serviço transcreve**. A Web Speech API do navegador (a mesma do microfone do Jarvis) é grátis, mas é feita pra frase curta — em reunião longa ela corta sozinha, erra muito com várias pessoas e não separa quem falou. Pra reunião de verdade o caminho é um serviço dedicado de transcrição (ex: Whisper via API, Deepgram, AssemblyAI) — tem custo por minuto e alguns separam falantes. Precisa do Douglas escolher e criar a chave.
   - Outros pontos: gravar reunião online (Meet/Teams) pelo navegador exige capturar o áudio da aba, não só o microfone; limite de duração; e aviso/consentimento de gravação das outras pessoas.

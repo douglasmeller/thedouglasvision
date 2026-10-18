@@ -1728,6 +1728,182 @@
           </div>
         </sc-if>
 
+        <!-- ═══ COFRE DE SENHAS ═══ -->
+        <sc-if value="{{ isCofre }}" hint-placeholder-val="{{ false }}">
+          <div class="fade-in" style="padding: 20px; display: flex; flex-direction: column; gap: 16px; max-width: 960px; margin: 0 auto; width: 100%; box-sizing: border-box;">
+
+            <sc-if value="{{ vaultShowChecking }}" hint-placeholder-val="{{ false }}">
+              <div style="display: flex; align-items: center; justify-content: center; gap: 10px; padding: 80px 0; color: #475569; font-size: 13px;">
+                <span class="btn-spinner" style="border-color: #33415555; border-top-color: #64748B; width: 18px; height: 18px;"></span>Abrindo o cofre…
+              </div>
+            </sc-if>
+
+            <sc-if value="{{ vaultShowError }}" hint-placeholder-val="{{ false }}">
+              <div style="background: #111118; border: 1px solid #151525; border-radius: 14px; padding: 40px 24px; display: flex; flex-direction: column; align-items: center; gap: 14px; text-align: center;">
+                <i class="ph ph-wifi-slash" style="font-size: 34px; color: #334155;"></i>
+                <div style="font-size: 13px; color: #94A3B8; max-width: 340px; line-height: 1.6;">{{ vaultError }}</div>
+                <button onClick="{{ vaultRetry }}" style="padding: 9px 20px; background: transparent; border: 1px solid #1E2A45; border-radius: 9px; color: #94A3B8; font-size: 13px; font-family: inherit; cursor: pointer;">Tentar de novo</button>
+              </div>
+            </sc-if>
+
+            <!-- Criar o cofre — passo 1: confirmar a senha do app -->
+            <sc-if value="{{ vaultShowSetupPw }}" hint-placeholder-val="{{ false }}">
+              <div style="max-width: 440px; width: 100%; margin: 40px auto 0; background: #111118; border: 1px solid #1E2A45; border-radius: 16px; padding: 28px; display: flex; flex-direction: column; gap: 14px;">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                  <div style="width: 44px; height: 44px; border-radius: 12px; background: #2563EB18; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><i class="ph ph-vault" style="font-size: 24px; color: #60A5FA;"></i></div>
+                  <div>
+                    <div style="font-size: 17px; font-weight: 700; color: #E2E8F0;">Criar o Cofre de Senhas</div>
+                    <div style="font-size: 12px; color: #475569; margin-top: 2px;">Tudo é cifrado aqui no seu aparelho</div>
+                  </div>
+                </div>
+                <div style="font-size: 12.5px; color: #64748B; line-height: 1.7;">Suas senhas são cifradas no navegador antes de ir pro servidor — nem o banco de dados, nem o Jarvis, nem eu conseguimos ler. O cofre abre com a <b style="color: #94A3B8;">mesma senha do app</b>, pedida de novo toda vez, e tranca sozinho quando você sai da aba ou fica parado.</div>
+                <div style="font-size: 11px; color: #475569; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Senha do app</div>
+                <input type="password" value="{{ vaultPwInput }}" onInput="{{ setVaultPwInput }}" onKeyDown="{{ vaultPwKeyDown }}" autocomplete="current-password" placeholder="Digite a senha do app" style="width: 100%; box-sizing: border-box; background: #0D0D1A; border: 1px solid #1E2A45; border-radius: 8px; padding: 11px 14px; color: #E2E8F0; font-size: 14px; font-family: inherit;">
+                <sc-if value="{{ hasVaultError }}" hint-placeholder-val="{{ false }}"><div style="font-size: 12px; color: #F87171; line-height: 1.5;">{{ vaultError }}</div></sc-if>
+                <button onClick="{{ vaultSetupContinue }}" style="padding: 11px; background: linear-gradient(135deg, #2563EB, #06B6D4); border: none; border-radius: 9px; color: white; font-size: 14px; font-weight: 600; font-family: inherit; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                  <sc-if value="{{ vaultBusy }}" hint-placeholder-val="{{ false }}"><span class="btn-spinner"></span></sc-if>Continuar
+                </button>
+              </div>
+            </sc-if>
+
+            <!-- Criar o cofre — passo 2: chave de recuperação (aparece uma vez só) -->
+            <sc-if value="{{ vaultShowSetupKey }}" hint-placeholder-val="{{ false }}">
+              <div style="max-width: 520px; width: 100%; margin: 24px auto 0; background: #111118; border: 1px solid #F59E0B44; border-radius: 16px; padding: 28px; display: flex; flex-direction: column; gap: 14px;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                  <i class="ph ph-key" style="font-size: 22px; color: #F59E0B;"></i>
+                  <div style="font-size: 16px; font-weight: 700; color: #E2E8F0;">Guarde sua chave de recuperação</div>
+                </div>
+                <div style="font-size: 12.5px; color: #94A3B8; line-height: 1.7;">Se um dia você redefinir a senha do app (esqueceu, link por e-mail), <b style="color: #FCD34D;">esta chave é a única forma de reabrir o cofre</b>. Ela <b>não fica salva em lugar nenhum</b> e não aparece de novo. Anote em papel ou guarde fora do TDV — num gerenciador de senhas, por exemplo.</div>
+                <div style="background: #0D0D1A; border: 1px dashed #F59E0B55; border-radius: 10px; padding: 16px; text-align: center; font-family: 'Share Tech Mono', monospace; font-size: 17px; letter-spacing: 1.5px; color: #FDE68A; line-height: 1.7; word-break: break-all; user-select: all;">{{ vaultNewRecKey }}</div>
+                <button onClick="{{ copyVaultRecKey }}" style="padding: 9px; background: transparent; border: 1px solid #1E2A45; border-radius: 9px; color: #94A3B8; font-size: 12.5px; font-family: inherit; cursor: pointer;"><i class="ph ph-copy"></i> Copiar (some da área de transferência em 20s)</button>
+                <label style="display: flex; align-items: flex-start; gap: 10px; cursor: pointer;">
+                  <input type="checkbox" checked="{{ vaultRecAck }}" onChange="{{ setVaultRecAck }}" style="width: 18px; height: 18px; accent-color: #2563EB; cursor: pointer; flex-shrink: 0; margin-top: 1px;">
+                  <span style="font-size: 12.5px; color: #CBD5E1; line-height: 1.5;">Guardei a chave num lugar seguro e entendo que sem ela, se a senha do app mudar, o cofre não abre.</span>
+                </label>
+                <sc-if value="{{ hasVaultError }}" hint-placeholder-val="{{ false }}"><div style="font-size: 12px; color: #F87171;">{{ vaultError }}</div></sc-if>
+                <button onClick="{{ vaultSetupFinish }}" style="padding: 11px; background: linear-gradient(135deg, #2563EB, #06B6D4); border: none; border-radius: 9px; color: white; font-size: 14px; font-weight: 600; font-family: inherit; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                  <sc-if value="{{ vaultBusy }}" hint-placeholder-val="{{ false }}"><span class="btn-spinner"></span></sc-if>Criar cofre
+                </button>
+              </div>
+            </sc-if>
+
+            <!-- Trancado -->
+            <sc-if value="{{ vaultShowLocked }}" hint-placeholder-val="{{ false }}">
+              <div style="max-width: 440px; width: 100%; margin: 40px auto 0; background: #111118; border: 1px solid #1E2A45; border-radius: 16px; padding: 28px; display: flex; flex-direction: column; gap: 14px;">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                  <div style="width: 44px; height: 44px; border-radius: 12px; background: #2563EB18; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><i class="ph ph-lock-key" style="font-size: 24px; color: #60A5FA;"></i></div>
+                  <div>
+                    <div style="font-size: 17px; font-weight: 700; color: #E2E8F0;">Cofre de Senhas</div>
+                    <div style="font-size: 12px; color: #475569; margin-top: 2px;">Trancado</div>
+                  </div>
+                </div>
+                <div style="font-size: 11px; color: #475569; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Senha do app</div>
+                <input type="password" value="{{ vaultPwInput }}" onInput="{{ setVaultPwInput }}" onKeyDown="{{ vaultPwKeyDown }}" autocomplete="current-password" placeholder="Digite a senha do app pra abrir" style="width: 100%; box-sizing: border-box; background: #0D0D1A; border: 1px solid #1E2A45; border-radius: 8px; padding: 11px 14px; color: #E2E8F0; font-size: 14px; font-family: inherit;">
+                <sc-if value="{{ vaultModeIsRec }}" hint-placeholder-val="{{ false }}">
+                  <div style="font-size: 11px; color: #F59E0B; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Chave de recuperação</div>
+                  <input type="text" value="{{ vaultRecInput }}" onInput="{{ setVaultRecInput }}" onKeyDown="{{ vaultPwKeyDown }}" autocomplete="off" spellcheck="false" placeholder="XXXX-XXXX-XXXX-XXXX-XXXX-XXXX-XXXX-XXXX" style="width: 100%; box-sizing: border-box; background: #0D0D1A; border: 1px solid #F59E0B44; border-radius: 8px; padding: 11px 14px; color: #FDE68A; font-size: 13px; font-family: 'Share Tech Mono', monospace; letter-spacing: 0.5px;">
+                </sc-if>
+                <sc-if value="{{ hasVaultError }}" hint-placeholder-val="{{ false }}"><div style="font-size: 12px; color: #F87171; line-height: 1.5;">{{ vaultError }}</div></sc-if>
+                <button onClick="{{ vaultUnlock }}" style="padding: 11px; background: linear-gradient(135deg, #2563EB, #06B6D4); border: none; border-radius: 9px; color: white; font-size: 14px; font-weight: 600; font-family: inherit; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                  <sc-if value="{{ vaultBusy }}" hint-placeholder-val="{{ false }}"><span class="btn-spinner"></span></sc-if>Abrir cofre
+                </button>
+                <sc-if value="{{ vaultModeIsPw }}" hint-placeholder-val="{{ true }}">
+                  <button onClick="{{ vaultUseRecovery }}" style="background: none; border: none; color: #475569; font-size: 12px; font-family: inherit; cursor: pointer; text-decoration: underline; padding: 0;">Redefini a senha do app — usar chave de recuperação</button>
+                </sc-if>
+                <sc-if value="{{ vaultModeIsRec }}" hint-placeholder-val="{{ false }}">
+                  <button onClick="{{ vaultUsePassword }}" style="background: none; border: none; color: #475569; font-size: 12px; font-family: inherit; cursor: pointer; text-decoration: underline; padding: 0;">Voltar</button>
+                </sc-if>
+              </div>
+            </sc-if>
+
+            <!-- Aberto -->
+            <sc-if value="{{ vaultShowUnlocked }}" hint-placeholder-val="{{ false }}">
+              <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                  <div style="font-size: 20px; font-weight: 600; color: #E2E8F0; letter-spacing: -0.3px;">Cofre de Senhas</div>
+                  <span style="font-size: 10px; font-weight: 700; color: #22C55E; background: #22C55E16; padding: 3px 8px; border-radius: 5px; letter-spacing: 0.5px;">ABERTO</span>
+                </div>
+                <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                  <button onClick="{{ openVaultFolderModalNew }}" style="display: flex; align-items: center; gap: 6px; padding: 9px 14px; background: transparent; border: 1px solid #1E2A45; border-radius: 9px; color: #94A3B8; font-size: 13px; font-family: inherit; cursor: pointer;"><i class="ph ph-folder-plus" style="font-size: 15px;"></i>Pasta</button>
+                  <button onClick="{{ openVaultItemModalNew }}" style="display: flex; align-items: center; gap: 6px; padding: 9px 16px; background: linear-gradient(135deg, #2563EB, #06B6D4); border: none; border-radius: 9px; color: white; font-size: 13px; font-weight: 600; font-family: inherit; cursor: pointer;"><i class="ph ph-plus" style="font-size: 15px;"></i>Senha</button>
+                  <button onClick="{{ openVaultSettings }}" title="Ajustes do cofre" style="width: 38px; background: transparent; border: 1px solid #1E2A45; border-radius: 9px; color: #64748B; cursor: pointer; display: flex; align-items: center; justify-content: center;"><i class="ph ph-gear" style="font-size: 16px;"></i></button>
+                  <button onClick="{{ vaultLockNow }}" style="display: flex; align-items: center; gap: 6px; padding: 9px 14px; background: #EF444414; border: 1px solid #EF444433; border-radius: 9px; color: #F87171; font-size: 13px; font-weight: 600; font-family: inherit; cursor: pointer;"><i class="ph ph-lock-key" style="font-size: 15px;"></i>Trancar</button>
+                </div>
+              </div>
+
+              <div style="position: relative;">
+                <i class="ph ph-magnifying-glass" style="position: absolute; left: 11px; top: 50%; transform: translateY(-50%); font-size: 14px; color: #334155; pointer-events: none;"></i>
+                <input type="text" value="{{ vaultSearch }}" onInput="{{ setVaultSearch }}" autocomplete="off" placeholder="Buscar por nome, site ou usuário…" style="width: 100%; box-sizing: border-box; background: #111118; border: 1px solid #1A1A28; border-radius: 8px; padding: 9px 12px 9px 34px; color: #CBD5E1; font-size: 13px; font-family: inherit;">
+              </div>
+
+              <sc-if value="{{ hasVaultSearch }}" hint-placeholder-val="{{ false }}"><div style="font-size: 11px; color: #475569;">Buscando em todas as pastas</div></sc-if>
+              <div style="display: flex; align-items: center; gap: 4px; flex-wrap: wrap; font-size: 12.5px;">
+                <sc-for list="{{ vaultCrumbs }}" as="cr" hint-placeholder-count="2">
+                  <button onClick="{{ cr.onGo }}" style="background: none; border: none; padding: 2px 4px; font-family: inherit; font-size: 12.5px; cursor: pointer; color: #64748B;">{{ cr.label }}</button>
+                  <sc-if value="{{ cr.notLast }}" hint-placeholder-val="{{ false }}"><i class="ph ph-caret-right" style="font-size: 11px; color: #334155;"></i></sc-if>
+                </sc-for>
+                <span style="margin-left: auto; font-size: 11px; color: #334155;">{{ vaultCount }} senha(s)</span>
+              </div>
+
+              <sc-if value="{{ vaultNoRows }}" hint-placeholder-val="{{ false }}">
+                <div style="background: #111118; border: 1px solid #151525; border-radius: 12px; padding: 44px 24px; display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center;">
+                  <i class="ph ph-vault" style="font-size: 34px; color: #1E2A3A;"></i>
+                  <span style="font-size: 13px; color: #334155;">{{ vaultEmptyText }}</span>
+                </div>
+              </sc-if>
+
+              <sc-if value="{{ vaultHasRows }}" hint-placeholder-val="{{ false }}">
+                <div style="display: flex; flex-direction: column; gap: 8px;">
+                  <sc-for list="{{ vaultRows }}" as="vr" hint-placeholder-count="4">
+                    <sc-if value="{{ vr.isFolder }}" hint-placeholder-val="{{ false }}">
+                      <div style="display: flex; align-items: center; gap: 12px; background: #111118; border: 1px solid #151525; border-radius: 12px; padding: 12px 14px;">
+                        <button onClick="{{ vr.onOpen }}" style="flex: 1; min-width: 0; display: flex; align-items: center; gap: 12px; background: none; border: none; padding: 0; cursor: pointer; font-family: inherit; text-align: left;">
+                          <div style="width: 38px; height: 38px; border-radius: 10px; background: #F59E0B16; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><i class="ph ph-folder" style="font-size: 19px; color: #F59E0B;"></i></div>
+                          <div style="min-width: 0;">
+                            <div style="font-size: 14px; font-weight: 600; color: #CBD5E1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ vr.name }}</div>
+                            <div style="font-size: 11px; color: #334155; margin-top: 2px;">{{ vr.countLabel }}</div>
+                          </div>
+                        </button>
+                        <button onClick="{{ vr.onEdit }}" title="Renomear / mover" style="background: none; border: 1px solid #1A1A28; border-radius: 6px; color: #334155; cursor: pointer; padding: 6px 8px; font-size: 13px; display: flex; align-items: center; line-height: 1;"><i class="ph ph-pencil-simple"></i></button>
+                        <button onClick="{{ vr.onDelete }}" title="Apagar pasta" style="background: none; border: 1px solid #1A1A28; border-radius: 6px; color: #EF444466; cursor: pointer; padding: 6px 8px; font-size: 13px; display: flex; align-items: center; line-height: 1;"><i class="ph ph-trash"></i></button>
+                      </div>
+                    </sc-if>
+                    <sc-if value="{{ vr.isItem }}" hint-placeholder-val="{{ true }}">
+                      <div style="background: #111118; border: 1px solid #151525; border-radius: 12px; padding: 13px 14px; display: flex; flex-direction: column; gap: 9px;">
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                          <div style="width: 38px; height: 38px; border-radius: 10px; background: #2563EB16; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><i class="ph ph-key" style="font-size: 18px; color: #60A5FA;"></i></div>
+                          <div style="flex: 1; min-width: 0;">
+                            <div style="font-size: 14px; font-weight: 600; color: #E2E8F0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ vr.name }}</div>
+                            <div style="font-size: 11.5px; color: #475569; margin-top: 2px; display: flex; gap: 6px; flex-wrap: wrap;">
+                              <sc-if value="{{ vr.hasSite }}" hint-placeholder-val="{{ false }}"><span>{{ vr.site }}</span></sc-if>
+                              <sc-if value="{{ vr.hasPath }}" hint-placeholder-val="{{ false }}"><span style="color: #334155;">· em {{ vr.pathLabel }}</span></sc-if>
+                            </div>
+                          </div>
+                          <button onClick="{{ vr.onEdit }}" title="Editar" style="background: none; border: 1px solid #1A1A28; border-radius: 6px; color: #334155; cursor: pointer; padding: 6px 8px; font-size: 13px; display: flex; align-items: center; line-height: 1;"><i class="ph ph-pencil-simple"></i></button>
+                          <button onClick="{{ vr.onDelete }}" title="Apagar" style="background: none; border: 1px solid #1A1A28; border-radius: 6px; color: #EF444466; cursor: pointer; padding: 6px 8px; font-size: 13px; display: flex; align-items: center; line-height: 1;"><i class="ph ph-trash"></i></button>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                          <sc-if value="{{ vr.hasUser }}" hint-placeholder-val="{{ false }}">
+                            <button onClick="{{ vr.onCopyUser }}" title="Copiar usuário" style="display: flex; align-items: center; gap: 6px; background: #0D0D1A; border: 1px solid #1A1A28; border-radius: 7px; padding: 6px 10px; color: #94A3B8; font-size: 12px; font-family: inherit; cursor: pointer; max-width: 100%;"><i class="ph ph-user" style="font-size: 13px;"></i><span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ vr.username }}</span><i class="ph ph-copy" style="font-size: 12px; color: #475569;"></i></button>
+                          </sc-if>
+                          <div style="display: flex; align-items: center; gap: 6px; background: #0D0D1A; border: 1px solid #1A1A28; border-radius: 7px; padding: 4px 4px 4px 10px; min-width: 0;">
+                            <i class="ph ph-lock-simple" style="font-size: 13px; color: #475569;"></i>
+                            <span style="font-family: 'Share Tech Mono', monospace; font-size: 13px; color: #CBD5E1; letter-spacing: 0.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 260px;">{{ vr.passDisplay }}</span>
+                            <button onClick="{{ vr.onToggleReveal }}" title="Mostrar / ocultar" style="background: none; border: none; color: #64748B; cursor: pointer; padding: 3px 5px; display: flex; align-items: center;"><i class="{{ vr.revealIcon }}" style="font-size: 14px;"></i></button>
+                            <button onClick="{{ vr.onCopyPass }}" title="Copiar senha" style="background: #2563EB1A; border: none; border-radius: 5px; color: #60A5FA; cursor: pointer; padding: 5px 8px; display: flex; align-items: center; gap: 4px; font-size: 11.5px; font-family: inherit; font-weight: 600;"><i class="ph ph-copy" style="font-size: 13px;"></i>Copiar</button>
+                          </div>
+                        </div>
+                        <sc-if value="{{ vr.hasNotes }}" hint-placeholder-val="{{ false }}"><div style="font-size: 11.5px; color: #475569; line-height: 1.5; white-space: pre-wrap;">{{ vr.notes }}</div></sc-if>
+                      </div>
+                    </sc-if>
+                  </sc-for>
+                </div>
+              </sc-if>
+            </sc-if>
+
+          </div>
+        </sc-if>
+
         <!-- ═══ CONFIGURAÇÕES ═══ -->
         <sc-if value="{{ isConfiguracoes }}" hint-placeholder-val="{{ false }}">
           <div class="fade-in" style="padding: 20px; max-width: 1280px; margin: 0 auto; width: 100%; box-sizing: border-box;">
@@ -3494,6 +3670,159 @@
       </div>
     </sc-if>
 
+    <!-- ── Cofre: nova/editar senha ── -->
+    <sc-if value="{{ showVaultItemModal }}" hint-placeholder-val="{{ false }}">
+      <div style="position: fixed; inset: 0; background: #00000099; z-index: 200; display: flex; align-items: center; justify-content: center; padding: 16px;">
+        <div class="modal-in" style="background: #111118; border: 1px solid #1E2A45; border-radius: 16px; padding: 24px; width: 100%; max-width: 460px; max-height: 92vh; overflow-y: auto; box-shadow: 0 32px 80px #00000066; display: flex; flex-direction: column; gap: 12px;">
+          <div style="display: flex; align-items: center; justify-content: space-between;">
+            <div style="font-size: 17px; font-weight: 700; color: #E2E8F0;">{{ vaultItemModalTitle }}</div>
+            <button onClick="{{ closeVaultItemModal }}" style="background: none; border: none; color: #334155; cursor: pointer; font-size: 22px; line-height: 1; padding: 0; display: flex;">×</button>
+          </div>
+          <div>
+            <label style="display: block; font-size: 11px; color: #475569; margin-bottom: 6px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Nome</label>
+            <input type="text" value="{{ vFName }}" onInput="{{ setVFName }}" autocomplete="off" placeholder="Ex: Banco, Netflix, e-mail pessoal" style="width: 100%; box-sizing: border-box; background: #0D0D1A; border: 1px solid #1E2A45; border-radius: 8px; padding: 10px 14px; color: #E2E8F0; font-size: 14px; font-family: inherit;">
+          </div>
+          <div>
+            <label style="display: block; font-size: 11px; color: #475569; margin-bottom: 6px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Site ou app <span style="color: #334155; font-weight: 400; text-transform: none; letter-spacing: 0;">(opcional)</span></label>
+            <input type="text" value="{{ vFSite }}" onInput="{{ setVFSite }}" autocomplete="off" placeholder="exemplo.com" style="width: 100%; box-sizing: border-box; background: #0D0D1A; border: 1px solid #1E2A45; border-radius: 8px; padding: 10px 14px; color: #E2E8F0; font-size: 14px; font-family: inherit;">
+          </div>
+          <div>
+            <label style="display: block; font-size: 11px; color: #475569; margin-bottom: 6px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Usuário / e-mail</label>
+            <input type="text" value="{{ vFUser }}" onInput="{{ setVFUser }}" autocomplete="off" style="width: 100%; box-sizing: border-box; background: #0D0D1A; border: 1px solid #1E2A45; border-radius: 8px; padding: 10px 14px; color: #E2E8F0; font-size: 14px; font-family: inherit;">
+          </div>
+          <div>
+            <label style="display: block; font-size: 11px; color: #475569; margin-bottom: 6px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Senha</label>
+            <div style="display: flex; gap: 6px;">
+              <input type="{{ vFPassType }}" value="{{ vFPass }}" onInput="{{ setVFPass }}" autocomplete="new-password" spellcheck="false" style="flex: 1; min-width: 0; box-sizing: border-box; background: #0D0D1A; border: 1px solid #1E2A45; border-radius: 8px; padding: 10px 14px; color: #E2E8F0; font-size: 14px; font-family: 'Share Tech Mono', monospace; letter-spacing: 0.5px;">
+              <button onClick="{{ toggleVFShowPass }}" title="Mostrar / ocultar" style="width: 40px; background: transparent; border: 1px solid #1E2A45; border-radius: 8px; color: #64748B; cursor: pointer; display: flex; align-items: center; justify-content: center;"><i class="{{ vFShowIcon }}" style="font-size: 16px;"></i></button>
+            </div>
+            <sc-if value="{{ vHasStrength }}" hint-placeholder-val="{{ false }}">
+              <div style="display: flex; align-items: center; gap: 8px; margin-top: 8px;">
+                <div style="flex: 1; height: 4px; background: #1A1A28; border-radius: 2px; overflow: hidden;"><div style="height: 100%; border-radius: 2px; background: {{ vStrengthColor }}; width: {{ vStrengthPct }}%; transition: width 0.25s ease;"></div></div>
+                <span style="font-size: 11px; font-weight: 600; color: {{ vStrengthColor }}; min-width: 62px; text-align: right;">{{ vStrengthLabel }}</span>
+              </div>
+            </sc-if>
+          </div>
+          <div style="background: #0D0D1A; border: 1px solid #151525; border-radius: 10px; padding: 12px 14px; display: flex; flex-direction: column; gap: 10px;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <span style="font-size: 11px; color: #475569; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap;">Gerador</span>
+              <input type="range" min="8" max="64" step="1" value="{{ vGenLen }}" onInput="{{ setVGenLen }}" style="flex: 1; min-width: 0; accent-color: #2563EB;">
+              <span style="font-size: 12px; color: #94A3B8; min-width: 24px; text-align: right; font-variant-numeric: tabular-nums;">{{ vGenLen }}</span>
+            </div>
+            <div style="display: flex; gap: 14px; flex-wrap: wrap;">
+              <label style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: #94A3B8; cursor: pointer;"><input type="checkbox" checked="{{ vGenUpper }}" onChange="{{ setVGenUpper }}" style="accent-color: #2563EB;">ABC</label>
+              <label style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: #94A3B8; cursor: pointer;"><input type="checkbox" checked="{{ vGenDigits }}" onChange="{{ setVGenDigits }}" style="accent-color: #2563EB;">123</label>
+              <label style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: #94A3B8; cursor: pointer;"><input type="checkbox" checked="{{ vGenSymbols }}" onChange="{{ setVGenSymbols }}" style="accent-color: #2563EB;">!@#</label>
+              <button onClick="{{ vaultGenerate }}" style="margin-left: auto; display: flex; align-items: center; gap: 5px; padding: 6px 12px; background: #2563EB1A; border: 1px solid #2563EB44; border-radius: 7px; color: #60A5FA; font-size: 12px; font-weight: 600; font-family: inherit; cursor: pointer;"><i class="ph ph-magic-wand" style="font-size: 13px;"></i>Gerar</button>
+            </div>
+          </div>
+          <div>
+            <label style="display: block; font-size: 11px; color: #475569; margin-bottom: 6px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Pasta</label>
+            <select value="{{ vFFolder }}" onChange="{{ setVFFolder }}" style="width: 100%; background: #0D0D1A; border: 1px solid #1E2A45; border-radius: 8px; padding: 10px 14px; color: #CBD5E1; font-size: 14px; font-family: inherit; cursor: pointer;">
+              <sc-for list="{{ vaultFolderOptions }}" as="fo" hint-placeholder-count="3">
+                <option value="{{ fo.id }}">{{ fo.label }}</option>
+              </sc-for>
+            </select>
+          </div>
+          <div>
+            <label style="display: block; font-size: 11px; color: #475569; margin-bottom: 6px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Observações <span style="color: #334155; font-weight: 400; text-transform: none; letter-spacing: 0;">(opcional)</span></label>
+            <textarea rows="3" value="{{ vFNotes }}" onInput="{{ setVFNotes }}" style="width: 100%; box-sizing: border-box; background: #0D0D1A; border: 1px solid #1E2A45; border-radius: 8px; padding: 10px 14px; color: #E2E8F0; font-size: 13px; font-family: inherit; resize: vertical; line-height: 1.5;"></textarea>
+          </div>
+          <sc-if value="{{ hasVaultError }}" hint-placeholder-val="{{ false }}"><div style="font-size: 12px; color: #F87171;">{{ vaultError }}</div></sc-if>
+          <div style="display: flex; gap: 10px;">
+            <button onClick="{{ closeVaultItemModal }}" style="flex: 1; padding: 11px; background: transparent; border: 1px solid #1E2A45; border-radius: 10px; color: #64748B; font-size: 14px; font-family: inherit; cursor: pointer;">Cancelar</button>
+            <button onClick="{{ saveVaultItem }}" style="flex: 2; padding: 11px; background: linear-gradient(135deg, #2563EB, #06B6D4); border: none; border-radius: 10px; color: white; font-size: 14px; font-weight: 600; font-family: inherit; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
+              <sc-if value="{{ vaultBusy }}" hint-placeholder-val="{{ false }}"><span class="btn-spinner"></span></sc-if>Guardar no cofre
+            </button>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- ── Cofre: pasta ── -->
+    <sc-if value="{{ showVaultFolderModal }}" hint-placeholder-val="{{ false }}">
+      <div style="position: fixed; inset: 0; background: #00000099; z-index: 200; display: flex; align-items: center; justify-content: center; padding: 16px;">
+        <div class="modal-in" style="background: #111118; border: 1px solid #1E2A45; border-radius: 16px; padding: 24px; width: 100%; max-width: 380px; box-shadow: 0 32px 80px #00000066; display: flex; flex-direction: column; gap: 12px;">
+          <div style="display: flex; align-items: center; justify-content: space-between;">
+            <div style="font-size: 17px; font-weight: 700; color: #E2E8F0;">{{ vaultFolderModalTitle }}</div>
+            <button onClick="{{ closeVaultFolderModal }}" style="background: none; border: none; color: #334155; cursor: pointer; font-size: 22px; line-height: 1; padding: 0; display: flex;">×</button>
+          </div>
+          <div>
+            <label style="display: block; font-size: 11px; color: #475569; margin-bottom: 6px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Nome da pasta</label>
+            <input type="text" value="{{ vFolderName }}" onInput="{{ setVFolderName }}" autocomplete="off" placeholder="Ex: Bancos, Trabalho, Streaming" style="width: 100%; box-sizing: border-box; background: #0D0D1A; border: 1px solid #1E2A45; border-radius: 8px; padding: 10px 14px; color: #E2E8F0; font-size: 14px; font-family: inherit;">
+          </div>
+          <div>
+            <label style="display: block; font-size: 11px; color: #475569; margin-bottom: 6px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Dentro de</label>
+            <select value="{{ vFolderParent }}" onChange="{{ setVFolderParent }}" style="width: 100%; background: #0D0D1A; border: 1px solid #1E2A45; border-radius: 8px; padding: 10px 14px; color: #CBD5E1; font-size: 14px; font-family: inherit; cursor: pointer;">
+              <sc-for list="{{ vaultParentOptions }}" as="po" hint-placeholder-count="3">
+                <option value="{{ po.id }}">{{ po.label }}</option>
+              </sc-for>
+            </select>
+          </div>
+          <sc-if value="{{ hasVaultError }}" hint-placeholder-val="{{ false }}"><div style="font-size: 12px; color: #F87171;">{{ vaultError }}</div></sc-if>
+          <div style="display: flex; gap: 10px;">
+            <button onClick="{{ closeVaultFolderModal }}" style="flex: 1; padding: 11px; background: transparent; border: 1px solid #1E2A45; border-radius: 10px; color: #64748B; font-size: 14px; font-family: inherit; cursor: pointer;">Cancelar</button>
+            <button onClick="{{ saveVaultFolder }}" style="flex: 2; padding: 11px; background: linear-gradient(135deg, #2563EB, #06B6D4); border: none; border-radius: 10px; color: white; font-size: 14px; font-weight: 600; font-family: inherit; cursor: pointer;">Salvar</button>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- ── Cofre: ajustes ── -->
+    <sc-if value="{{ showVaultSettings }}" hint-placeholder-val="{{ false }}">
+      <div style="position: fixed; inset: 0; background: #00000099; z-index: 200; display: flex; align-items: center; justify-content: center; padding: 16px;">
+        <div class="modal-in" style="background: #111118; border: 1px solid #1E2A45; border-radius: 16px; padding: 24px; width: 100%; max-width: 400px; box-shadow: 0 32px 80px #00000066; display: flex; flex-direction: column; gap: 14px;">
+          <div style="display: flex; align-items: center; justify-content: space-between;">
+            <div style="font-size: 17px; font-weight: 700; color: #E2E8F0;">Ajustes do cofre</div>
+            <button onClick="{{ closeVaultSettings }}" style="background: none; border: none; color: #334155; cursor: pointer; font-size: 22px; line-height: 1; padding: 0; display: flex;">×</button>
+          </div>
+          <div>
+            <label style="display: block; font-size: 11px; color: #475569; margin-bottom: 6px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Trancar sozinho após ficar parado</label>
+            <select value="{{ vaultAutoLockVal }}" onChange="{{ setVaultAutoLock }}" style="width: 100%; background: #0D0D1A; border: 1px solid #1E2A45; border-radius: 8px; padding: 10px 14px; color: #CBD5E1; font-size: 14px; font-family: inherit; cursor: pointer;">
+              <sc-for list="{{ vaultAutoLockOptions }}" as="al" hint-placeholder-count="5">
+                <option value="{{ al.val }}">{{ al.label }}</option>
+              </sc-for>
+            </select>
+            <div style="font-size: 11px; color: #334155; margin-top: 6px; line-height: 1.5;">Ele também tranca ao sair da aba, ao sair do app e ao recarregar a página.</div>
+          </div>
+          <div style="border-top: 1px solid #151525; padding-top: 14px;">
+            <div style="font-size: 11px; color: #475569; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;">Chave de recuperação</div>
+            <div style="font-size: 12px; color: #64748B; line-height: 1.6; margin-bottom: 10px;">Perdeu ou suspeita que alguém viu a chave? Gere uma nova — a antiga deixa de funcionar na hora.</div>
+            <button onClick="{{ vaultNewRecovery }}" style="padding: 9px 16px; background: transparent; border: 1px solid #F59E0B55; border-radius: 9px; color: #FBBF24; font-size: 13px; font-weight: 600; font-family: inherit; cursor: pointer;">Gerar nova chave de recuperação</button>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- ── Cofre: nova chave de recuperação ── -->
+    <sc-if value="{{ showVaultRecKey }}" hint-placeholder-val="{{ false }}">
+      <div style="position: fixed; inset: 0; background: #000000B3; z-index: 210; display: flex; align-items: center; justify-content: center; padding: 16px;">
+        <div class="modal-in" style="background: #111118; border: 1px solid #F59E0B44; border-radius: 16px; padding: 24px; width: 100%; max-width: 500px; box-shadow: 0 32px 80px #00000066; display: flex; flex-direction: column; gap: 14px;">
+          <div style="display: flex; align-items: center; gap: 10px;"><i class="ph ph-key" style="font-size: 22px; color: #F59E0B;"></i><div style="font-size: 16px; font-weight: 700; color: #E2E8F0;">Nova chave de recuperação</div></div>
+          <div style="font-size: 12.5px; color: #94A3B8; line-height: 1.7;">A chave antiga já não vale mais. Esta <b style="color: #FCD34D;">não aparece de novo</b> — guarde agora, fora do TDV.</div>
+          <div style="background: #0D0D1A; border: 1px dashed #F59E0B55; border-radius: 10px; padding: 16px; text-align: center; font-family: 'Share Tech Mono', monospace; font-size: 17px; letter-spacing: 1.5px; color: #FDE68A; line-height: 1.7; word-break: break-all; user-select: all;">{{ vaultNewRecKey }}</div>
+          <button onClick="{{ copyVaultRecKey }}" style="padding: 9px; background: transparent; border: 1px solid #1E2A45; border-radius: 9px; color: #94A3B8; font-size: 12.5px; font-family: inherit; cursor: pointer;"><i class="ph ph-copy"></i> Copiar (some da área de transferência em 20s)</button>
+          <button onClick="{{ closeVaultRecKey }}" style="padding: 11px; background: linear-gradient(135deg, #2563EB, #06B6D4); border: none; border-radius: 10px; color: white; font-size: 14px; font-weight: 600; font-family: inherit; cursor: pointer;">Já guardei</button>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- ── Cofre: confirmar exclusão ── -->
+    <sc-if value="{{ showVaultConfirm }}" hint-placeholder-val="{{ false }}">
+      <div style="position: fixed; inset: 0; background: #00000099; z-index: 210; display: flex; align-items: center; justify-content: center; padding: 16px;">
+        <div class="modal-in" style="background: #111118; border: 1px solid #1E2A45; border-radius: 16px; padding: 24px; width: 100%; max-width: 360px; box-shadow: 0 32px 80px #00000066; display: flex; flex-direction: column; gap: 12px;">
+          <div style="font-size: 17px; font-weight: 700; color: #E2E8F0;">{{ vaultConfirmTitle }}</div>
+          <div style="font-size: 13px; color: #94A3B8; line-height: 1.6;">{{ vaultConfirmText }}</div>
+          <div style="display: flex; gap: 10px; margin-top: 4px;">
+            <button onClick="{{ cancelVaultDelete }}" style="flex: 1; padding: 11px; background: transparent; border: 1px solid #1E2A45; border-radius: 10px; color: #64748B; font-size: 14px; font-family: inherit; cursor: pointer;">Cancelar</button>
+            <button onClick="{{ confirmVaultDelete }}" style="flex: 1; padding: 11px; background: #EF444422; border: 1px solid #EF444455; border-radius: 10px; color: #F87171; font-size: 14px; font-weight: 600; font-family: inherit; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
+              <sc-if value="{{ vaultBusy }}" hint-placeholder-val="{{ false }}"><span class="btn-spinner" style="border-color: #EF444455; border-top-color: #EF4444;"></span></sc-if>Apagar
+            </button>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
     <!-- ── Toast ── -->
     <sc-if value="{{ showToast }}" hint-placeholder-val="{{ false }}">
       <div style="position: fixed; bottom: calc(80px + env(safe-area-inset-bottom, 0px)); left: 16px; right: 16px; z-index: 140; max-width: 420px; margin: 0 auto; background: #1E293B; border: 1px solid #334155; border-radius: 12px; padding: 14px 16px; display: flex; align-items: center; gap: 12px; box-shadow: 0 8px 32px #00000077; animation: fadeIn 0.2s ease both;">
@@ -3596,6 +3925,16 @@ class Component extends DCLogic {
     taskRecCount: '',
     savingTask: false,
     taskFilter: 'pending', // 'pending' | 'done' | 'all'
+
+    // Cofre de Senhas (nada disso persiste: tudo some ao trancar)
+    vaultStatus: 'idle', // idle | checking | setup | locked | unlocked | error
+    vaultMode: 'pw', vaultSetupStep: 'password', vaultPwInput: '', vaultRecInput: '', vaultError: '', vaultBusy: false,
+    vaultNewRecKey: '', vaultRecAck: false, vaultAutoLock: 5,
+    vaultItems: [], vaultFolderId: null, vaultSearch: '', vaultRevealed: {},
+    showVaultItemModal: false, vaultEditId: null, vFName: '', vFSite: '', vFUser: '', vFPass: '', vFNotes: '', vFFolder: '', vFShowPass: false,
+    vGenLen: 20, vGenUpper: true, vGenDigits: true, vGenSymbols: true,
+    showVaultFolderModal: false, vaultEditFolderId: null, vFolderName: '', vFolderParent: '',
+    showVaultSettings: false, showVaultRecKey: false, vaultConfirmDelete: null,
 
     // Agenda
     agendaEvents: [],
@@ -3771,7 +4110,7 @@ class Component extends DCLogic {
   // ─── URL sincronizada com a aba ativa ───────────────────────────────────
   // Antes disso, "screen" só existia no state — dar F5 em qualquer aba caía
   // sempre na Home (ou no default configurado), porque a URL nunca mudava.
-  _SCREENS = ['home', 'dashboard', 'lancamentos', 'planejamento', 'categorias', 'tarefas', 'agenda', 'notas', 'noticias', 'jarvis', 'configuracoes'];
+  _SCREENS = ['home', 'dashboard', 'lancamentos', 'planejamento', 'categorias', 'tarefas', 'agenda', 'notas', 'noticias', 'cofre', 'jarvis', 'configuracoes'];
 
   _screenFromPath = (pathname) => {
     const seg = (pathname || '/').replace(/^\/+|\/+$/g, '').split('/')[0];
@@ -3861,6 +4200,10 @@ class Component extends DCLogic {
       this._flushNoteSave();
       this.setState({ editingNoteId: null });
     }
+    // Cofre: sair da aba tranca (a chave some da memória); entrar consulta o servidor uma vez.
+    if (prevScreen === 'cofre' && this.state.screen !== 'cofre' && this._vaultKey) this._vaultLock('Cofre trancado.');
+    if (this.state.screen === 'cofre' && this.state.user && this.state.vaultStatus === 'idle') this._vaultCheck();
+    if (this.state.screen !== 'cofre' && this.state.vaultStatus === 'locked' && this.state.vaultPwInput) this.setState({ vaultPwInput: '', vaultRecInput: '', vaultError: '' });
     // O mini-chat do Jarvis na Home é desmontado/remontado toda vez que sai e volta pra essa
     // aba (é uma sc-if condicionada a "screen === 'home'", não um componente que persiste por
     // trás) — o container nasce de novo com scrollTop 0, ou seja, no topo do histórico inteiro
@@ -4056,6 +4399,7 @@ class Component extends DCLogic {
         return;
       }
       if (event === 'SIGNED_OUT') {
+        this._vaultLock(null, true);
         this.setState({ screen: 'login', user: null, transactions: [], categories: [], goals: [], loading: false });
       }
     });
@@ -4095,6 +4439,628 @@ class Component extends DCLogic {
     this.setState({ recoveryMode: false, recoveryDone: false });
     if (session) this._loadFromSupabase(session.user);
     else this.setState({ screen: 'login', loading: false });
+  }
+
+  // ─── Cofre de Senhas ─────────────────────────────────────────────────────
+  // Cifragem em envelope, tudo no navegador (WebCrypto). O servidor só enxerga texto cifrado:
+  //   • uma chave aleatória do cofre (AES-GCM 256) cifra cada entrada (nome, usuário, senha, tudo);
+  //   • essa chave fica "embrulhada" duas vezes em vault_meta — por uma chave derivada da SENHA DO
+  //     APP (PBKDF2-SHA256) e por uma CHAVE DE RECUPERAÇÃO (aleatória, mostrada uma vez);
+  //   • trocar/resetar a senha do app não perde nada: abre-se com a chave de recuperação e o cofre
+  //     é re-embrulhado com a senha nova (a chave do cofre em si nunca muda, nada é re-cifrado).
+  // A chave do cofre só vive em memória (this._vaultKey): trancar, sair da aba, ficar parado ou dar
+  // F5 apaga ela, e o Jarvis não tem acesso nenhum (nada daqui vai pro servidor em claro).
+  _VAULT_ITERS = 600000
+  _VAULT_B32 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567'
+
+  _vB64 = (bytes) => {
+    const a = new Uint8Array(bytes);
+    let s = '';
+    for (let i = 0; i < a.length; i++) s += String.fromCharCode(a[i]);
+    return btoa(s);
+  }
+  _vUnB64 = (str) => {
+    const s = atob(str);
+    const a = new Uint8Array(s.length);
+    for (let i = 0; i < s.length; i++) a[i] = s.charCodeAt(i);
+    return a;
+  }
+  _vRand = (n) => crypto.getRandomValues(new Uint8Array(n))
+  // Inteiro uniforme em [0, max) sem viés (descarta o resto da divisão).
+  _vRandInt = (max) => {
+    const lim = Math.floor(0x100000000 / max) * max;
+    const buf = new Uint32Array(1);
+    do { crypto.getRandomValues(buf); } while (buf[0] >= lim);
+    return buf[0] % max;
+  }
+  _vTxt = (s) => new TextEncoder().encode(s)
+
+  _vB32 = (bytes) => {
+    let bits = 0, val = 0, out = '';
+    for (const b of bytes) {
+      val = (val << 8) | b; bits += 8;
+      while (bits >= 5) { out += this._VAULT_B32[(val >>> (bits - 5)) & 31]; bits -= 5; val &= (1 << bits) - 1; }
+    }
+    if (bits > 0) out += this._VAULT_B32[(val << (5 - bits)) & 31];
+    return out;
+  }
+  // Aceita com ou sem hífen/espaço, minúscula, e 0/1 digitados no lugar de O/I. null = inválida.
+  _vUnB32 = (text) => {
+    const clean = String(text || '').toUpperCase().replace(/[^A-Z0-9]/g, '').replace(/0/g, 'O').replace(/1/g, 'I');
+    if (clean.length !== 32) return null;
+    let bits = 0, val = 0;
+    const out = [];
+    for (const ch of clean) {
+      const v = this._VAULT_B32.indexOf(ch);
+      if (v < 0) return null;
+      val = (val << 5) | v; bits += 5;
+      if (bits >= 8) { out.push((val >>> (bits - 8)) & 255); bits -= 8; val &= (1 << bits) - 1; }
+    }
+    return out.length === 20 ? new Uint8Array(out) : null;
+  }
+  _vFormatRecKey = (bytes) => this._vB32(bytes).match(/.{4}/g).join('-')
+
+  _vPwKey = async (password, saltBytes, iters) => {
+    const base = await crypto.subtle.importKey('raw', this._vTxt(password), 'PBKDF2', false, ['deriveKey']);
+    return crypto.subtle.deriveKey({ name: 'PBKDF2', salt: saltBytes, iterations: iters, hash: 'SHA-256' },
+      base, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']);
+  }
+  // A chave de recuperação já é aleatória de 160 bits — não precisa de KDF lento, só de um hash com
+  // separador de contexto pra virar chave AES.
+  _vRecKey = async (bytes) => {
+    const ctx = this._vTxt('tdv-vault-recovery-v1');
+    const all = new Uint8Array(ctx.length + bytes.length);
+    all.set(ctx, 0); all.set(bytes, ctx.length);
+    const h = await crypto.subtle.digest('SHA-256', all);
+    return crypto.subtle.importKey('raw', h, 'AES-GCM', false, ['encrypt', 'decrypt']);
+  }
+  _vSeal = async (key, bytes, aad) => {
+    const iv = this._vRand(12);
+    const ct = await crypto.subtle.encrypt({ name: 'AES-GCM', iv, additionalData: this._vTxt(aad) }, key, bytes);
+    return this._vB64(iv) + '.' + this._vB64(ct);
+  }
+  _vOpen = async (key, str, aad) => {
+    const [iv, ct] = String(str).split('.');
+    return new Uint8Array(await crypto.subtle.decrypt({ name: 'AES-GCM', iv: this._vUnB64(iv), additionalData: this._vTxt(aad) }, key, this._vUnB64(ct)));
+  }
+  _vImportVaultKey = (raw) => crypto.subtle.importKey('raw', raw, 'AES-GCM', true, ['encrypt', 'decrypt'])
+
+  // Cada entrada é cifrada amarrada ao próprio id (additionalData): trocar o texto cifrado de uma
+  // linha pra outra no banco faz a abertura falhar em vez de mostrar a senha errada.
+  _vEncItem = async (item) => {
+    const { id, ...dados } = item;
+    return this._vSeal(this._vaultKey, this._vTxt(JSON.stringify(dados)), 'item:' + id);
+  }
+  _vDecItem = async (row) => {
+    const bytes = await this._vOpen(this._vaultKey, row.payload, 'item:' + row.id);
+    return { id: row.id, createdAt: row.created_at, updatedAt: row.updated_at, ...JSON.parse(new TextDecoder().decode(bytes)) };
+  }
+
+  // Gerador de senha — sorteio com crypto.getRandomValues, garante ao menos um de cada tipo ligado.
+  _vGenPassword = (len, upper, digits, symbols) => {
+    const sets = ['abcdefghijkmnopqrstuvwxyz'];
+    if (upper) sets.push('ABCDEFGHJKLMNPQRSTUVWXYZ');
+    if (digits) sets.push('23456789');
+    if (symbols) sets.push('!@#$%&*?+-_=');
+    const pool = sets.join('');
+    const out = sets.map(set => set[this._vRandInt(set.length)]);
+    while (out.length < len) out.push(pool[this._vRandInt(pool.length)]);
+    for (let i = out.length - 1; i > 0; i--) { const j = this._vRandInt(i + 1); [out[i], out[j]] = [out[j], out[i]]; }
+    return out.slice(0, len).join('');
+  }
+  _vPoolSize = (pw) => {
+    let n = 0;
+    if (/[a-z]/.test(pw)) n += 26;
+    if (/[A-Z]/.test(pw)) n += 26;
+    if (/[0-9]/.test(pw)) n += 10;
+    if (/[^a-zA-Z0-9]/.test(pw)) n += 28;
+    return n;
+  }
+  _vStrength = (pw) => {
+    if (!pw) return { label: '', color: '#334155', pct: 0 };
+    const bits = pw.length * Math.log2(Math.max(2, this._vPoolSize(pw)));
+    if (bits < 45) return { label: 'Fraca', color: '#EF4444', pct: 25 };
+    if (bits < 70) return { label: 'Razoável', color: '#F59E0B', pct: 50 };
+    if (bits < 100) return { label: 'Forte', color: '#22C55E', pct: 78 };
+    return { label: 'Excelente', color: '#06B6D4', pct: 100 };
+  }
+
+  // Confere a senha do app no servidor SEM mexer na sessão atual (cliente descartável).
+  // 'ok' | 'bad' (senha errada) | 'error' (sem rede etc.)
+  _vaultVerifyPassword = async (pw) => {
+    try {
+      const tmp = window.supabase.createClient(window._sb.supabaseUrl, window._sb.supabaseKey, {
+        auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false, storageKey: 'tdv-vault-verify' },
+      });
+      const { error } = await tmp.auth.signInWithPassword({ email: this.OWNER_EMAIL, password: pw });
+      try { await tmp.auth.signOut({ scope: 'local' }); } catch (e) { /* cliente descartável */ }
+      if (!error) return 'ok';
+      return /invalid|credentials/i.test(error.message || '') ? 'bad' : 'error';
+    } catch (e) { return 'error'; }
+  }
+
+  // Depois de erros seguidos, espera um pouco antes de tentar de novo (o servidor também limita).
+  _vaultBackoff = async () => {
+    const n = this._vaultFails || 0;
+    if (n >= 3) await new Promise(r => setTimeout(r, Math.min(10000, 1000 * (n - 2))));
+  }
+
+  _vaultCheck = async () => {
+    if (this._vaultChecking) return;
+    this._vaultChecking = true;
+    this.setState({ vaultStatus: 'checking', vaultError: '' });
+    try {
+      const { data, error } = await window._sb.from('vault_meta').select('*').maybeSingle();
+      if (error) throw error;
+      this._vaultMeta = data || null;
+      this.setState({
+        vaultStatus: data ? 'locked' : 'setup', vaultAutoLock: data ? data.auto_lock_min : 5,
+        vaultMode: 'pw', vaultSetupStep: 'password', vaultError: '',
+      });
+    } catch (e) {
+      this.setState({ vaultStatus: 'error', vaultError: 'Não consegui falar com o servidor. Verifique a conexão e tente de novo.' });
+    }
+    this._vaultChecking = false;
+  }
+
+  // ── Criação ──
+  vaultSetupContinue = async () => {
+    const { vaultPwInput, vaultBusy } = this.state;
+    if (vaultBusy) return;
+    if (!vaultPwInput) { this.setState({ vaultError: 'Digite a senha do app.' }); return; }
+    this.setState({ vaultBusy: true, vaultError: '' });
+    const r = await this._vaultVerifyPassword(vaultPwInput);
+    if (r !== 'ok') {
+      this.setState({ vaultBusy: false, vaultError: r === 'bad' ? 'Senha do app incorreta.' : 'Não consegui conferir a senha agora. Tente de novo.' });
+      return;
+    }
+    const raw = this._vRand(32);
+    const rec = this._vRand(20);
+    this._vaultPending = { raw, rec, password: vaultPwInput };
+    this.setState({ vaultBusy: false, vaultSetupStep: 'showkey', vaultNewRecKey: this._vFormatRecKey(rec), vaultRecAck: false });
+  }
+
+  vaultSetupFinish = async () => {
+    const { vaultRecAck, vaultBusy, user } = this.state;
+    const p = this._vaultPending;
+    if (vaultBusy || !p) return;
+    if (!vaultRecAck) { this.setState({ vaultError: 'Marque que guardou a chave de recuperação.' }); return; }
+    this.setState({ vaultBusy: true, vaultError: '' });
+    try {
+      const salt = this._vRand(16);
+      const kek = await this._vPwKey(p.password, salt, this._VAULT_ITERS);
+      const wrappedPw = await this._vSeal(kek, p.raw, 'vault-key:pw');
+      const wrappedRec = await this._vSeal(await this._vRecKey(p.rec), p.raw, 'vault-key:rec');
+      const row = {
+        user_id: user.id, kdf_salt: this._vB64(salt), kdf_iters: this._VAULT_ITERS,
+        wrapped_key_pw: wrappedPw, wrapped_key_rec: wrappedRec, auto_lock_min: 5,
+      };
+      const { error } = await window._sb.from('vault_meta').insert(row);
+      if (error) throw error;
+      this._vaultMeta = row;
+      this._vaultKey = await this._vImportVaultKey(p.raw);
+      this._vaultPending = null;
+      this._vaultFails = 0;
+      this._vaultStartGuard();
+      this.setState({
+        vaultStatus: 'unlocked', vaultItems: [], vaultFolderId: null, vaultBusy: false, vaultError: '',
+        vaultPwInput: '', vaultNewRecKey: '', vaultRecAck: false, vaultAutoLock: 5, vaultSetupStep: 'password',
+      });
+      this._toast('Cofre criado e aberto.');
+    } catch (e) {
+      this.setState({ vaultBusy: false, vaultError: 'Não consegui criar o cofre. Tente de novo.' });
+    }
+  }
+
+  // ── Abertura ──
+  _vaultLoadItems = async () => {
+    const { data, error } = await window._sb.from('vault_items').select('*');
+    if (error) throw error;
+    const items = [];
+    let falhas = 0;
+    for (const row of (data || [])) {
+      try { items.push(await this._vDecItem(row)); } catch (e) { falhas++; }
+    }
+    return { items, falhas };
+  }
+
+  _vaultOpenWith = async (rawKey) => {
+    this._vaultKey = await this._vImportVaultKey(rawKey);
+    const { items, falhas } = await this._vaultLoadItems();
+    this._vaultFails = 0;
+    this._vaultStartGuard();
+    this.setState({
+      vaultStatus: 'unlocked', vaultItems: items, vaultFolderId: null, vaultBusy: false, vaultError: '',
+      vaultPwInput: '', vaultRecInput: '', vaultMode: 'pw', vaultSearch: '', vaultRevealed: {},
+    });
+    if (falhas) this._toast(falhas + ' item(ns) não puderam ser abertos (dados corrompidos).');
+  }
+
+  vaultUnlock = async () => {
+    const { vaultPwInput, vaultRecInput, vaultMode, vaultBusy } = this.state;
+    const meta = this._vaultMeta;
+    if (vaultBusy || !meta) return;
+    if (!vaultPwInput) { this.setState({ vaultError: 'Digite a senha do app.' }); return; }
+    const viaRecovery = vaultMode === 'rec';
+    let recBytes = null;
+    if (viaRecovery) {
+      recBytes = this._vUnB32(vaultRecInput);
+      if (!recBytes) { this.setState({ vaultError: 'Chave de recuperação inválida — são 32 letras e números, em grupos de 4.' }); return; }
+    }
+    this.setState({ vaultBusy: true, vaultError: '' });
+    await this._vaultBackoff();
+    const r = await this._vaultVerifyPassword(vaultPwInput);
+    if (r !== 'ok') {
+      if (r === 'bad') this._vaultFails = (this._vaultFails || 0) + 1;
+      this.setState({ vaultBusy: false, vaultError: r === 'bad' ? 'Senha do app incorreta.' : 'Não consegui conferir a senha agora. Tente de novo.' });
+      return;
+    }
+    try {
+      if (!viaRecovery) {
+        let raw;
+        try {
+          const kek = await this._vPwKey(vaultPwInput, this._vUnB64(meta.kdf_salt), meta.kdf_iters);
+          raw = await this._vOpen(kek, meta.wrapped_key_pw, 'vault-key:pw');
+        } catch (e) {
+          // Senha do app certa, mas não é a que embrulhou o cofre: ela foi trocada (reset por e-mail).
+          this.setState({
+            vaultBusy: false, vaultMode: 'rec',
+            vaultError: 'A senha do app mudou desde que o cofre foi criado. Digite também a chave de recuperação — o cofre passa a usar a senha nova.',
+          });
+          return;
+        }
+        await this._vaultOpenWith(raw);
+        return;
+      }
+      let raw;
+      try { raw = await this._vOpen(await this._vRecKey(recBytes), meta.wrapped_key_rec, 'vault-key:rec'); }
+      catch (e) {
+        this._vaultFails = (this._vaultFails || 0) + 1;
+        this.setState({ vaultBusy: false, vaultError: 'Chave de recuperação incorreta.' });
+        return;
+      }
+      // Re-embrulha com a senha atual do app (sal novo) — daqui pra frente a senha de abrir é a nova.
+      const salt = this._vRand(16);
+      const kek = await this._vPwKey(vaultPwInput, salt, this._VAULT_ITERS);
+      const wrappedPw = await this._vSeal(kek, raw, 'vault-key:pw');
+      const patch = { kdf_salt: this._vB64(salt), kdf_iters: this._VAULT_ITERS, wrapped_key_pw: wrappedPw, updated_at: new Date().toISOString() };
+      const { error } = await window._sb.from('vault_meta').update(patch).eq('user_id', this.state.user.id);
+      if (error) throw error;
+      this._vaultMeta = { ...meta, ...patch };
+      await this._vaultOpenWith(raw);
+      this._toast('Cofre aberto com a chave de recuperação. Agora ele abre com a senha atual do app.');
+    } catch (e) {
+      this.setState({ vaultBusy: false, vaultError: 'Algo deu errado ao abrir o cofre. Tente de novo.' });
+    }
+  }
+
+  vaultUseRecovery = () => this.setState({ vaultMode: 'rec', vaultError: '' })
+  vaultUsePassword = () => this.setState({ vaultMode: 'pw', vaultError: '', vaultRecInput: '' })
+
+  // ── Trancar ──
+  // fim = true quando o usuário saiu do app: esquece até o que sabia sobre o cofre.
+  _vaultLock = (msg, fim) => {
+    this._vaultKey = null;
+    this._vaultPending = null;
+    this._vaultStopGuard();
+    clearTimeout(this._vaultClipTimer);
+    if (fim) this._vaultMeta = null;
+    this.setState({
+      vaultStatus: fim ? 'idle' : (this._vaultMeta ? 'locked' : 'idle'),
+      vaultItems: [], vaultFolderId: null, vaultSearch: '', vaultRevealed: {}, vaultPwInput: '', vaultRecInput: '',
+      vaultMode: 'pw', vaultError: '', vaultBusy: false, vaultNewRecKey: '', vaultRecAck: false, vaultSetupStep: 'password',
+      showVaultItemModal: false, showVaultFolderModal: false, showVaultSettings: false, showVaultRecKey: false, vaultConfirmDelete: null,
+      vFPass: '', vFUser: '', vFNotes: '',
+    });
+    if (msg) this._toast(msg);
+  }
+  vaultLockNow = () => this._vaultLock('Cofre trancado.')
+
+  _vaultActivity = () => { this._vaultLastActive = Date.now(); }
+  _vaultStartGuard = () => {
+    this._vaultLastActive = Date.now();
+    this._vaultStopGuard();
+    ['mousedown', 'keydown', 'touchstart', 'wheel'].forEach(ev => window.addEventListener(ev, this._vaultActivity, { passive: true }));
+    this._vaultGuardTimer = setInterval(() => {
+      if (!this._vaultKey) return;
+      const min = (this._vaultMeta && this._vaultMeta.auto_lock_min) || 5;
+      if (Date.now() - this._vaultLastActive > min * 60000) this._vaultLock('Cofre trancado por inatividade.');
+    }, 5000);
+  }
+  _vaultStopGuard = () => {
+    clearInterval(this._vaultGuardTimer);
+    ['mousedown', 'keydown', 'touchstart', 'wheel'].forEach(ev => window.removeEventListener(ev, this._vaultActivity));
+  }
+
+  // ── Dados ──
+  _vaultSaveRow = async (item) => {
+    const payload = await this._vEncItem(item);
+    const row = { id: item.id, user_id: this.state.user.id, payload, updated_at: new Date().toISOString() };
+    const { error } = await window._sb.from('vault_items').upsert(row);
+    if (error) throw error;
+    return row.updated_at;
+  }
+  _vaultFolders = () => this.state.vaultItems.filter(i => i.kind === 'folder')
+  _vaultPath = (id) => {
+    const todas = this._vaultFolders();
+    const out = [];
+    let cur = id, guard = 0;
+    while (cur && guard++ < 50) {
+      const f = todas.find(x => x.id === cur);
+      if (!f) break;
+      out.unshift(f.name);
+      cur = f.parentId || null;
+    }
+    return out;
+  }
+  _vaultDescendantIds = (id) => {
+    const todas = this._vaultFolders();
+    const out = new Set([id]);
+    let mudou = true;
+    while (mudou) {
+      mudou = false;
+      for (const f of todas) if (!out.has(f.id) && out.has(f.parentId)) { out.add(f.id); mudou = true; }
+    }
+    return out;
+  }
+
+  vaultOpenFolder = (id) => this.setState({ vaultFolderId: id, vaultSearch: '' })
+  setVaultSearch = (e) => this.setState({ vaultSearch: e.target.value })
+  setVaultPwInput = (e) => this.setState({ vaultPwInput: e.target.value })
+  setVaultRecInput = (e) => this.setState({ vaultRecInput: e.target.value })
+  setVaultRecAck = (e) => this.setState({ vaultRecAck: !!e.target.checked })
+  vaultPwKeyDown = (e) => {
+    if (e.key !== 'Enter') return;
+    e.preventDefault();
+    const st = this.state.vaultStatus;
+    if (st === 'setup') this.vaultSetupContinue(); else this.vaultUnlock();
+  }
+
+  _vaultCopy = async (texto, rotulo) => {
+    try {
+      await navigator.clipboard.writeText(texto);
+    } catch (e) { this._toast('Não consegui copiar — o navegador bloqueou o acesso à área de transferência.'); return; }
+    clearTimeout(this._vaultClipTimer);
+    this._vaultClipTimer = setTimeout(() => { try { navigator.clipboard.writeText(''); } catch (e) { /* já mudou de aba */ } }, 20000);
+    this._toast(rotulo + ' copiado — sai da área de transferência em 20 segundos.');
+  }
+  vaultToggleReveal = (id) => this.setState(st => ({ vaultRevealed: { ...st.vaultRevealed, [id]: !st.vaultRevealed[id] } }))
+
+  // ── Modal de senha ──
+  openVaultItemModal = (item) => {
+    this.setState({
+      showVaultItemModal: true, vaultEditId: item ? item.id : null, vaultError: '',
+      vFName: item ? item.name : '', vFSite: item ? (item.site || '') : '', vFUser: item ? (item.username || '') : '',
+      vFPass: item ? (item.password || '') : '', vFNotes: item ? (item.notes || '') : '',
+      vFFolder: item ? (item.parentId || '') : (this.state.vaultFolderId || ''), vFShowPass: false,
+    });
+  }
+  closeVaultItemModal = () => this.setState({ showVaultItemModal: false, vFPass: '', vFUser: '', vFNotes: '', vFShowPass: false })
+  setVFName = (e) => this.setState({ vFName: e.target.value })
+  setVFSite = (e) => this.setState({ vFSite: e.target.value })
+  setVFUser = (e) => this.setState({ vFUser: e.target.value })
+  setVFPass = (e) => this.setState({ vFPass: e.target.value })
+  setVFNotes = (e) => this.setState({ vFNotes: e.target.value })
+  setVFFolder = (e) => this.setState({ vFFolder: e.target.value })
+  toggleVFShowPass = () => this.setState(st => ({ vFShowPass: !st.vFShowPass }))
+  setVGenLen = (e) => this.setState({ vGenLen: Number(e.target.value) || 20 })
+  setVGenUpper = (e) => this.setState({ vGenUpper: !!e.target.checked })
+  setVGenDigits = (e) => this.setState({ vGenDigits: !!e.target.checked })
+  setVGenSymbols = (e) => this.setState({ vGenSymbols: !!e.target.checked })
+  vaultGenerate = () => {
+    const s = this.state;
+    this.setState({ vFPass: this._vGenPassword(s.vGenLen, s.vGenUpper, s.vGenDigits, s.vGenSymbols), vFShowPass: true });
+  }
+
+  saveVaultItem = async () => {
+    const s = this.state;
+    if (s.vaultBusy || !this._vaultKey) return;
+    const name = (s.vFName || '').trim();
+    if (!name) { this.setState({ vaultError: 'Dê um nome pra essa senha.' }); return; }
+    const old = s.vaultEditId ? s.vaultItems.find(i => i.id === s.vaultEditId) : null;
+    const item = {
+      id: old ? old.id : this._genId('vi'), kind: 'item', name, site: (s.vFSite || '').trim(), username: s.vFUser || '',
+      password: s.vFPass || '', notes: s.vFNotes || '', parentId: s.vFFolder || null,
+    };
+    this.setState({ vaultBusy: true, vaultError: '' });
+    try {
+      const updatedAt = await this._vaultSaveRow(item);
+      const full = { ...item, createdAt: old ? old.createdAt : updatedAt, updatedAt };
+      this.setState(st => ({
+        vaultItems: old ? st.vaultItems.map(i => i.id === old.id ? full : i) : [...st.vaultItems, full],
+        vaultBusy: false, showVaultItemModal: false, vFPass: '', vFUser: '', vFNotes: '', vFShowPass: false,
+      }));
+      this._toast(old ? 'Senha atualizada.' : 'Senha guardada no cofre.');
+    } catch (e) {
+      this.setState({ vaultBusy: false, vaultError: 'Não consegui salvar. Tente de novo.' });
+    }
+  }
+
+  // ── Modal de pasta ──
+  openVaultFolderModal = (folder) => {
+    this.setState({
+      showVaultFolderModal: true, vaultEditFolderId: folder ? folder.id : null, vaultError: '',
+      vFolderName: folder ? folder.name : '', vFolderParent: folder ? (folder.parentId || '') : (this.state.vaultFolderId || ''),
+    });
+  }
+  closeVaultFolderModal = () => this.setState({ showVaultFolderModal: false })
+  setVFolderName = (e) => this.setState({ vFolderName: e.target.value })
+  setVFolderParent = (e) => this.setState({ vFolderParent: e.target.value })
+  saveVaultFolder = async () => {
+    const s = this.state;
+    if (s.vaultBusy || !this._vaultKey) return;
+    const name = (s.vFolderName || '').trim();
+    if (!name) { this.setState({ vaultError: 'Dê um nome pra pasta.' }); return; }
+    const old = s.vaultEditFolderId ? s.vaultItems.find(i => i.id === s.vaultEditFolderId) : null;
+    const folder = { id: old ? old.id : this._genId('vf'), kind: 'folder', name, parentId: s.vFolderParent || null };
+    this.setState({ vaultBusy: true, vaultError: '' });
+    try {
+      const updatedAt = await this._vaultSaveRow(folder);
+      const full = { ...folder, createdAt: old ? old.createdAt : updatedAt, updatedAt };
+      this.setState(st => ({
+        vaultItems: old ? st.vaultItems.map(i => i.id === old.id ? full : i) : [...st.vaultItems, full],
+        vaultBusy: false, showVaultFolderModal: false,
+      }));
+    } catch (e) {
+      this.setState({ vaultBusy: false, vaultError: 'Não consegui salvar a pasta. Tente de novo.' });
+    }
+  }
+
+  // ── Apagar ──
+  askVaultDelete = (item) => this.setState({ vaultConfirmDelete: { id: item.id, kind: item.kind, name: item.name } })
+  cancelVaultDelete = () => this.setState({ vaultConfirmDelete: null })
+  confirmVaultDelete = async () => {
+    const s = this.state;
+    const alvo = s.vaultConfirmDelete;
+    if (!alvo || s.vaultBusy) return;
+    this.setState({ vaultBusy: true });
+    try {
+      let itens = s.vaultItems;
+      if (alvo.kind === 'folder') {
+        // Nada dentro da pasta se perde: o conteúdo sobe um nível (o pai fica dentro do payload
+        // cifrado, então cada filho é re-cifrado com o pai novo antes da pasta sumir).
+        const pasta = itens.find(i => i.id === alvo.id);
+        const filhos = itens.filter(i => i.parentId === alvo.id);
+        for (const f of filhos) {
+          const novo = { ...f, parentId: pasta ? (pasta.parentId || null) : null };
+          const upd = await this._vaultSaveRow(novo);
+          itens = itens.map(i => i.id === f.id ? { ...novo, updatedAt: upd } : i);
+        }
+      }
+      const { error } = await window._sb.from('vault_items').delete().eq('id', alvo.id);
+      if (error) throw error;
+      itens = itens.filter(i => i.id !== alvo.id);
+      const aindaDentro = s.vaultFolderId === alvo.id;
+      this.setState({
+        vaultItems: itens, vaultConfirmDelete: null, vaultBusy: false,
+        vaultFolderId: aindaDentro ? ((s.vaultItems.find(i => i.id === alvo.id) || {}).parentId || null) : s.vaultFolderId,
+      });
+      this._toast(alvo.kind === 'folder' ? 'Pasta apagada — o conteúdo subiu um nível.' : 'Senha apagada.');
+    } catch (e) {
+      this.setState({ vaultBusy: false, vaultConfirmDelete: null });
+      this._toast('Não consegui apagar. Tente de novo.');
+    }
+  }
+
+  // ── Configurações do cofre ──
+  openVaultSettings = () => this.setState({ showVaultSettings: true, vaultError: '' })
+  closeVaultSettings = () => this.setState({ showVaultSettings: false })
+  setVaultAutoLock = async (e) => {
+    const min = Number(e.target.value) || 5;
+    this.setState({ vaultAutoLock: min });
+    const { error } = await window._sb.from('vault_meta').update({ auto_lock_min: min, updated_at: new Date().toISOString() }).eq('user_id', this.state.user.id);
+    if (error) { this._toast('Não consegui salvar o tempo de bloqueio.'); return; }
+    this._vaultMeta = { ...this._vaultMeta, auto_lock_min: min };
+  }
+  // Nova chave de recuperação: a antiga deixa de funcionar. Exige o cofre aberto (a chave do cofre
+  // está em memória, então o re-embrulho não precisa de senha nenhuma).
+  vaultNewRecovery = async () => {
+    if (this.state.vaultBusy || !this._vaultKey) return;
+    this.setState({ vaultBusy: true });
+    try {
+      const rec = this._vRand(20);
+      const raw = new Uint8Array(await crypto.subtle.exportKey('raw', this._vaultKey));
+      const wrappedRec = await this._vSeal(await this._vRecKey(rec), raw, 'vault-key:rec');
+      const patch = { wrapped_key_rec: wrappedRec, updated_at: new Date().toISOString() };
+      const { error } = await window._sb.from('vault_meta').update(patch).eq('user_id', this.state.user.id);
+      if (error) throw error;
+      this._vaultMeta = { ...this._vaultMeta, ...patch };
+      this.setState({ vaultBusy: false, showVaultSettings: false, showVaultRecKey: true, vaultNewRecKey: this._vFormatRecKey(rec) });
+    } catch (e) {
+      this.setState({ vaultBusy: false });
+      this._toast('Não consegui gerar a nova chave. A antiga continua valendo.');
+    }
+  }
+  closeVaultRecKey = () => this.setState({ showVaultRecKey: false, vaultNewRecKey: '' })
+  copyVaultRecKey = () => this._vaultCopy(this.state.vaultNewRecKey, 'Chave de recuperação')
+
+  // Valores da tela do cofre (renderVals só devolve dado plano; nada de ternário no template).
+  _vaultVals = () => {
+    const s = this.state;
+    const st = s.vaultStatus;
+    const todas = s.vaultItems || [];
+    // Busca sem acento e sem maiúscula ("itau" acha "Itaú"). Nunca varre o texto da senha.
+    const norm = (t) => String(t || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+    const q = norm((s.vaultSearch || '').trim());
+    const pasta = s.vaultFolderId || null;
+    const byName = (a, b) => (a.name || '').localeCompare(b.name || '', 'pt-BR', { sensitivity: 'base' });
+    const lista = q
+      ? todas.filter(i => [i.name, i.site, i.username, i.notes].some(t => norm(t).includes(q)))
+      : todas.filter(i => (i.parentId || null) === pasta);
+    const ordenada = [...lista.filter(i => i.kind === 'folder').sort(byName), ...lista.filter(i => i.kind !== 'folder').sort(byName)];
+    const filhos = (id) => todas.filter(i => i.parentId === id).length;
+    const rows = ordenada.map(i => {
+      const revelada = !!s.vaultRevealed[i.id];
+      const caminho = q && i.parentId ? this._vaultPath(i.parentId).join(' / ') : '';
+      return {
+        id: i.id, isFolder: i.kind === 'folder', isItem: i.kind !== 'folder', name: i.name,
+        countLabel: filhos(i.id) === 1 ? '1 item' : filhos(i.id) + ' itens',
+        site: i.site || '', hasSite: !!i.site, username: i.username || '', hasUser: !!i.username,
+        hasNotes: !!i.notes, notes: i.notes || '', pathLabel: caminho, hasPath: !!caminho,
+        passDisplay: revelada ? (i.password || '(vazia)') : (i.password ? '••••••••••••' : '(vazia)'),
+        revealIcon: revelada ? 'ph ph-eye-slash' : 'ph ph-eye',
+        onOpen: () => this.vaultOpenFolder(i.id),
+        onEdit: () => (i.kind === 'folder' ? this.openVaultFolderModal(i) : this.openVaultItemModal(i)),
+        onDelete: () => this.askVaultDelete(i),
+        onToggleReveal: () => this.vaultToggleReveal(i.id),
+        onCopyPass: () => this._vaultCopy(i.password || '', 'Senha'),
+        onCopyUser: () => this._vaultCopy(i.username || '', 'Usuário'),
+      };
+    });
+    const trilha = [];
+    {
+      let cur = pasta, g = 0;
+      const fs = todas.filter(i => i.kind === 'folder');
+      while (cur && g++ < 50) { const f = fs.find(x => x.id === cur); if (!f) break; trilha.unshift(f); cur = f.parentId || null; }
+    }
+    const crumbs = [
+      { id: 'root', label: 'Cofre', isLast: trilha.length === 0, notLast: trilha.length > 0, onGo: () => this.vaultOpenFolder(null) },
+      ...trilha.map((f, k) => ({ id: f.id, label: f.name, isLast: k === trilha.length - 1, notLast: k < trilha.length - 1, onGo: () => this.vaultOpenFolder(f.id) })),
+    ];
+    const pastas = todas.filter(i => i.kind === 'folder');
+    const comCaminho = pastas.map(f => ({ id: f.id, label: this._vaultPath(f.id).join(' / ') })).sort((a, b) => a.label.localeCompare(b.label, 'pt-BR'));
+    const bloqueadas = s.vaultEditFolderId ? this._vaultDescendantIds(s.vaultEditFolderId) : new Set();
+    const str = this._vStrength(s.vFPass || '');
+    const del = s.vaultConfirmDelete;
+    const optAuto = [1, 5, 15, 30, 60].map(m => ({ val: String(m), label: m === 1 ? '1 minuto' : (m === 60 ? '1 hora' : m + ' minutos') }));
+    return {
+      vaultShowChecking: st === 'idle' || st === 'checking', vaultShowError: st === 'error',
+      vaultShowSetup: st === 'setup', vaultShowSetupPw: st === 'setup' && s.vaultSetupStep === 'password',
+      vaultShowSetupKey: st === 'setup' && s.vaultSetupStep === 'showkey',
+      vaultShowLocked: st === 'locked', vaultShowUnlocked: st === 'unlocked',
+      vaultModeIsPw: s.vaultMode !== 'rec', vaultModeIsRec: s.vaultMode === 'rec',
+      vaultPwInput: s.vaultPwInput, vaultRecInput: s.vaultRecInput, vaultError: s.vaultError, hasVaultError: !!s.vaultError,
+      vaultBusy: s.vaultBusy, vaultNotBusy: !s.vaultBusy,
+      vaultNewRecKey: s.vaultNewRecKey, vaultRecAck: s.vaultRecAck,
+      setVaultPwInput: this.setVaultPwInput, setVaultRecInput: this.setVaultRecInput, setVaultRecAck: this.setVaultRecAck,
+      vaultPwKeyDown: this.vaultPwKeyDown, vaultSetupContinue: this.vaultSetupContinue, vaultSetupFinish: this.vaultSetupFinish,
+      vaultUnlock: this.vaultUnlock, vaultUseRecovery: this.vaultUseRecovery, vaultUsePassword: this.vaultUsePassword,
+      vaultRetry: () => this._vaultCheck(), vaultLockNow: this.vaultLockNow, copyVaultRecKey: this.copyVaultRecKey,
+      vaultSearch: s.vaultSearch, setVaultSearch: this.setVaultSearch, hasVaultSearch: !!q,
+      vaultRows: rows, vaultHasRows: rows.length > 0, vaultNoRows: rows.length === 0,
+      vaultEmptyText: q ? 'Nada encontrado para essa busca.' : (pasta ? 'Esta pasta está vazia.' : 'O cofre está vazio. Guarde a primeira senha.'),
+      vaultCrumbs: crumbs, vaultCount: todas.filter(i => i.kind !== 'folder').length,
+      openVaultItemModalNew: () => this.openVaultItemModal(null), openVaultFolderModalNew: () => this.openVaultFolderModal(null),
+      openVaultSettings: this.openVaultSettings, closeVaultSettings: this.closeVaultSettings,
+      showVaultSettings: s.showVaultSettings, showVaultRecKey: s.showVaultRecKey, closeVaultRecKey: this.closeVaultRecKey,
+      vaultAutoLockVal: String(s.vaultAutoLock), vaultAutoLockOptions: optAuto, setVaultAutoLock: this.setVaultAutoLock, vaultNewRecovery: this.vaultNewRecovery,
+      showVaultItemModal: s.showVaultItemModal, closeVaultItemModal: this.closeVaultItemModal, saveVaultItem: this.saveVaultItem,
+      vaultItemModalTitle: s.vaultEditId ? 'Editar senha' : 'Nova senha',
+      vFName: s.vFName, vFSite: s.vFSite, vFUser: s.vFUser, vFPass: s.vFPass, vFNotes: s.vFNotes, vFFolder: s.vFFolder,
+      setVFName: this.setVFName, setVFSite: this.setVFSite, setVFUser: this.setVFUser, setVFPass: this.setVFPass, setVFNotes: this.setVFNotes, setVFFolder: this.setVFFolder,
+      vFPassType: s.vFShowPass ? 'text' : 'password', vFShowIcon: s.vFShowPass ? 'ph ph-eye-slash' : 'ph ph-eye', toggleVFShowPass: this.toggleVFShowPass,
+      vaultFolderOptions: [{ id: '', label: 'Raiz (sem pasta)' }, ...comCaminho],
+      vStrengthLabel: str.label, vStrengthColor: str.color, vStrengthPct: str.pct, vHasStrength: !!(s.vFPass || ''),
+      vGenLen: s.vGenLen, vGenUpper: s.vGenUpper, vGenDigits: s.vGenDigits, vGenSymbols: s.vGenSymbols,
+      setVGenLen: this.setVGenLen, setVGenUpper: this.setVGenUpper, setVGenDigits: this.setVGenDigits, setVGenSymbols: this.setVGenSymbols, vaultGenerate: this.vaultGenerate,
+      showVaultFolderModal: s.showVaultFolderModal, closeVaultFolderModal: this.closeVaultFolderModal, saveVaultFolder: this.saveVaultFolder,
+      vaultFolderModalTitle: s.vaultEditFolderId ? 'Renomear pasta' : 'Nova pasta',
+      vFolderName: s.vFolderName, vFolderParent: s.vFolderParent, setVFolderName: this.setVFolderName, setVFolderParent: this.setVFolderParent,
+      vaultParentOptions: [{ id: '', label: 'Raiz (sem pasta)' }, ...comCaminho.filter(f => !bloqueadas.has(f.id))],
+      showVaultConfirm: !!del, cancelVaultDelete: this.cancelVaultDelete, confirmVaultDelete: this.confirmVaultDelete,
+      vaultConfirmTitle: del ? (del.kind === 'folder' ? 'Apagar pasta' : 'Apagar senha') : '',
+      vaultConfirmText: del ? (del.kind === 'folder' ? 'A pasta "' + del.name + '" será apagada. O que está dentro dela sobe um nível — nada se perde.' : '"' + del.name + '" será apagada do cofre. Isso não tem volta.') : '',
+    };
   }
 
   componentWillUnmount() {
@@ -4557,6 +5523,7 @@ class Component extends DCLogic {
   }
 
   handleLogout = async () => {
+    this._vaultLock(null, true);
     await window._sb.auth.signOut();
     window.history.pushState(null, '', '/');
     this.setState({ user: null, screen: 'login', loginEmail: '', loginPassword: '', sidebarOpen: false, transactions: [], categories: [], goals: [], recurringExpenses: [], tasks: [], agendaEvents: [], notes: [], notesTrash: [], editingNoteId: null, jarvisMessages: [], jarvisLoaded: false, jarvisConversationId: null });
@@ -5116,6 +6083,7 @@ class Component extends DCLogic {
       { id: 'nav-agenda', label: 'Agenda', icon: 'ph ph-calendar-blank', hint: 'Ir para', onSelect: () => this.setState({ screen: 'agenda', sidebarOpen: false }) },
       { id: 'nav-notas', label: 'Anotações', icon: 'ph ph-note-pencil', hint: 'Ir para', onSelect: () => this.setState({ screen: 'notas', sidebarOpen: false }) },
       { id: 'nav-noticias', label: 'Notícias', icon: 'ph ph-newspaper', hint: 'Ir para', onSelect: () => this.setState({ screen: 'noticias', sidebarOpen: false }) },
+      { id: 'nav-cofre', label: 'Cofre de Senhas', icon: 'ph ph-vault', hint: 'Ir para', onSelect: () => this.setState({ screen: 'cofre', sidebarOpen: false }) },
       { id: 'nav-jarvis', label: 'Jarvis', icon: 'ph ph-robot', hint: 'Ir para', onSelect: () => this.goToJarvisScreen() },
       { id: 'nav-config', label: 'Configurações', icon: 'ph ph-gear', hint: 'Ir para', onSelect: () => this.setState({ screen: 'configuracoes', sidebarOpen: false }) },
     ];
@@ -8311,10 +9279,11 @@ class Component extends DCLogic {
     const isAgenda = screen === 'agenda';
     const isNotas = screen === 'notas';
     const isNoticias = screen === 'noticias';
+    const isCofre = screen === 'cofre';
     const isConfiguracoes = screen === 'configuracoes';
     const isJarvisScreen = screen === 'jarvis';
 
-    const titles = { home: 'Home', dashboard: 'Dashboard', lancamentos: 'Lançamentos', planejamento: 'Planejamento', categorias: 'Categorias', tarefas: 'Tarefas', agenda: 'Agenda', notas: 'Anotações', noticias: 'Notícias', jarvis: 'Jarvis', configuracoes: 'Configurações' };
+    const titles = { home: 'Home', dashboard: 'Dashboard', lancamentos: 'Lançamentos', planejamento: 'Planejamento', categorias: 'Categorias', tarefas: 'Tarefas', agenda: 'Agenda', notas: 'Anotações', noticias: 'Notícias', cofre: 'Cofre de Senhas', jarvis: 'Jarvis', configuracoes: 'Configurações' };
 
     // Modelos do J.A.R.V.I.S. — as chaves ('haiku'/'sonnet'/'opus') são o que vai pro backend e o
     // que já está gravado em jarvis_messages.persona, por isso não mudam junto com o nome exibido.
@@ -8402,6 +9371,7 @@ class Component extends DCLogic {
       { id: 'agenda',        label: 'Agenda',         icon: 'calendar-blank' },
       { id: 'notas',         label: 'Anotações',      icon: 'note-pencil' },
       { id: 'noticias',      label: 'Notícias',       icon: 'newspaper' },
+      { id: 'cofre',         label: 'Cofre de Senhas', icon: 'vault' },
       { id: 'jarvis',        label: 'Jarvis',         icon: 'robot' },
       { id: 'configuracoes', label: 'Configurações',  icon: 'gear' },
     ];
@@ -9405,7 +10375,7 @@ class Component extends DCLogic {
     const selectionToolbarStyle = { position: 'absolute', top: (s.selectionToolbarPos ? s.selectionToolbarPos.top : 0) + 'px', left: (s.selectionToolbarPos ? s.selectionToolbarPos.left : 0) + 'px', zIndex: 250 };
 
     return {
-      isLogin, isApp, isHome, isDashboard, isLancamentos, isPlanejamento, isCategorias, isFinanceSector, financeSubNavItems, isTarefas, isAgenda, isNotas, isNoticias, isConfiguracoes,
+      isLogin, isApp, isHome, isDashboard, isLancamentos, isPlanejamento, isCategorias, isFinanceSector, financeSubNavItems, isTarefas, isAgenda, isNotas, isNoticias, isCofre, isConfiguracoes,
       currentScreenTitle: titles[screen] || '',
       commandPaletteOpen: s.commandPaletteOpen, commandPaletteQuery: s.commandPaletteQuery,
       commandPaletteEntries, commandPaletteEmpty,
@@ -10134,6 +11104,7 @@ class Component extends DCLogic {
       cfgJarvisNotes: s.cfgJarvisNotes || '',
       setCfgJarvisNotes: e => this.setState({ cfgJarvisNotes: e.target.value }),
       saveJarvisNotes: this.saveJarvisNotes,
+      ...this._vaultVals(),
       jarvisModelLabel: jarvisCur.name,
       jarvisDisplayName: 'J.A.R.V.I.S.',
       // Com a barra inicial: sem ela, o navegador resolve o caminho relativo à URL atual — e em

@@ -63,6 +63,25 @@
     .note-body li { margin: 2px 0; }
     .note-body blockquote { margin: 8px 0; padding-left: 14px; border-left: 3px solid #334155; font-style: italic; color: #CBD5E1; }
     .note-body table { border-collapse: collapse; }
+    /* Checkbox das anotações: desenho próprio (o do navegador era a bolinha azul genérica do sistema).
+       Mira dos cantos do resto do HUD: quadrado de cantos leves, borda ciano, acende e brilha quando
+       marcado. Vale pra QUALQUER checklist (a classe .tdv-check-row já está em todas as notas). */
+    .tdv-check-row input[type="checkbox"] {
+      -webkit-appearance: none; appearance: none; position: relative; flex-shrink: 0;
+      width: 18px; height: 18px; margin: 0; border-radius: 5px; cursor: pointer;
+      background: #0D0D1A; border: 1.5px solid #38BDF866;
+      transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+    .tdv-check-row input[type="checkbox"]:hover { border-color: #38BDF8; box-shadow: 0 0 8px #38BDF844; }
+    .tdv-check-row input[type="checkbox"]:checked { background: #38BDF8; border-color: #38BDF8; box-shadow: 0 0 12px #38BDF866; }
+    .tdv-check-row input[type="checkbox"]::after {
+      content: ''; position: absolute; left: 5px; top: 1px; width: 5px; height: 10px;
+      border: solid #05050A; border-width: 0 2.2px 2.2px 0; border-radius: 1px;
+      transform: rotate(45deg) scale(0); transition: transform 0.14s ease;
+    }
+    .tdv-check-row input[type="checkbox"]:checked::after { transform: rotate(45deg) scale(1); }
+    .tdv-check-row input[type="checkbox"]:focus-visible { outline: 2px solid #38BDF8; outline-offset: 2px; }
+    @media (prefers-reduced-motion: reduce) { .tdv-check-row input[type="checkbox"], .tdv-check-row input[type="checkbox"]::after { transition: none; } }
     .note-body td, .note-body th { border: 1px solid #1E2A45; padding: 4px 8px; }
     /* Jarvis mexendo na nota: corpo desfocado, chuva de binário por cima e barra de carregamento. */
     @keyframes jarvisScan { 0% { transform: translateY(-100%); } 100% { transform: translateY(1400%); } }
@@ -7712,7 +7731,7 @@ class Component extends DCLogic {
     }
     const arrumado = this._normalizeNoteHtml(data.content || '');
     const el = document.getElementById('note-editor-el');
-    if (el) el.innerHTML = arrumado;
+    if (el) { el.innerHTML = arrumado; this._syncCheckStates(el); }
     const mudou = antes && antes.id === id && (antes.content !== arrumado || antes.title !== (data.title || ''));
     this.setState({
       noteTitle: data.title || '', noteContent: arrumado, noteSaveStatus: 'saved',
@@ -7730,7 +7749,7 @@ class Component extends DCLogic {
     const v = this.state.jarvisNoteUndo;
     if (!v || v.id !== this.state.editingNoteId) return;
     const el = document.getElementById('note-editor-el');
-    if (el) el.innerHTML = v.content || '';
+    if (el) { el.innerHTML = v.content || ''; this._syncCheckStates(el); }
     this.setState({ noteTitle: v.title || '', noteContent: v.content || '', jarvisNoteUndo: null }, () => this.saveNoteContent());
     this._toast('Nota voltou pra versão de antes do Jarvis.');
   }
@@ -7824,7 +7843,7 @@ class Component extends DCLogic {
     this._enterNoteHistory();
     this.setState({ editingNoteId: note.id, noteTitle: note.title, noteContent: note.content, noteSaveStatus: 'idle', slashMenuOpen: false, selectionToolbarOpen: false, noteExportOpen: false, tableControlsOpen: false }, () => {
       const el = document.getElementById('note-editor-el');
-      if (el) { el.innerHTML = note.content || ''; this._migrateOldChecklistRows(el); }
+      if (el) { el.innerHTML = note.content || ''; this._migrateOldChecklistRows(el); this._syncCheckStates(el); }
     });
   }
 
@@ -8470,6 +8489,21 @@ class Component extends DCLogic {
     });
   }
 
+  // O navegador NÃO grava no HTML o estado "marcado" de um checkbox clicado (o atributo só vale
+  // como estado inicial) — por isso, ao recarregar a nota, o texto aparecia riscado e a caixinha
+  // vazia. Daqui pra frente o clique grava o atributo; aqui se acerta também o que já foi salvo
+  // assim: texto riscado de uma linha de checklist = item marcado.
+  _syncCheckStates = (el) => {
+    if (!el) return;
+    el.querySelectorAll('.tdv-check-row').forEach(row => {
+      const cb = row.querySelector('input[type="checkbox"]');
+      const txt = row.querySelector('.tdv-check-text');
+      if (!cb || !txt) return;
+      if (/line-through/.test(txt.style.textDecoration || '')) cb.checked = true;
+      cb.toggleAttribute('checked', cb.checked);
+    });
+  }
+
   // Insere um nó na posição do cursor dentro do editor (substitui a seleção, se houver). Base
   // compartilhada por todo bloco novo — checklist já usava essa mesma lógica antes, só que solta.
   _insertNodeAtCursor = (node) => {
@@ -8863,6 +8897,7 @@ class Component extends DCLogic {
     if (e.target.tagName !== 'INPUT' || e.target.type !== 'checkbox') return;
     const row = e.target.closest('.tdv-check-row');
     const textSpan = row && row.querySelector('.tdv-check-text');
+    e.target.toggleAttribute('checked', e.target.checked);
     if (textSpan) {
       textSpan.style.textDecoration = e.target.checked ? 'line-through' : 'none';
       textSpan.style.opacity = e.target.checked ? '0.5' : '1';

@@ -18,7 +18,7 @@ dia conforme novos pedidos chegavam.
 **Fase 7 — Agenda: visão por semana e por dia, tudo numa tela só** (pedido de 22/09).
 **Fase 8 — Efeito visual na ligação ao vivo com o Jarvis.** ✅ Feita em 23/09.
 **Fase 9 — Hover "piscada" deve ficar aceso enquanto o mouse estiver em cima.** ✅ Feita em 23/09.
-**Fase 10 — Checkbox das anotações com a cara do TDV** (pedido de 22/09).
+**Fase 10 — Checkbox das anotações com a cara do TDV.** ✅ Feita em 12/11.
 **Fase 11 — Jarvis com busca na web** (pedido de 22/09).
 
 Depois disso continuam na fila, esperando decisão do Sr. Douglas:
@@ -346,7 +346,8 @@ brilho ambiente pulsando devagar no botão de interromper (o de encerrar fica es
 
 ---
 
-### Fase 10 — Checkbox das anotações com a cara do TDV
+### Fase 10 — Checkbox das anotações com a cara do TDV — FEITA (12/11)
+**Feito:** `appearance: none` por CSS na classe `.tdv-check-row` (vale pra todas as notas, sem migrar dado): quadrado 18px de cantos leves, borda ciano `#38BDF8` a 40%, hover acende, marcado preenche em ciano com glow e "✓" que entra com escala. **Bug achado no caminho:** o navegador não grava o estado marcado no HTML — recarregar a nota deixava o texto riscado e a caixinha vazia; agora o clique grava o atributo `checked` e, ao abrir a nota, texto riscado numa linha de checklist vira item marcado (cobre as notas antigas).
 **Pedido (22/09):** "o checkbox nas anotações... hoje ele é muito simples e genérico". Hoje é um
 `<input type="checkbox">` puro, sem nenhum estilo próprio — usa o desenho padrão do navegador (a
 bolinha/quadrado azul do sistema operacional), que não tem nada a ver com o resto do app.

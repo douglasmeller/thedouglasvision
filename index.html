@@ -2192,36 +2192,103 @@
 
         <!-- ═══ AGENDA ═══ -->
         <sc-if value="{{ isAgenda }}" hint-placeholder-val="{{ false }}">
-          <div class="fade-in" style="padding: 20px; display: flex; flex-direction: column; gap: 16px; max-width: 1320px; margin: 0 auto; width: 100%; box-sizing: border-box;">
-            <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
-              <div style="font-size: 20px; font-weight: 600; color: #E2E8F0; letter-spacing: -0.3px;">Agenda</div>
-              <button onClick="{{ openNewEvent }}" style="display: flex; align-items: center; gap: 6px; padding: 9px 16px; background: linear-gradient(135deg, #2563EB, #06B6D4); border: none; border-radius: 9px; color: white; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; box-shadow: 0 2px 12px #2563EB33;">
-                <i class="ph ph-plus" style="font-size: 15px;"></i>Novo Evento
-              </button>
-            </div>
+          <div class="fade-in" style="{{ agendaWrapStyle }}">
+            <sc-if value="{{ agendaShowTitleRow }}" hint-placeholder-val="{{ true }}">
+              <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+                <div style="font-size: 20px; font-weight: 600; color: #E2E8F0; letter-spacing: -0.3px;">Agenda</div>
+                <button onClick="{{ openNewEvent }}" style="display: flex; align-items: center; gap: 6px; padding: 9px 16px; background: linear-gradient(135deg, #2563EB, #06B6D4); border: none; border-radius: 9px; color: white; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; box-shadow: 0 2px 12px #2563EB33;">
+                  <i class="ph ph-plus" style="font-size: 15px;"></i>Novo Evento
+                </button>
+              </div>
+            </sc-if>
             <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;">
-              <button onClick="{{ prevAgendaMonth }}" style="background: none; border: 1px solid #1E2A45; border-radius: 7px; color: #64748B; cursor: pointer; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-                <i class="ph ph-caret-left" style="font-size: 15px;"></i>
-              </button>
-              <div style="display: flex; align-items: center; gap: 8px;">
-                <div style="font-size: 15px; font-weight: 600; color: #E2E8F0; text-transform: capitalize;">{{ agendaMonthLabel }}</div>
-                <sc-if value="{{ agendaNotCurrentMonth }}" hint-placeholder-val="{{ false }}">
-                  <button onClick="{{ resetAgendaMonth }}" style="font-size: 11px; color: #3B82F6; background: none; border: none; cursor: pointer; font-family: inherit; white-space: nowrap; padding: 0; font-weight: 600;">Hoje</button>
-                </sc-if>
+              <div style="{{ agendaNavGroupStyle }}">
+                <button onClick="{{ prevAgendaMonth }}" style="background: none; border: 1px solid #1E2A45; border-radius: 7px; color: #64748B; cursor: pointer; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                  <i class="ph ph-caret-left" style="font-size: 15px;"></i>
+                </button>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <div style="font-size: 15px; font-weight: 600; color: #E2E8F0;">{{ agendaMonthLabel }}</div>
+                  <sc-if value="{{ agendaNotCurrentMonth }}" hint-placeholder-val="{{ false }}">
+                    <button onClick="{{ resetAgendaMonth }}" style="font-size: 11px; color: #3B82F6; background: none; border: none; cursor: pointer; font-family: inherit; white-space: nowrap; padding: 0; font-weight: 600;">Hoje</button>
+                  </sc-if>
+                </div>
+                <button onClick="{{ nextAgendaMonth }}" style="background: none; border: 1px solid #1E2A45; border-radius: 7px; color: #64748B; cursor: pointer; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                  <i class="ph ph-caret-right" style="font-size: 15px;"></i>
+                </button>
               </div>
-              <button onClick="{{ nextAgendaMonth }}" style="background: none; border: 1px solid #1E2A45; border-radius: 7px; color: #64748B; cursor: pointer; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-                <i class="ph ph-caret-right" style="font-size: 15px;"></i>
-              </button>
+              <sc-if value="{{ agendaCanPickMode }}" hint-placeholder-val="{{ true }}">
+                <div style="display: flex; align-items: center; gap: 2px; background: #0D0D1A; border: 1px solid #1E2A45; border-radius: 8px; padding: 2px;">
+                  <button onClick="{{ showAgendaModeDay }}" style="{{ agendaModeDayStyle }}">Dia</button>
+                  <button onClick="{{ showAgendaModeWeek }}" style="{{ agendaModeWeekStyle }}">Semana</button>
+                  <button onClick="{{ showAgendaModeMonth }}" style="{{ agendaModeMonthStyle }}">Mês</button>
+                </div>
+              </sc-if>
+              <sc-if value="{{ agendaShowPlusBtn }}" hint-placeholder-val="{{ false }}">
+                <button onClick="{{ openNewEvent }}" title="Novo evento" style="width: 34px; height: 32px; background: linear-gradient(135deg, #2563EB, #06B6D4); border: none; border-radius: 8px; color: white; cursor: pointer; display: flex; align-items: center; justify-content: center;"><i class="ph ph-plus" style="font-size: 16px;"></i></button>
+              </sc-if>
+              <sc-if value="{{ agendaCanPick24 }}" hint-placeholder-val="{{ false }}">
+                <button onClick="{{ toggleAgendaFull24 }}" title="Mostrar o dia inteiro (0h–24h)" style="{{ agendaFull24Style }}">24h</button>
+              </sc-if>
               <div style="display: flex; align-items: center; gap: 2px; background: #0D0D1A; border: 1px solid #1E2A45; border-radius: 8px; padding: 2px;">
-                <button onClick="{{ showAgendaCalendar }}" style="{{ agendaCalBtnStyle }}"><i class="ph ph-calendar-blank"></i>Calendário</button>
-                <button onClick="{{ showAgendaMap }}" style="{{ agendaMapBtnStyle }}"><i class="ph ph-map-trifold"></i>Mapa</button>
+                <button onClick="{{ showAgendaCalendar }}" style="{{ agendaCalBtnStyle }}"><i class="ph ph-calendar-blank"></i>{{ agendaCalText }}</button>
+                <button onClick="{{ showAgendaMap }}" style="{{ agendaMapBtnStyle }}"><i class="ph ph-map-trifold"></i>{{ agendaMapText }}</button>
               </div>
-              <div style="display: flex; align-items: center; gap: 14px; font-size: 11px; color: #64748B; margin-left: auto;">
+              <div style="{{ agendaLegendStyle }}">
                 <div style="display: flex; align-items: center; gap: 5px;"><span style="width: 8px; height: 8px; border-radius: 2px; background: #60A5FA;"></span>Eventos</div>
                 <div style="display: flex; align-items: center; gap: 5px;"><span style="width: 8px; height: 8px; border-radius: 2px; background: #FBBF24;"></span>Tarefas</div>
               </div>
             </div>
-            <sc-if value="{{ isAgendaCalendar }}" hint-placeholder-val="{{ true }}">
+            <sc-if value="{{ isAgendaTime }}" hint-placeholder-val="{{ false }}">
+              <div style="flex: 1; min-height: 0; display: flex; flex-direction: column; border: 1px solid #151525; border-radius: 12px; overflow: hidden; background: #0D0D1A;">
+                <div style="display: grid; grid-template-columns: {{ agendaTimeGridCols }}; border-bottom: 1px solid #151525; flex-shrink: 0;">
+                  <div></div>
+                  <sc-for list="{{ agendaTimeCols }}" as="tc" hint-placeholder-count="7">
+                    <button onClick="{{ tc.onHeadClick }}" style="{{ tc.headStyle }}">
+                      <span style="font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px;">{{ tc.dow }}</span>
+                      <span style="{{ tc.numStyle }}">{{ tc.num }}</span>
+                    </button>
+                  </sc-for>
+                </div>
+                <div style="display: grid; grid-template-columns: {{ agendaTimeGridCols }}; border-bottom: 1px solid #1E2A45; flex-shrink: 0;">
+                  <div style="font-size: 9px; color: #334155; text-transform: uppercase; padding: 7px 6px 0 0; text-align: right;">dia</div>
+                  <sc-for list="{{ agendaTimeCols }}" as="tc" hint-placeholder-count="7">
+                    <div data-agenda-date="{{ tc.dateKey }}" onClick="{{ tc.onStripClick }}" style="{{ tc.stripStyle }}">
+                      <sc-for list="{{ tc.stripItems }}" as="it" hint-placeholder-count="1">
+                        <span onClick="{{ it.onClick }}" onMouseDown="{{ it.onDragStart }}" onPointerDown="{{ it.onTouchStart }}" onContextMenu="{{ it.onContextMenu }}" style="{{ it.pillStyle }}">{{ it.title }}</span>
+                      </sc-for>
+                      <sc-if value="{{ tc.hasStripExtra }}" hint-placeholder-val="{{ false }}">
+                        <button onClick="{{ tc.onStripMore }}" style="background: none; border: none; padding: 0 2px; font-family: inherit; font-size: 10px; color: #475569; cursor: pointer;">+{{ tc.stripExtra }}</button>
+                      </sc-if>
+                    </div>
+                  </sc-for>
+                </div>
+                <div style="flex: 1; min-height: 0; overflow-y: auto;">
+                  <div style="display: grid; grid-template-columns: {{ agendaTimeGridCols }}; height: 100%; min-height: {{ agendaGridMinH }};">
+                    <div style="position: relative;">
+                      <sc-for list="{{ agendaHourLabels }}" as="hl" hint-placeholder-count="15">
+                        <span style="{{ hl.style }}">{{ hl.label }}</span>
+                      </sc-for>
+                    </div>
+                    <sc-for list="{{ agendaTimeCols }}" as="tc" hint-placeholder-count="7">
+                      <div data-agenda-date="{{ tc.dateKey }}" data-agenda-col="1" onClick="{{ tc.onSlotClick }}" style="{{ tc.colStyle }}">
+                        <sc-for list="{{ tc.blocks }}" as="bk" hint-placeholder-count="2">
+                          <div data-agenda-block="1" onClick="{{ bk.onClick }}" onMouseDown="{{ bk.onDragStart }}" onPointerDown="{{ bk.onTouchStart }}" onContextMenu="{{ bk.onContextMenu }}" style="{{ bk.style }}">
+                            <div style="font-size: 11px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ bk.title }}</div>
+                            <sc-if value="{{ bk.showTime }}" hint-placeholder-val="{{ false }}">
+                              <div style="font-size: 10px; opacity: 0.75; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ bk.timeLabel }}</div>
+                            </sc-if>
+                          </div>
+                        </sc-for>
+                        <sc-if value="{{ tc.showNow }}" hint-placeholder-val="{{ false }}">
+                          <div style="{{ tc.nowStyle }}"></div>
+                        </sc-if>
+                      </div>
+                    </sc-for>
+                  </div>
+                </div>
+              </div>
+            </sc-if>
+            <sc-if value="{{ isAgendaMonthGrid }}" hint-placeholder-val="{{ true }}">
               <div style="display: flex; flex-direction: column; gap: 4px;">
             <div style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; font-size: 11px; color: #334155; text-transform: uppercase; text-align: center; font-weight: 600;">
               <div>Dom</div><div>Seg</div><div>Ter</div><div>Qua</div><div>Qui</div><div>Sex</div><div>Sáb</div>
@@ -3958,6 +4025,9 @@ class Component extends DCLogic {
     // Agenda
     agendaEvents: [],
     agendaMonthOffset: 0,
+    agendaMode: (() => { try { const v = localStorage.getItem('tdv_agendaMode'); if (v === 'month' || v === 'week' || v === 'day') return v; } catch (_e) { /* sem armazenamento */ } return (typeof window !== 'undefined' && window.innerWidth < 768) ? 'day' : 'week'; })(),
+    agendaAnchor: '', // 'AAAA-MM-DD' do dia/semana aberto; vazio = hoje
+    agendaFull24: (() => { try { return localStorage.getItem('tdv_agendaFull24') === '1'; } catch (_e) { return false; } })(),
     agendaDragOverDate: null,
     draggingEventId: null,
     showEventModal: false,
@@ -5768,6 +5838,10 @@ class Component extends DCLogic {
       base.setDate(1);
       base.setMonth(base.getMonth() + s.agendaMonthOffset);
       ctx.monthLabel = base.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+      if (this._agendaEffMode(s) !== 'month') {
+        // Semana/Dia: o mês que vale é o do dia aberto, não o do deslocamento da grade de mês.
+        ctx.monthLabel = this._dParse(s.agendaAnchor || this._agendaToday()).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric', timeZone: 'UTC' });
+      }
     }
     if (s.screen === 'tarefas' && s.showTaskModal && s.editTaskId) {
       ctx.taskId = s.editTaskId;
@@ -7486,9 +7560,118 @@ class Component extends DCLogic {
     }
   }
 
-  prevAgendaMonth = () => this.setState(st => ({ agendaMonthOffset: st.agendaMonthOffset - 1 }));
-  nextAgendaMonth = () => this.setState(st => ({ agendaMonthOffset: st.agendaMonthOffset + 1 }));
-  resetAgendaMonth = () => this.setState({ agendaMonthOffset: 0 });
+  // ─── Agenda: Mês / Semana / Dia ───────────────────────────────────────────
+  // Semana e Dia são uma grade de horas que cabe na tela sem rolar (as posições são percentuais
+  // da altura disponível, sem medir nada em pixel). A faixa de horas padrão é 7h–22h e cresce
+  // sozinha se houver evento fora dela; o botão "24h" mostra o dia inteiro. A aba Mapa sempre
+  // navega por mês, então ela ignora o modo escolhido.
+  _agendaToday = () => new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' })
+  _agendaAnchorKey = () => this.state.agendaAnchor || this._agendaToday()
+  _agendaWeekStart = (key) => this._dAdd(key, -this._dParse(key).getUTCDay())
+  _agendaEffMode = (st) => ((st || this.state).agendaView === 'map' ? 'month' : (st || this.state).agendaMode)
+  _fmtMin = (m) => String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0')
+  _minOf = (t) => { const [h, m] = String(t || '').split(':').map(Number); return (h || 0) * 60 + (m || 0); }
+
+  setAgendaMode = (mode) => {
+    const s = this.state;
+    if (mode === s.agendaMode) return;
+    try { localStorage.setItem('tdv_agendaMode', mode); } catch (_e) { /* sem armazenamento */ }
+    const patch = { agendaMode: mode };
+    const today = this._agendaToday();
+    if (s.agendaMode === 'month' && mode !== 'month') {
+      // Mês → Semana/Dia: hoje, se o mês aberto é o atual; senão o dia 1 do mês aberto.
+      const t = new Date();
+      const d = new Date(t.getFullYear(), t.getMonth() + s.agendaMonthOffset, 1);
+      patch.agendaAnchor = s.agendaMonthOffset === 0 ? '' : d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-01';
+    } else if (s.agendaMode !== 'month' && mode === 'month') {
+      const [ay, am] = this._agendaAnchorKey().split('-').map(Number);
+      const [ty, tm] = today.split('-').map(Number);
+      patch.agendaMonthOffset = (ay - ty) * 12 + (am - tm);
+    }
+    this.setState(patch);
+  }
+  showAgendaModeMonth = () => this.setAgendaMode('month')
+  showAgendaModeWeek = () => this.setAgendaMode('week')
+  showAgendaModeDay = () => this.setAgendaMode('day')
+
+  toggleAgendaFull24 = () => {
+    const v = !this.state.agendaFull24;
+    try { localStorage.setItem('tdv_agendaFull24', v ? '1' : ''); } catch (_e) { /* sem armazenamento */ }
+    this.setState({ agendaFull24: v });
+  }
+
+  _agendaStep = (dir) => this.setState(st => {
+    const mode = this._agendaEffMode(st);
+    if (mode === 'month') return { agendaMonthOffset: st.agendaMonthOffset + dir };
+    const novo = this._dAdd(st.agendaAnchor || this._agendaToday(), dir * (mode === 'week' ? 7 : 1));
+    return { agendaAnchor: novo === this._agendaToday() ? '' : novo };
+  })
+  prevAgendaMonth = () => this._agendaStep(-1)
+  nextAgendaMonth = () => this._agendaStep(1)
+  resetAgendaMonth = () => this.setState({ agendaMonthOffset: 0, agendaAnchor: '' })
+
+  // Clicar no cabeçalho de um dia da semana abre aquele dia na visão Dia.
+  goToAgendaDay = (key) => {
+    try { localStorage.setItem('tdv_agendaMode', 'day'); } catch (_e) { /* sem armazenamento */ }
+    this.setState({ agendaMode: 'day', agendaAnchor: key === this._agendaToday() ? '' : key });
+  }
+
+  // Clique num horário vazio: novo evento naquele dia, na meia hora clicada, com 1h de duração.
+  _agendaSlotClick = (dateKey, e) => {
+    if (this._agendaJustDragged) return;
+    const col = e && e.target && e.target.closest ? e.target.closest('[data-agenda-col]') : null;
+    const r = this._agendaTimeRange || { startMin: 420, totalMin: 900 };
+    let min = r.startMin;
+    if (col) {
+      const rect = col.getBoundingClientRect();
+      const frac = rect.height ? (e.clientY - rect.top) / rect.height : 0;
+      min = Math.floor((r.startMin + frac * r.totalMin) / 30) * 30;
+    }
+    min = Math.max(0, Math.min(23 * 60 + 30, min));
+    this.openEventModal(dateKey, null);
+    this.setState({ eventTime: this._fmtMin(min), eventEndTime: this._fmtMin(Math.min(min + 60, 23 * 60 + 59)) });
+  }
+
+  // Minutos entre o topo do bloco e o ponteiro, no começo do arrasto — pra o bloco não "pular"
+  // pra debaixo do cursor quando solta.
+  _agendaGrabMin = (e) => {
+    const r = this._agendaTimeRange;
+    const blk = e && e.target && e.target.closest ? e.target.closest('[data-agenda-block]') : null;
+    const col = blk && blk.closest ? blk.closest('[data-agenda-col]') : null;
+    if (!r || !blk || !col) return 0;
+    const colH = col.getBoundingClientRect().height;
+    return colH ? Math.max(0, (e.clientY - blk.getBoundingClientRect().top) / colH * r.totalMin) : 0;
+  }
+
+  _agendaColElFromPoint = (x, y) => {
+    const el = document.elementFromPoint(x, y);
+    return el && el.closest ? el.closest('[data-agenda-col]') : null;
+  }
+
+  // Soltar um evento com horário na grade de horas: muda dia E horário (de 15 em 15 min),
+  // mantendo a duração. Evento que repete: só a ocorrência arrastada sai da série (mesma regra do
+  // arrasto por dia).
+  moveEventTimed = async (eventId, occDate, newDate, newTime) => {
+    const ev = this.state.agendaEvents.find(e => e.id === eventId);
+    if (!ev || !newTime) return;
+    const start = occDate || ev.date;
+    const delta = this._dDiff(start, newDate);
+    if (!delta && newTime === ev.time) return;
+    const dur = ev.time && ev.endTime && this._minOf(ev.endTime) > this._minOf(ev.time) ? this._minOf(ev.endTime) - this._minOf(ev.time) : 0;
+    const newEnd = dur ? this._fmtMin(Math.min(this._minOf(newTime) + dur, 23 * 60 + 59)) : '';
+    const msg = 'Evento movido para ' + this.fmtDate(newDate) + ' às ' + newTime + '.';
+    if (ev.recurrence) {
+      const single = { ...ev, id: this._genId('ev'), date: newDate, endDate: '', time: newTime, endTime: newEnd, recurrence: '', recurrenceDays: [], recurrenceUntil: '', recurrenceCount: null, exdates: [] };
+      await this._commitEventChanges([{ upsert: single }, { upsert: { ...ev, exdates: [...(ev.exdates || []), start] } }], 'Só esta ocorrência foi movida para ' + this.fmtDate(newDate) + ' às ' + newTime + '.', false, false);
+      return;
+    }
+    const moved = { ...ev, date: newDate, endDate: '', time: newTime, endTime: newEnd };
+    this.setState({ agendaEvents: this.state.agendaEvents.map(e => e.id === eventId ? moved : e) });
+    const { error } = await window._sb.from('agenda_events').update({ date: moved.date, end_date: null, time: moved.time, end_time: moved.endTime || null }).eq('id', eventId);
+    if (error) { this.setState({ agendaEvents: this.state.agendaEvents.map(e => e.id === eventId ? ev : e) }); this._toast('Não foi possível mover o evento. Tente novamente.'); return; }
+    this._toast(msg);
+  }
+
 
   // Arrastar um evento de um dia pra outro na grade do mês. Feito na mão com mousedown/mousemove/
   // mouseup (ouvidos globais registrados uma vez no componentDidMount, ver _onAgendaDragMove/
@@ -7506,10 +7689,12 @@ class Component extends DCLogic {
   // occDate: em evento que repete, qual ocorrência está sendo arrastada.
   _agendaDragKey = (kind, id, occDate) => (kind === 'task' ? 't' + id : 'e' + id + '@' + occDate)
 
-  startAgendaDrag = (kind, id, originDate, e, occDate) => {
+  // opts = { timed, grabMin } quando o bloco vem da grade de horas (Semana/Dia): aí soltar também
+  // escolhe o horário, não só o dia.
+  startAgendaDrag = (kind, id, originDate, e, occDate, opts) => {
     e.stopPropagation();
     e.preventDefault();
-    this._agendaDrag = { kind, id, occDate, key: this._agendaDragKey(kind, id, occDate), originDate, moved: false, startX: e.clientX, startY: e.clientY };
+    this._agendaDrag = { kind, id, occDate, key: this._agendaDragKey(kind, id, occDate), originDate, moved: false, startX: e.clientX, startY: e.clientY, ...(opts || {}) };
   }
 
   _agendaDragOver = (drag, x, y) => {
@@ -7545,7 +7730,22 @@ class Component extends DCLogic {
       setTimeout(() => { this._agendaJustDragged = false; }, drag.touch ? 400 : 0);
     }
     this.setState({ agendaDragOverDate: null, draggingEventId: null });
-    if (!overDate || overDate === drag.originDate) return;
+    if (!overDate) return;
+    // Bloco da grade de horas solto numa coluna: dia + horário (de 15 em 15 min, mesma duração).
+    if (drag.timed && drag.kind === 'event') {
+      const colEl = this._agendaColElFromPoint(x, y);
+      const r = this._agendaTimeRange;
+      const ev = this.state.agendaEvents.find(e => e.id === drag.id);
+      if (colEl && r && ev) {
+        const rect = colEl.getBoundingClientRect();
+        const dur = ev.time && ev.endTime && this._minOf(ev.endTime) > this._minOf(ev.time) ? this._minOf(ev.endTime) - this._minOf(ev.time) : 60;
+        let raw = r.startMin + ((y - rect.top) / (rect.height || 1)) * r.totalMin - (drag.grabMin || 0);
+        raw = Math.max(0, Math.min(24 * 60 - dur, Math.round(raw / 15) * 15));
+        this.moveEventTimed(drag.id, drag.occDate, overDate, this._fmtMin(raw));
+        return;
+      }
+    }
+    if (overDate === drag.originDate) return;
     if (drag.kind === 'task') this.moveTaskToDate(drag.id, overDate);
     else this.moveEventByDrag(drag.id, drag.occDate, this._dDiff(drag.originDate, overDate));
   }
@@ -7558,10 +7758,10 @@ class Component extends DCLogic {
 
   // Toque: segurar ~0,35s na pílula pega ela (vibra, se o aparelho deixar); arrastar o dedo antes
   // disso é rolagem normal da página e cancela. Mouse continua no caminho do onMouseDown acima.
-  _startAgendaTouch = (kind, id, originDate, e, occDate) => {
+  _startAgendaTouch = (kind, id, originDate, e, occDate, opts) => {
     if (e.pointerType === 'mouse') return;
     clearTimeout(this._agendaTouchTimer);
-    const pending = { kind, id, occDate, key: this._agendaDragKey(kind, id, occDate), originDate, startX: e.clientX, startY: e.clientY, lastX: e.clientX, lastY: e.clientY };
+    const pending = { kind, id, occDate, key: this._agendaDragKey(kind, id, occDate), originDate, startX: e.clientX, startY: e.clientY, lastX: e.clientX, lastY: e.clientY, ...(opts || {}) };
     this._agendaTouchPending = pending;
     this._agendaTouchTimer = setTimeout(() => {
       if (this._agendaTouchPending !== pending) return;
@@ -9491,7 +9691,16 @@ class Component extends DCLogic {
     // em todos os dias dele (dayIndex 0 = primeiro dia).
     const agendaGridStart = this._dKey(new Date(Date.UTC(agendaYear, agendaMonthIdx, 1 - agendaFirstDow)));
     const agendaGridEnd = this._dAdd(agendaGridStart, Math.ceil((agendaFirstDow + agendaDaysInMonth) / 7) * 7 - 1);
-    const agendaRange = [agendaGridStart, agendaGridEnd, agendaTodayStr, this._dAdd(agendaTodayStr, 1)].concat(s.eventModalDate ? [s.eventModalDate] : []).sort();
+    // Modo efetivo: a aba Mapa navega por mês, então ignora Semana/Dia.
+    const agendaMode = this._agendaEffMode(s);
+    const agendaIsTime = agendaMode !== 'month';
+    const agendaAnchorKey = s.agendaAnchor || agendaTodayStr;
+    const agendaTimeDays = agendaMode === 'week'
+      ? Array.from({ length: 7 }, (_, i) => this._dAdd(this._agendaWeekStart(agendaAnchorKey), i))
+      : (agendaMode === 'day' ? [agendaAnchorKey] : []);
+    const agendaRange = [agendaGridStart, agendaGridEnd, agendaTodayStr, this._dAdd(agendaTodayStr, 1)]
+      .concat(s.eventModalDate ? [s.eventModalDate] : [])
+      .concat(agendaTimeDays.length ? [agendaTimeDays[0], agendaTimeDays[agendaTimeDays.length - 1]] : []).sort();
     const agendaRangeLo = agendaRange[0], agendaRangeHi = agendaRange[agendaRange.length - 1];
     const agendaEventsByDate = {};
     s.agendaEvents.forEach(ev => {
@@ -9570,6 +9779,164 @@ class Component extends DCLogic {
         onClick: () => { if (this._agendaJustDragged) return; this.openEventModal(dateKey, null); },
       });
     }
+    // Agenda — Semana / Dia (grade de horas numa tela só). Posição e altura dos blocos são
+    // percentuais da altura da coluna, então preenchem a tela disponível sem medir pixel.
+    const agendaTimeCols = [];
+    let agendaTimeGridCols = '', agendaGridMinH = '0px', agendaHourLabels = [];
+    if (agendaIsTime) {
+      const DOW = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+      const perDay = agendaTimeDays.map(dk => {
+        const evs = (agendaEventsByDate[dk] || []).slice().sort(agendaEvSort);
+        const isTimed = (ev) => !!ev.time && !ev.allDay && !(ev.spanDays > 0);
+        return { dk, timed: evs.filter(isTimed), strip: evs.filter(ev => !isTimed(ev)), tasks: agendaTasksByDate[dk] || [] };
+      });
+      // Faixa de horas: 7h–22h (ou o dia todo) e cresce pra caber qualquer evento fora dela.
+      let loH = s.agendaFull24 ? 0 : 7, hiH = s.agendaFull24 ? 24 : 22;
+      const spanOf = (ev) => {
+        const a = this._minOf(ev.time);
+        let b = ev.endTime ? this._minOf(ev.endTime) : a + 60;
+        if (b <= a) b = a + 60;
+        return [a, Math.min(b, 24 * 60)];
+      };
+      perDay.forEach(d => d.timed.forEach(ev => {
+        const [a, b] = spanOf(ev);
+        loH = Math.min(loH, Math.floor(a / 60));
+        hiH = Math.max(hiH, Math.ceil(b / 60));
+      }));
+      loH = Math.max(0, loH); hiH = Math.min(24, Math.max(hiH, loH + 4));
+      const startMin = loH * 60, totalMin = (hiH - loH) * 60;
+      this._agendaTimeRange = { startMin, totalMin };
+      const nCols = agendaTimeDays.length;
+      agendaTimeGridCols = (s.isMobile ? '34px' : '48px') + ' repeat(' + nCols + ', minmax(0, 1fr))';
+      agendaGridMinH = ((hiH - loH) * 30) + 'px';
+      for (let h = loH; h < hiH; h++) {
+        const first = h === loH;
+        agendaHourLabels.push({
+          label: String(h).padStart(2, '0') + (s.isMobile ? '' : 'h'),
+          style: { position: 'absolute', right: '6px', top: ((h - loH) / (hiH - loH) * 100) + '%', transform: first ? 'translateY(2px)' : 'translateY(-50%)', fontSize: '10px', color: '#334155', fontVariantNumeric: 'tabular-nums' },
+        });
+      }
+      const nowParts = new Date().toLocaleTimeString('en-GB', { timeZone: 'America/Sao_Paulo', hour: '2-digit', minute: '2-digit', hour12: false });
+      const nowMin = this._minOf(nowParts);
+      const noTouchUi = { userSelect: 'none', WebkitUserSelect: 'none', WebkitTouchCallout: 'none' };
+      const blockMenu = (e) => { if (this._agendaTouchPending || this._agendaDrag) e.preventDefault(); };
+      const stripMax = agendaMode === 'day' ? 6 : (s.isMobile ? 2 : 3);
+      perDay.forEach(d => {
+        const { dk } = d;
+        const isToday = dk === agendaTodayStr;
+        const dragOver = !!s.draggingEventId && s.agendaDragOverDate === dk;
+        const dt = this._dParse(dk);
+        // Colunas de sobreposição: eventos que se cruzam dividem a largura (como no Google Agenda).
+        const items = d.timed.map(ev => { const [a, b] = spanOf(ev); return { ev, s: a, e: b, col: 0, cols: 1 }; }).sort((x, y) => x.s - y.s || y.e - x.e);
+        const clusters = [];
+        let cur = null;
+        items.forEach(it => {
+          if (!cur || it.s >= cur.end) { cur = { items: [], end: it.e }; clusters.push(cur); }
+          cur.items.push(it); cur.end = Math.max(cur.end, it.e);
+        });
+        clusters.forEach(cl => {
+          const ends = [];
+          cl.items.forEach(it => {
+            let c = ends.findIndex(en => en <= it.s);
+            if (c < 0) { c = ends.length; ends.push(it.e); } else ends[c] = it.e;
+            it.col = c;
+          });
+          cl.items.forEach(it => { it.cols = ends.length; });
+        });
+        const blocks = items.map(it => {
+          const ev = it.ev;
+          const topPct = Math.max(0, (it.s - startMin) / totalMin * 100);
+          const hPct = Math.max(0.5, (Math.min(it.e, startMin + totalMin) - Math.max(it.s, startMin)) / totalMin * 100);
+          const dragKey = this._agendaDragKey('event', ev.id, ev.occDate);
+          const timeLabel = this._eventTimeLabel(ev);
+          return {
+            key: ev.id + '@' + ev.occDate, title: ev.title, timeLabel, showTime: (it.e - it.s) >= 45,
+            style: {
+              position: 'absolute', top: topPct + '%', height: hPct + '%', minHeight: '17px',
+              left: 'calc(' + (it.col / it.cols * 100) + '% + 1px)', width: 'calc(' + (100 / it.cols) + '% - 3px)',
+              boxSizing: 'border-box', overflow: 'hidden', padding: '2px 5px', borderRadius: '6px', cursor: 'grab', zIndex: 2,
+              background: '#2563EB33', border: '1px solid #3B82F666', color: '#DBEAFE', lineHeight: 1.25,
+              opacity: s.draggingEventId === dragKey ? 0.35 : 1, ...noTouchUi,
+            },
+            onClick: (e) => { e.stopPropagation(); if (this._agendaJustDragged) return; this.openEventModal(dk, ev); },
+            onDragStart: (e) => this.startAgendaDrag('event', ev.id, dk, e, ev.occDate, { timed: true, grabMin: this._agendaGrabMin(e) }),
+            onTouchStart: (e) => this._startAgendaTouch('event', ev.id, dk, e, ev.occDate, { timed: true, grabMin: this._agendaGrabMin(e) }),
+            onContextMenu: blockMenu,
+          };
+        });
+        // Faixa "dia inteiro": evento sem horário, dia inteiro, continuação de evento longo e as
+        // tarefas com prazo (em âmbar, como na grade do mês).
+        const pill = (bg, fg, dragged) => ({
+          fontSize: s.isMobile ? '9px' : '11px', color: fg, background: bg, borderRadius: '4px', padding: '2px 5px', marginBottom: '2px',
+          width: '100%', boxSizing: 'border-box', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', cursor: 'grab',
+          display: 'block', textAlign: 'left', opacity: dragged ? 0.35 : 1, ...noTouchUi,
+        });
+        const stripAll = [
+          ...d.strip.map(ev => ({
+            key: 'e' + ev.id + '@' + ev.occDate,
+            title: (ev.dayIndex > 0 ? '↳ ' : '') + (ev.time && !ev.allDay && ev.dayIndex === 0 ? ev.time + ' ' : '') + ev.title,
+            pillStyle: pill(ev.allDay || ev.spanDays > 0 ? '#2563EB40' : '#2563EB1A', ev.allDay || ev.spanDays > 0 ? '#BFDBFE' : '#60A5FA', s.draggingEventId === this._agendaDragKey('event', ev.id, ev.occDate)),
+            onClick: (e) => { e.stopPropagation(); if (this._agendaJustDragged) return; this.openEventModal(dk, ev); },
+            onDragStart: (e) => this.startAgendaDrag('event', ev.id, dk, e, ev.occDate),
+            onTouchStart: (e) => this._startAgendaTouch('event', ev.id, dk, e, ev.occDate),
+            onContextMenu: blockMenu,
+          })),
+          ...d.tasks.map(t => ({
+            key: 't' + t.id, title: t.title, pillStyle: pill('#F59E0B1F', '#FBBF24', s.draggingEventId === 't' + t.id),
+            onClick: (e) => { e.stopPropagation(); if (this._agendaJustDragged) return; this.openTaskModal(t); },
+            onDragStart: (e) => this.startAgendaDrag('task', t.id, dk, e),
+            onTouchStart: (e) => this._startAgendaTouch('task', t.id, dk, e),
+            onContextMenu: blockMenu,
+          })),
+        ];
+        const showNow = isToday && nowMin >= startMin && nowMin <= startMin + totalMin;
+        agendaTimeCols.push({
+          dateKey: dk, dow: DOW[dt.getUTCDay()], num: dt.getUTCDate(), blocks,
+          onHeadClick: () => (agendaMode === 'day' ? null : this.goToAgendaDay(dk)),
+          headStyle: {
+            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px', padding: '7px 0 6px', background: 'none', border: 'none',
+            borderLeft: '1px solid #151525', color: isToday ? '#60A5FA' : '#64748B', fontFamily: 'inherit', cursor: agendaMode === 'day' ? 'default' : 'pointer',
+          },
+          numStyle: {
+            fontSize: s.isMobile ? '13px' : '16px', fontWeight: 600, minWidth: '28px', height: '28px', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+            background: isToday ? '#2563EB' : 'transparent', color: isToday ? '#fff' : '#CBD5E1',
+          },
+          stripStyle: {
+            borderLeft: '1px solid #151525', padding: '3px 3px 1px', minHeight: '24px', cursor: 'pointer', minWidth: 0,
+            background: dragOver ? '#2563EB22' : (isToday ? '#2563EB0A' : 'transparent'),
+          },
+          stripItems: stripAll.slice(0, stripMax),
+          hasStripExtra: stripAll.length > stripMax, stripExtra: stripAll.length - stripMax,
+          onStripMore: (e) => { e.stopPropagation(); this.goToAgendaDay(dk); },
+          onStripClick: () => { if (this._agendaJustDragged) return; this.openEventModal(dk, null); },
+          colStyle: {
+            position: 'relative', borderLeft: '1px solid #151525', cursor: 'pointer', minWidth: 0,
+            background: dragOver ? '#2563EB22' : (isToday ? '#2563EB0A' : 'transparent'),
+            backgroundImage: 'linear-gradient(#171C2A 1px, transparent 1px)', backgroundSize: '100% ' + (100 / (hiH - loH)) + '%',
+          },
+          onSlotClick: (e) => this._agendaSlotClick(dk, e),
+          showNow, nowStyle: { position: 'absolute', left: 0, right: 0, top: ((nowMin - startMin) / totalMin * 100) + '%', height: '2px', background: '#38BDF8', boxShadow: '0 0 6px #38BDF8', zIndex: 3, pointerEvents: 'none' },
+        });
+      });
+    }
+    const agendaWeekEnd = agendaTimeDays.length ? agendaTimeDays[agendaTimeDays.length - 1] : '';
+    const agendaNavLabelRaw = agendaMode === 'week'
+      ? this._dParse(agendaTimeDays[0]).toLocaleDateString('pt-BR', { day: 'numeric', month: 'short', timeZone: 'UTC' }) + ' – ' + this._dParse(agendaWeekEnd).toLocaleDateString('pt-BR', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' })
+      : (agendaMode === 'day'
+        ? this._dParse(agendaAnchorKey).toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' })
+        : agendaMonthLabel);
+    const agendaNavLabel = agendaNavLabelRaw.charAt(0).toUpperCase() + agendaNavLabelRaw.slice(1);
+    const agendaShowToday = agendaMode === 'month' ? s.agendaMonthOffset !== 0
+      : (agendaMode === 'week' ? !(agendaTodayStr >= agendaTimeDays[0] && agendaTodayStr <= agendaWeekEnd) : agendaAnchorKey !== agendaTodayStr);
+    const agendaModeBtn = (on) => ({
+      padding: '6px 11px', fontSize: '12px', fontWeight: 600, fontFamily: 'inherit', cursor: 'pointer', border: 'none', borderRadius: '6px',
+      background: on ? '#2563EB33' : 'transparent', color: on ? '#BFDBFE' : '#64748B',
+    });
+    const agendaWrapStyle = {
+      padding: agendaIsTime && s.isMobile ? '12px' : '20px', display: 'flex', flexDirection: 'column', gap: agendaIsTime ? '12px' : '16px',
+      maxWidth: '1320px', margin: '0 auto', width: '100%', boxSizing: 'border-box',
+      ...(agendaIsTime ? { height: '100%', minHeight: '560px' } : {}),
+    };
     const agendaDayEvents = (agendaEventsByDate[s.eventModalDate] || []).slice().sort(agendaEvSort)
       .map(ev => {
         const timeLabel = this._eventTimeLabel(ev);
@@ -10904,9 +11271,19 @@ class Component extends DCLogic {
       saveTaskLabel: s.savingTask ? 'Salvando…' : 'Salvar',
       saveTaskBtnStyle: { ..._actionBtn(s.savingTask, GRAD_BLUE, '#2563EB33'), marginTop: '20px' },
       // agenda
-      agendaMonthLabel, agendaDays,
+      agendaMonthLabel: agendaNavLabel, agendaDays, agendaWrapStyle,
+      agendaNavGroupStyle: { display: 'flex', alignItems: 'center', gap: '8px', ...(s.isMobile ? { width: '100%', justifyContent: 'space-between' } : {}) },
+      isAgendaTime: s.agendaView !== 'map' && agendaIsTime, isAgendaMonthGrid: s.agendaView !== 'map' && !agendaIsTime,
+      agendaTimeCols, agendaTimeGridCols, agendaGridMinH, agendaHourLabels,
+      showAgendaModeMonth: this.showAgendaModeMonth, showAgendaModeWeek: this.showAgendaModeWeek, showAgendaModeDay: this.showAgendaModeDay,
+      agendaModeMonthStyle: agendaModeBtn(s.agendaMode === 'month'), agendaModeWeekStyle: agendaModeBtn(s.agendaMode === 'week'), agendaModeDayStyle: agendaModeBtn(s.agendaMode === 'day'),
+      toggleAgendaFull24: this.toggleAgendaFull24, agendaFull24Style: agendaModeBtn(s.agendaFull24),
+      agendaShowTitleRow: !(s.isMobile && agendaIsTime), agendaShowPlusBtn: s.isMobile && agendaIsTime,
+      agendaCalText: s.isMobile && agendaIsTime ? '' : 'Calendário', agendaMapText: s.isMobile && agendaIsTime ? '' : 'Mapa',
+      agendaLegendStyle: { display: s.isMobile && agendaIsTime ? 'none' : 'flex', alignItems: 'center', gap: '14px', fontSize: '11px', color: '#64748B', marginLeft: 'auto' },
+      agendaCanPickMode: s.agendaView !== 'map', agendaCanPick24: s.agendaView !== 'map' && agendaIsTime,
       prevAgendaMonth: this.prevAgendaMonth, nextAgendaMonth: this.nextAgendaMonth, resetAgendaMonth: this.resetAgendaMonth,
-      agendaNotCurrentMonth: s.agendaMonthOffset !== 0,
+      agendaNotCurrentMonth: agendaShowToday,
       openNewEvent: () => this.openEventModal(agendaTodayStr, null),
       showEventModal: s.showEventModal,
       eventModalDateLabel: s.eventModalDate ? this.fmtDate(s.eventModalDate) : '',

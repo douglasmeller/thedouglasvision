@@ -15,7 +15,7 @@ dia conforme novos pedidos chegavam.
 **Fase 4 — Jarvis formata anotação de verdade.** ✅ Feita em 22/09.
 **Fase 5 — Tabela com mais linhas e colunas.** ✅ Feita em 22/09.
 **Fase 6 — Tarefas recorrentes.** ✅ Feita em 23/09.
-**Fase 7 — Agenda: visão por semana e por dia, tudo numa tela só** (pedido de 22/09).
+**Fase 7 — Agenda: visão por semana e por dia, tudo numa tela só.** ✅ Feita em 12/11.
 **Fase 8 — Efeito visual na ligação ao vivo com o Jarvis.** ✅ Feita em 23/09.
 **Fase 9 — Hover "piscada" deve ficar aceso enquanto o mouse estiver em cima.** ✅ Feita em 23/09.
 **Fase 10 — Checkbox das anotações com a cara do TDV.** ✅ Feita em 12/11.
@@ -280,6 +280,16 @@ corretamente e a lista reordenou sozinha.
 ---
 
 ### Fase 7 — Agenda: visão por semana e por dia, tudo numa tela só
+**FEITO (12/11) — decisões e o que entrou:**
+- **Modos Dia / Semana / Mês** (padrão: Semana no desktop, Dia no celular; a escolha fica salva). Setas e "Hoje" andam por dia, semana ou mês conforme o modo; a aba Mapa sempre navega por mês.
+- **Cabe numa tela só, sem rolar:** posições e alturas são percentuais da altura disponível (nada medido em pixel). Faixa de horas padrão 7h–22h, cresce sozinha se houver evento fora dela; botão **24h** mostra 0h–24h. Só rola num aparelho muito baixo (mínimo 30px por hora).
+- **Faixa "dia"** no topo com evento de dia inteiro, evento sem horário, continuação de evento longo e as tarefas com prazo (âmbar); excesso vira "+N" que abre o dia.
+- Eventos que se cruzam dividem a largura (algoritmo de colunas por cluster, como no Google Agenda). Linha azul de "agora" na coluna de hoje (atualiza a cada 30s pelo relógio do HUD).
+- **Clicar num horário vazio** cria evento naquela meia hora (1h de duração); clicar num evento abre a edição; clicar no cabeçalho de um dia da semana abre aquele dia.
+- **Arrastar** (mouse e toque longo): muda dia E horário, de 15 em 15 min, mantendo a duração; evento que repete move só a ocorrência (mesma regra do arrasto por dia). Tarefas e eventos da faixa "dia" movem só o dia.
+- Mobile: cabeçalho compacto (título da página, legenda e rótulos somem; "+" vira ícone) pra o dia inteiro caber.
+- Contexto de tela do Jarvis em Semana/Dia usa o mês do dia aberto.
+- **Fora desta rodada:** redimensionar evento arrastando a borda de baixo; arrastar pra criar; deslizar o dedo pra trocar de dia.
 **Pedido (22/09):** além do mês, ter **semana** e **dia** ("grandão"), e a agenda caber **numa tela
 só, sem rolar pra cima e pra baixo** pra ver tudo — do jeito que o Google Agenda faz.
 

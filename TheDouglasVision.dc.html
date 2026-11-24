@@ -537,11 +537,11 @@
     <nav style="{{ sidebarStyle }}">
       <div style="{{ sidebarHeaderStyle }}">
         <div style="{{ logoRowStyle }}">
-          <img src="/uploads/tdv-logo.png" alt="" style="width: 38px; height: 38px; flex-shrink: 0; object-fit: contain;">
+          <img src="/uploads/tdv-logo.png" alt="" style="width: 44px; height: 44px; flex-shrink: 0; object-fit: contain; filter: brightness(1.3) drop-shadow(0 0 6px #38BDF866);">
           <sc-if value="{{ sidebarExpanded }}" hint-placeholder-val="{{ true }}">
             <div>
               <div style="font-size: 13px; font-weight: 700; background: linear-gradient(135deg, #60A5FA, #22D3EE); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; letter-spacing: -0.3px;">TheDouglasVision</div>
-              <div class="jarvis-font" style="display: flex; align-items: center; gap: 5px; font-size: 9px; color: #1E2A3A; letter-spacing: 1.5px; margin-top: 2px; font-weight: 500;">
+              <div class="jarvis-font" style="display: flex; align-items: center; gap: 5px; font-size: 10px; color: #7C8AA0; letter-spacing: 1.5px; margin-top: 2px; font-weight: 500;">
                 <span class="hud-status-dot"></span>SISTEMA ONLINE
               </div>
             </div>
@@ -570,9 +570,9 @@
       </div>
       <div style="{{ sidebarFooterStyle }}">
         <sc-if value="{{ sidebarExpanded }}" hint-placeholder-val="{{ true }}">
-          <div class="jarvis-font" style="display: flex; flex-direction: column; gap: 4px; font-size: 9px; color: #1E2A3A; letter-spacing: 1px; margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px solid #151525;">
-            <div style="display: flex; justify-content: space-between;"><span>HORA LOCAL</span><span style="color: #334155;">{{ hudClockLabel }}</span></div>
-            <div style="display: flex; justify-content: space-between;"><span>SYNC</span><span style="color: #334155;">{{ hudSyncLabel }}</span></div>
+          <div class="jarvis-font" style="display: flex; flex-direction: column; gap: 4px; font-size: 10px; color: #7C8AA0; letter-spacing: 1px; margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px solid #1E2433;">
+            <div style="display: flex; justify-content: space-between;"><span>HORA LOCAL</span><span style="color: #CBD5E1;">{{ hudClockLabel }}</span></div>
+            <div style="display: flex; justify-content: space-between;"><span>SYNC</span><span style="color: #CBD5E1;">{{ hudSyncLabel }}</span></div>
           </div>
         </sc-if>
         <button onClick="{{ handleLogout }}" title="Sair" style="{{ logoutBtnStyle }}">
@@ -9569,7 +9569,7 @@ class Component extends DCLogic {
     const collapseToggleStyle = {
       display: 'flex', alignItems: 'center', justifyContent: 'center',
       width: '26px', height: '26px', borderRadius: '7px', flexShrink: 0,
-      background: 'transparent', border: '1px solid #1E2A45', color: '#475569',
+      background: 'transparent', border: '1px solid #2A3A5C', color: '#94A3B8',
       cursor: 'pointer', transition: 'all 0.15s',
     };
     const logoRowStyle = { display: 'flex', alignItems: 'center', gap: '9px', justifyContent: sidebarCollapsed ? 'center' : 'flex-start' };
@@ -9591,7 +9591,7 @@ class Component extends DCLogic {
     const logoutBtnStyle = {
       marginTop: sidebarCollapsed ? '0' : '10px', display: 'flex', alignItems: 'center',
       justifyContent: sidebarCollapsed ? 'center' : 'flex-start',
-      gap: '6px', background: 'none', border: 'none', color: '#334155', fontSize: '12px',
+      gap: '6px', background: 'none', border: 'none', color: '#A3B1C6', fontSize: '13px', fontWeight: 500,
       cursor: 'pointer', fontFamily: 'inherit', padding: 0, transition: 'color 0.15s', width: '100%',
     };
 
@@ -9622,17 +9622,17 @@ class Component extends DCLogic {
           display: 'flex', alignItems: 'center', gap: '10px', padding: sidebarCollapsed ? '10px 0' : '10px 20px',
           justifyContent: sidebarCollapsed ? 'center' : 'flex-start',
           width: '100%', border: 'none', textAlign: 'left', cursor: 'pointer',
-          fontFamily: 'inherit', fontSize: '14px',
-          background: active ? '#2563EB14' : 'transparent',
-          color: active ? '#60A5FA' : '#334155',
+          fontFamily: 'inherit', fontSize: '14px', letterSpacing: '0.2px',
+          background: active ? '#2563EB1F' : 'transparent',
+          color: active ? '#93C5FD' : '#A3B1C6',
           borderLeft: sidebarCollapsed ? 'none' : ('2px solid ' + (active ? '#2563EB' : 'transparent')),
-          borderRadius: sidebarCollapsed ? '8px' : '0 6px 6px 0', transition: 'all 0.15s', fontWeight: active ? '500' : '400',
+          borderRadius: sidebarCollapsed ? '8px' : '0 6px 6px 0', transition: 'all 0.15s', fontWeight: active ? '600' : '500',
         },
         bottomNavStyle: {
           flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
           gap: '2px', padding: '10px 4px', border: 'none', background: 'none', cursor: 'pointer',
-          color: active ? '#60A5FA' : '#475569',
-          fontFamily: 'inherit', fontSize: '10px', fontWeight: active ? '600' : '400',
+          color: active ? '#93C5FD' : '#94A3B8',
+          fontFamily: 'inherit', fontSize: '10px', fontWeight: active ? '600' : '500',
           minHeight: '56px', transition: 'color 0.15s',
         },
         onClick: () => {
@@ -9647,8 +9647,8 @@ class Component extends DCLogic {
     const mobileMoreStyle = {
       flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
       gap: '2px', padding: '10px 4px', border: 'none', background: 'none', cursor: 'pointer',
-      color: mobileMoreActive ? '#60A5FA' : '#475569',
-      fontFamily: 'inherit', fontSize: '10px', fontWeight: mobileMoreActive ? '600' : '400',
+      color: mobileMoreActive ? '#93C5FD' : '#94A3B8',
+      fontFamily: 'inherit', fontSize: '10px', fontWeight: mobileMoreActive ? '600' : '500',
       minHeight: '56px', transition: 'color 0.15s',
     };
 

@@ -62,6 +62,14 @@
     .note-body li { margin: 2px 0; }
     .note-body blockquote { margin: 8px 0; padding-left: 14px; border-left: 3px solid #334155; font-style: italic; color: #CBD5E1; }
     .note-body table { border-collapse: collapse; }
+    /* Agenda: o item arrastado vira um "fantasma" que acompanha o ponteiro. */
+    body.tdv-agenda-dragging, body.tdv-agenda-dragging * { cursor: grabbing !important; user-select: none !important; -webkit-user-select: none !important; }
+    .tdv-agenda-ghost { position: fixed; margin: 0; z-index: 400; pointer-events: none; box-sizing: border-box; overflow: hidden; border-radius: 6px;
+      box-shadow: 0 14px 34px #000000AA, 0 0 0 1px #38BDF8, 0 0 18px #38BDF866; }
+    /* Na grade de horas ele encaixa de 15 em 15 min — a transição curta faz o encaixe deslizar. */
+    .tdv-agenda-ghost.snap { transition: top 0.09s ease-out, left 0.13s ease-out, width 0.13s ease-out, height 0.13s ease-out; }
+    .tdv-agenda-ghost.voltando { transition: top 0.2s ease, left 0.2s ease, width 0.2s ease, height 0.2s ease, opacity 0.2s ease; opacity: 0.35; }
+    @media (prefers-reduced-motion: reduce) { .tdv-agenda-ghost.snap, .tdv-agenda-ghost.voltando { transition: none; } }
     /* Checkbox das anotações: desenho próprio (o do navegador era a bolinha azul genérica do sistema).
        Mira dos cantos do resto do HUD: quadrado de cantos leves, borda ciano, acende e brilha quando
        marcado. Vale pra QUALQUER checklist (a classe .tdv-check-row já está em todas as notas). */
@@ -5514,13 +5522,133 @@ class Component extends DCLogic {
   // opts = { timed, grabMin } quando o bloco vem da grade de horas (Semana/Dia): aí soltar também
   // escolhe o horário, não só o dia.
   startAgendaDrag = (kind, id, originDate, e, occDate, opts) => {
+    if (e.button > 0) return; // só o botão esquerdo arrasta
     e.stopPropagation();
     e.preventDefault();
-    this._agendaDrag = { kind, id, occDate, key: this._agendaDragKey(kind, id, occDate), originDate, moved: false, startX: e.clientX, startY: e.clientY, ...(opts || {}) };
+    this._agendaDrag = { kind, id, occDate, key: this._agendaDragKey(kind, id, occDate), originDate, moved: false, startX: e.clientX, startY: e.clientY, ...this._agendaGrabSource(e), ...(opts || {}) };
+  }
+
+  // ── Fantasma que segue o ponteiro ───────────────────────────────────────
+  // Mexe direto no DOM, sem setState a cada movimento: o app inteiro re-renderizando a cada pixel
+  // é o que deixaria o arrasto engasgado. O estado só muda quando o dia sob o ponteiro muda.
+  _agendaGrabSource = (e) => {
+    const el = (e.currentTarget && e.currentTarget.getBoundingClientRect) ? e.currentTarget : e.target;
+    if (!el || !el.getBoundingClientRect) return {};
+    const rect = el.getBoundingClientRect();
+    const cs = window.getComputedStyle ? window.getComputedStyle(el) : null;
+    return {
+      srcNode: el.cloneNode(true),
+      srcRect: { left: rect.left, top: rect.top, width: rect.width, height: rect.height },
+      srcFont: cs ? { fontFamily: cs.fontFamily, fontSize: cs.fontSize, fontWeight: cs.fontWeight, letterSpacing: cs.letterSpacing, lineHeight: cs.lineHeight } : null,
+      offX: e.clientX - rect.left, offY: e.clientY - rect.top,
+    };
+  }
+
+  _agendaMakeGhost = (drag) => {
+    if (drag.ghost || !drag.srcNode || !document.body) return;
+    const g = drag.srcNode;
+    g.removeAttribute('data-agenda-block');
+    g.className = 'tdv-agenda-ghost';
+    Object.assign(g.style, drag.srcFont || {}, {
+      position: 'fixed', left: drag.srcRect.left + 'px', top: drag.srcRect.top + 'px',
+      width: drag.srcRect.width + 'px', height: drag.srcRect.height + 'px', minHeight: '17px', margin: '0', opacity: '1',
+      background: drag.kind === 'task' ? '#3A2E12' : '#1B2D57',
+    });
+    document.body.appendChild(g);
+    drag.ghost = g;
+    document.body.classList.add('tdv-agenda-dragging');
+    this._agendaEsc = (ev) => { if (ev.key === 'Escape') { ev.preventDefault(); ev.stopPropagation(); this._cancelAgendaDrag(); } };
+    window.addEventListener('keydown', this._agendaEsc, true);
+  }
+
+  _agendaDuration = (ev) => (ev && ev.time && ev.endTime && this._minOf(ev.endTime) > this._minOf(ev.time) ? this._minOf(ev.endTime) - this._minOf(ev.time) : 60)
+
+  // Onde o item cairia se fosse solto aqui. A prévia e a soltura usam a MESMA conta, então o que
+  // aparece é exatamente onde ele vai parar.
+  _agendaDropTarget = (drag, x, y) => {
+    const date = this._agendaCellFromPoint(x, y);
+    if (!date || !drag.timed || drag.kind !== 'event') return { date };
+    const colEl = this._agendaColElFromPoint(x, y);
+    const r = this._agendaTimeRange;
+    const ev = this.state.agendaEvents.find(e => e.id === drag.id);
+    if (!colEl || !r || !ev) return { date };
+    const rect = colEl.getBoundingClientRect();
+    const dur = this._agendaDuration(ev);
+    let min = r.startMin + ((y - rect.top) / (rect.height || 1)) * r.totalMin - (drag.grabMin || 0);
+    min = Math.max(0, Math.min(24 * 60 - dur, Math.round(min / 15) * 15));
+    return { date, colEl, rect, min, dur, ev };
+  }
+
+  _agendaMoveGhost = (drag, x, y, alvo) => {
+    const g = drag.ghost;
+    if (!g) return;
+    if (alvo.colEl) {
+      // Na grade de horas: encaixa na coluna e no quarto de hora, mostrando o horário novo.
+      const r = this._agendaTimeRange;
+      g.classList.add('snap');
+      g.style.left = (alvo.rect.left + 2) + 'px';
+      g.style.width = Math.max(20, alvo.rect.width - 4) + 'px';
+      g.style.top = (alvo.rect.top + (alvo.min - r.startMin) / r.totalMin * alvo.rect.height) + 'px';
+      g.style.height = Math.max(22, alvo.dur / r.totalMin * alvo.rect.height) + 'px';
+      const rotulo = this._fmtMin(alvo.min) + ' – ' + this._fmtMin(Math.min(alvo.min + alvo.dur, 24 * 60 - 1));
+      if (drag.ghostLabel !== rotulo) {
+        drag.ghostLabel = rotulo;
+        const hora = document.createElement('div');
+        hora.textContent = rotulo;
+        hora.style.cssText = 'font-size:10px;font-weight:700;color:#7DD3FC;white-space:nowrap;';
+        const titulo = document.createElement('div');
+        titulo.textContent = alvo.ev.title;
+        titulo.style.cssText = 'font-size:11px;font-weight:600;color:#F1F5F9;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;';
+        g.style.padding = '2px 5px';
+        g.replaceChildren(hora, titulo);
+      }
+    } else {
+      // Fora da grade de horas (mês, faixa "dia"): segue o ponteiro 1:1, sem atraso.
+      g.classList.remove('snap');
+      g.style.left = (x - drag.offX) + 'px';
+      g.style.top = (y - Math.min(drag.offY, 30)) + 'px';
+      g.style.width = Math.min(drag.srcRect.width, 260) + 'px';
+      if (drag.ghostLabel) { g.style.height = Math.min(drag.srcRect.height, 46) + 'px'; }
+    }
+  }
+
+  // voltar = true: não deu em mudança nenhuma — o fantasma desliza de volta pro lugar de origem.
+  _agendaRemoveGhost = (drag, voltar) => {
+    if (this._agendaEsc) { window.removeEventListener('keydown', this._agendaEsc, true); this._agendaEsc = null; }
+    if (document.body && document.body.classList) document.body.classList.remove('tdv-agenda-dragging');
+    const g = drag && drag.ghost;
+    if (!g) return;
+    drag.ghost = null;
+    if (!voltar) { g.remove(); return; }
+    g.classList.remove('snap');
+    g.classList.add('voltando');
+    Object.assign(g.style, { left: drag.srcRect.left + 'px', top: drag.srcRect.top + 'px', width: drag.srcRect.width + 'px', height: drag.srcRect.height + 'px' });
+    setTimeout(() => g.remove(), 220);
+  }
+
+  _cancelAgendaDrag = () => {
+    const drag = this._agendaDrag;
+    if (!drag) return;
+    this._agendaDrag = null;
+    this._agendaRemoveGhost(drag, true);
+    this._agendaJustDragged = true;
+    setTimeout(() => { this._agendaJustDragged = false; }, 400);
+    this.setState({ agendaDragOverDate: null, draggingEventId: null });
   }
 
   _agendaDragOver = (drag, x, y) => {
-    const overDate = this._agendaCellFromPoint(x, y);
+    this._agendaMakeGhost(drag);
+    const alvo = this._agendaDropTarget(drag, x, y);
+    this._agendaMoveGhost(drag, x, y, alvo);
+    // Grade de horas com rolagem (tela baixa ou 24h): chegar na borda rola junto.
+    if (alvo.colEl) {
+      const rolagem = alvo.colEl.parentElement && alvo.colEl.parentElement.parentElement;
+      if (rolagem && rolagem.scrollHeight > rolagem.clientHeight) {
+        const b = rolagem.getBoundingClientRect();
+        if (y < b.top + 28) rolagem.scrollTop -= 10; else if (y > b.bottom - 28) rolagem.scrollTop += 10;
+      }
+    }
+    const overDate = alvo.date;
     // Só atualiza o state quando a célula sob o dedo/cursor realmente muda — mousemove dispara dezenas
     // de vezes por segundo, e cada setState aqui recalcula o renderVals() inteiro do app; sem essa
     // checagem, arrastar por cima da grade travava a UI de tanto re-render.
@@ -5532,6 +5660,8 @@ class Component extends DCLogic {
   _onAgendaDragMove = (e) => {
     const drag = this._agendaDrag;
     if (!drag || drag.touch) return;
+    if (e.buttons & 1) drag.viuBotao = true;
+    else if (drag.viuBotao && e.buttons === 0) { this._cancelAgendaDrag(); return; }
     if (!drag.moved) {
       const dx = e.clientX - drag.startX, dy = e.clientY - drag.startY;
       if (Math.abs(dx) < 4 && Math.abs(dy) < 4) return;
@@ -5542,7 +5672,8 @@ class Component extends DCLogic {
 
   _finishAgendaDrag = (drag, x, y) => {
     this._agendaDrag = null;
-    const overDate = drag.moved ? this._agendaCellFromPoint(x, y) : null;
+    const alvo = drag.moved ? this._agendaDropTarget(drag, x, y) : {};
+    const overDate = alvo.date || null;
     if (drag.moved) {
       // A célula solta ainda recebe o click nativo do navegador logo em seguida (mesmo com
       // stopPropagation/preventDefault no mousedown) — sem essa trava, todo drag também abria o
@@ -5552,24 +5683,18 @@ class Component extends DCLogic {
       setTimeout(() => { this._agendaJustDragged = false; }, drag.touch ? 400 : 0);
     }
     this.setState({ agendaDragOverDate: null, draggingEventId: null });
-    if (!overDate) return;
-    // Bloco da grade de horas solto numa coluna: dia + horário (de 15 em 15 min, mesma duração).
-    if (drag.timed && drag.kind === 'event') {
-      const colEl = this._agendaColElFromPoint(x, y);
-      const r = this._agendaTimeRange;
-      const ev = this.state.agendaEvents.find(e => e.id === drag.id);
-      if (colEl && r && ev) {
-        const rect = colEl.getBoundingClientRect();
-        const dur = ev.time && ev.endTime && this._minOf(ev.endTime) > this._minOf(ev.time) ? this._minOf(ev.endTime) - this._minOf(ev.time) : 60;
-        let raw = r.startMin + ((y - rect.top) / (rect.height || 1)) * r.totalMin - (drag.grabMin || 0);
-        raw = Math.max(0, Math.min(24 * 60 - dur, Math.round(raw / 15) * 15));
-        this.moveEventTimed(drag.id, drag.occDate, overDate, this._fmtMin(raw));
-        return;
-      }
-    }
-    if (overDate === drag.originDate) return;
-    if (drag.kind === 'task') this.moveTaskToDate(drag.id, overDate);
-    else this.moveEventByDrag(drag.id, drag.occDate, this._dDiff(drag.originDate, overDate));
+    const novaHora = alvo.colEl ? this._fmtMin(alvo.min) : null;
+    const mudou = !!overDate && (overDate !== drag.originDate || (novaHora !== null && novaHora !== alvo.ev.time));
+    if (!mudou) { this._agendaRemoveGhost(drag, true); return; }
+    const ev = drag.kind === 'event' ? this.state.agendaEvents.find(e => e.id === drag.id) : null;
+    let gravando;
+    if (novaHora !== null) gravando = this.moveEventTimed(drag.id, drag.occDate, overDate, novaHora);
+    else if (drag.kind === 'task') gravando = this.moveTaskToDate(drag.id, overDate);
+    else gravando = this.moveEventByDrag(drag.id, drag.occDate, this._dDiff(drag.originDate, overDate));
+    // Evento comum já aparece no lugar novo na hora; o que se repete só muda depois de gravar,
+    // então o fantasma fica no destino até lá em vez de sumir e o bloco "pular" depois.
+    if (ev && ev.recurrence) Promise.resolve(gravando).finally(() => this._agendaRemoveGhost(drag, false));
+    else this._agendaRemoveGhost(drag, false);
   }
 
   _onAgendaDragEnd = (e) => {
@@ -5583,7 +5708,7 @@ class Component extends DCLogic {
   _startAgendaTouch = (kind, id, originDate, e, occDate, opts) => {
     if (e.pointerType === 'mouse') return;
     clearTimeout(this._agendaTouchTimer);
-    const pending = { kind, id, occDate, key: this._agendaDragKey(kind, id, occDate), originDate, startX: e.clientX, startY: e.clientY, lastX: e.clientX, lastY: e.clientY, ...(opts || {}) };
+    const pending = { kind, id, occDate, key: this._agendaDragKey(kind, id, occDate), originDate, startX: e.clientX, startY: e.clientY, lastX: e.clientX, lastY: e.clientY, ...this._agendaGrabSource(e), ...(opts || {}) };
     this._agendaTouchPending = pending;
     this._agendaTouchTimer = setTimeout(() => {
       if (this._agendaTouchPending !== pending) return;
@@ -5619,7 +5744,7 @@ class Component extends DCLogic {
     const drag = this._agendaDrag;
     if (!drag || !drag.touch) return;
     const t = e.changedTouches && e.changedTouches[0];
-    if (e.type === 'touchcancel' || !t) { this._agendaDrag = null; this.setState({ agendaDragOverDate: null, draggingEventId: null }); return; }
+    if (e.type === 'touchcancel' || !t) { this._cancelAgendaDrag(); return; }
     this._finishAgendaDrag(drag, t.clientX, t.clientY);
   }
 

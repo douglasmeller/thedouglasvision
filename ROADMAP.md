@@ -3,7 +3,7 @@
 Ideias e próximos passos discutidos, ainda não implementados.
 
 ## Idioma: inglês por padrão, português opcional — FEITO (27/11)
-Seletor em Settings ("Language · Idioma"), salvo por aparelho. Texto em português é a chave (`this.tr()` no script, `{{ i18n.k }}` no template, tradução em `_EN`). Datas, ditado por voz, mensagens de erro e as respostas do Jarvis seguem o idioma. **Continuam em português:** o resumo de Notícias (vem de sites brasileiros) e tudo que o Sr. Douglas escreveu. **Regra:** texto novo entra nos dois idiomas.
+Seletor em Settings ("Language · Idioma"), salvo por aparelho. Texto em português é a chave (`this.tr()` no script, `{{ i18n.k }}` no template, tradução em `_EN`). Datas e mensagens seguem o idioma do app. O **Jarvis tem seletor próprio (EN | PT) no chat**, que vale pras respostas e pro ditado. **Continuam em português:** o resumo de Notícias (vem de sites brasileiros) e tudo que o Sr. Douglas escreveu. **Regra:** texto novo entra nos dois idiomas.
 
 ## Módulo financeiro — REMOVIDO (27/11, a pedido do Sr. Douglas)
 "Exclua totalmente o módulo financeiro, no futuro eu volto a mexer com isso" — saiu do app: as 4 telas (Dashboard, Lançamentos, Planejamento, Categorias), o cartão da Home, os modais, o perfil de moeda/meta de poupança, a exportação Excel, a "Zona de Perigo" e, no Jarvis, as 15 ferramentas e o resumo financeiro. A lista de **Ações da B3** na Home e as Notícias continuam. As seções antigas deste arquivo sobre finanças ficam só como histórico.

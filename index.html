@@ -627,6 +627,10 @@
                 <div style="padding: 12px 14px; border-bottom: 1px solid #151525; display: flex; align-items: center; gap: 8px; flex-shrink: 0;">
                   <img src="{{ jarvisLogoSrc }}" alt="" style="width: 17px; height: 17px; object-fit: contain; border-radius: 50%; flex-shrink: 0;">
                   <span style="font-size: 12px; font-weight: 700; color: #E2E8F0; flex: 1;">{{ jarvisDisplayName }}</span>
+                  <div title="{{ jarvisLangTitle }}" style="display: flex; align-items: center; gap: 2px; height: 24px; padding: 2px; box-sizing: border-box; border: 1px solid #1E2A45; border-radius: 7px; flex-shrink: 0;">
+                    <button onClick="{{ setJarvisLangEn }}" style="{{ jarvisLangEnStyle }}">EN</button>
+                    <button onClick="{{ setJarvisLangPt }}" style="{{ jarvisLangPtStyle }}">PT</button>
+                  </div>
                   <button onClick="{{ toggleJarvisVoiceMuted }}" title="{{ jarvisMuteTitle }}" style="background: none; border: none; color: #64748B; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 4px;">
                     <i class="{{ jarvisMuteIcon }}" style="font-size: 14px;"></i>
                   </button>
@@ -2009,6 +2013,10 @@
                   <span class="hud-status-dot" style="background: {{ jarvisStatusColor }}; box-shadow: 0 0 6px {{ jarvisStatusColor }};"></span>{{ jarvisStatusLabel }}
                 </div>
               </div>
+              <div title="{{ jarvisLangTitle }}" style="display: flex; align-items: center; gap: 2px; height: 34px; padding: 2px; box-sizing: border-box; border: 1px solid #1E2A45; border-radius: 7px; flex-shrink: 0;">
+                <button onClick="{{ setJarvisLangEn }}" style="{{ jarvisLangEnStyle }}">EN</button>
+                <button onClick="{{ setJarvisLangPt }}" style="{{ jarvisLangPtStyle }}">PT</button>
+              </div>
               <button onClick="{{ toggleJarvisVoiceMuted }}" title="{{ jarvisMuteTitle }}" style="width: 34px; height: 34px; border-radius: 8px; background: transparent; border: 1px solid #1E2A45; color: #64748B; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
                 <i class="{{ jarvisMuteIcon }}" style="font-size: 16px;"></i>
               </button>
@@ -2114,6 +2122,10 @@
               </div>
             </div>
             <div class="jarvis-font-display {{ jarvisGlitchClass }}" style="flex: 1; min-width: 0; font-size: 13px; font-weight: 700; color: #E2E8F0; letter-spacing: 0.3px;">{{ jarvisDisplayName }}</div>
+            <div title="{{ jarvisLangTitle }}" style="display: flex; align-items: center; gap: 2px; height: 28px; padding: 2px; box-sizing: border-box; border: 1px solid #1E2A45; border-radius: 7px; flex-shrink: 0;">
+              <button onClick="{{ setJarvisLangEn }}" style="{{ jarvisLangEnStyle }}">EN</button>
+              <button onClick="{{ setJarvisLangPt }}" style="{{ jarvisLangPtStyle }}">PT</button>
+            </div>
             <button onClick="{{ toggleJarvisVoiceMuted }}" title="{{ jarvisMuteTitle }}" style="width: 28px; height: 28px; border-radius: 7px; background: transparent; border: 1px solid #1E2A45; color: #64748B; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
               <i class="{{ jarvisMuteIcon }}" style="font-size: 14px;"></i>
             </button>
@@ -2490,6 +2502,7 @@ class Component extends DCLogic {
     screen: 'login',
     sidebarOpen: false,
     lang: (() => { try { return localStorage.getItem('tdv_lang') === 'pt' ? 'pt' : 'en'; } catch (_e) { return 'en'; } })(),
+    jarvisLang: (() => { try { return localStorage.getItem('tdv_jarvisLang') === 'pt' ? 'pt' : 'en'; } catch (_e) { return 'en'; } })(),
     isMobile: false,
     loginEmail: '',
     loginPassword: '',
@@ -3660,6 +3673,18 @@ class Component extends DCLogic {
     if (typeof document !== 'undefined' && document.documentElement) document.documentElement.lang = lang === 'pt' ? 'pt-BR' : 'en';
     this.setState({ lang });
   }
+  // O Jarvis tem idioma PRÓPRIO, escolhido no chat dele (independente do idioma do app): vale pras
+  // respostas e pro ditado/modo ao vivo, que é como o Sr. Douglas fala com ele.
+  jarvisLocale = () => (this.state.jarvisLang === 'pt' ? 'pt-BR' : 'en-US')
+  setJarvisLang = (lang) => {
+    if ((lang !== 'en' && lang !== 'pt') || lang === this.state.jarvisLang) return;
+    try { localStorage.setItem('tdv_jarvisLang', lang); } catch (_e) { /* sem armazenamento */ }
+    // Microfone aberto continuaria ouvindo no idioma antigo.
+    if (this.state.jarvisListening) this.toggleJarvisListening();
+    this.setState({ jarvisLang: lang });
+  }
+  setJarvisLangEn = () => this.setJarvisLang('en')
+  setJarvisLangPt = () => this.setJarvisLang('pt')
   setLangEn = () => this.setLang('en')
   setLangPt = () => this.setLang('pt')
   _langVals = () => {
@@ -3667,8 +3692,14 @@ class Component extends DCLogic {
       flex: 1, padding: '10px', borderRadius: '8px', cursor: 'pointer', fontFamily: 'inherit', fontSize: '13px', fontWeight: 600,
       border: on ? '1px solid #38BDF8' : '1px solid #1E2A45', background: on ? '#38BDF81F' : '#0D0D1A', color: on ? '#E0F2FE' : '#94A3B8',
     });
+    const jbtn = (on) => ({
+      padding: '0 7px', height: '100%', border: 'none', borderRadius: '5px', cursor: 'pointer', fontFamily: 'inherit', fontSize: '10px',
+      fontWeight: 700, letterSpacing: '0.5px', background: on ? '#38BDF82E' : 'transparent', color: on ? '#BAE6FD' : '#64748B',
+    });
     return {
       i18n: this._i18nVals(), setLangEn: this.setLangEn, setLangPt: this.setLangPt,
+      setJarvisLangEn: this.setJarvisLangEn, setJarvisLangPt: this.setJarvisLangPt, jarvisLangTitle: this.tr('Idioma do Jarvis'),
+      jarvisLangEnStyle: jbtn(this.state.jarvisLang !== 'pt'), jarvisLangPtStyle: jbtn(this.state.jarvisLang === 'pt'),
       langEnStyle: btn(this.state.lang !== 'pt'), langPtStyle: btn(this.state.lang === 'pt'),
     };
   }
@@ -3937,6 +3968,7 @@ class Component extends DCLogic {
   }
 
   _EN = {
+    "Idioma do Jarvis": "Jarvis language",
     "falando…": "speaking…",
     "processando…": "processing…",
     "ouvindo…": "listening…",
@@ -4829,7 +4861,7 @@ class Component extends DCLogic {
   _startJarvisDictation = () => {
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     const rec = new SR();
-    rec.lang = this.locale(); // ditado no mesmo idioma da interface
+    rec.lang = this.jarvisLocale(); // ditado no idioma escolhido no chat do Jarvis
     rec.continuous = true;
     rec.interimResults = true;
     rec.onresult = (e) => {
@@ -5090,7 +5122,7 @@ class Component extends DCLogic {
         resp = await fetch('https://evkpskwjzbyzpvvodnwf.supabase.co/functions/v1/jarvis-chat', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + accessToken },
-          body: JSON.stringify({ message: text, model: s.jarvisModel, conversation_id: s.jarvisConversationId, screen_context: this._screenContext(), lang: s.lang }),
+          body: JSON.stringify({ message: text, model: s.jarvisModel, conversation_id: s.jarvisConversationId, screen_context: this._screenContext(), lang: s.jarvisLang }),
           signal: ctrl.signal,
         });
       } catch (fetchErr) {
@@ -5387,7 +5419,7 @@ class Component extends DCLogic {
     const LIVE_MAX_WAIT_MS = 12000;
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     const rec = new SR();
-    rec.lang = this.locale(); // ditado no mesmo idioma da interface
+    rec.lang = this.jarvisLocale(); // ditado no idioma escolhido no chat do Jarvis
     rec.continuous = true;
     rec.interimResults = true;
     let finalTranscript = '';

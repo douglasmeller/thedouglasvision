@@ -494,12 +494,28 @@ async function resolveCategoryId(sb: SupabaseClient, name: string): Promise<{ id
 
 // Pastas de anotações são diferentes de categoria: acham OU criam (na raiz) — o Jarvis não deveria
 // ter que pedir pro Douglas criar a pasta antes só pra colocar uma nota nela.
+// Mesma regra do app: nome de pasta é único nas Anotações inteiras, sem ligar pra maiúscula, acento
+// nem espaço sobrando.
+function foldName(s: string): string {
+  return String(s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/\s+/g, " ").trim();
+}
+
+// Procura em TODAS as pastas (raiz e subpastas). Se houver gêmeas antigas, prefere a da raiz.
+async function findFolderByName(sb: SupabaseClient, name: string): Promise<{ id?: string; error?: string }> {
+  const { data, error } = await sb.from("note_folders").select("id, name, parent_folder_id");
+  if (error) return { error: error.message };
+  const key = foldName(name);
+  const matches = (data || []).filter((f: any) => foldName(f.name) === key);
+  const found = matches.find((f: any) => !f.parent_folder_id) || matches[0];
+  return { id: found ? found.id : undefined };
+}
+
 async function resolveOrCreateFolderId(sb: SupabaseClient, userId: string, name: string): Promise<{ id?: string; error?: string }> {
-  const trimmed = name.trim();
+  const trimmed = name.trim().replace(/\s+/g, " ");
   if (!trimmed) return { id: undefined };
-  const { data: existing, error: findErr } = await sb.from("note_folders").select("id").ilike("name", trimmed).is("parent_folder_id", null).maybeSingle();
-  if (findErr) return { error: findErr.message };
-  if (existing) return { id: existing.id };
+  const existing = await findFolderByName(sb, trimmed);
+  if (existing.error) return { error: existing.error };
+  if (existing.id) return { id: existing.id };
   const { data: created, error: createErr } = await sb.from("note_folders").insert({ id: genId("nf"), user_id: userId, name: trimmed }).select("id").single();
   if (createErr) return { error: createErr.message };
   return { id: created.id };
@@ -1145,9 +1161,9 @@ async function executeTool(sb: SupabaseClient, userId: string, name: string, inp
       if (input.search) q = q.ilike("title", `%${input.search}%`);
       if (input.folder_name) {
         // Só busca (não cria) — listar não deveria criar uma pasta vazia por engano.
-        const { data: folder, error: folderErr } = await sb.from("note_folders").select("id").ilike("name", input.folder_name.trim()).maybeSingle();
-        if (folderErr) return { error: folderErr.message };
-        if (!folder) return { notes: [], aviso: `Nenhuma pasta chamada "${input.folder_name}" foi encontrada.` };
+        const folder = await findFolderByName(sb, input.folder_name);
+        if (folder.error) return { error: folder.error };
+        if (!folder.id) return { notes: [], aviso: `Nenhuma pasta chamada "${input.folder_name}" foi encontrada.` };
         q = q.eq("folder_id", folder.id);
       }
       const { data, error } = await q;

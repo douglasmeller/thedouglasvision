@@ -2689,6 +2689,9 @@
                 </div>
                 <div class="hud-label" style="margin-bottom: 7px;">NOME</div>
                 <input type="text" autofocus value="{{ folderName }}" onInput="{{ setFolderName }}" placeholder="Nome da pasta" style="width: 100%; box-sizing: border-box; background: #0D0D16; border: 1px solid #1B2438; border-radius: 8px; padding: 11px 14px; color: #E2E8F0; font-size: 14px; font-family: inherit; margin-bottom: 16px;">
+                <sc-if value="{{ hasFolderError }}" hint-placeholder-val="{{ false }}">
+                  <div style="font-size: 12px; color: #F87171; line-height: 1.5; margin: -6px 0 14px;">{{ folderError }}</div>
+                </sc-if>
                 <button onClick="{{ saveFolder }}" class="hud-btn-primary" style="width: 100%; justify-content: center; padding: 12px;">Salvar</button>
               </div>
             </div>
@@ -8409,15 +8412,33 @@ class Component extends DCLogic {
     return ids;
   }
 
-  openNewFolderModal = () => this.setState({ showFolderModal: true, folderModalParentId: this.state.currentFolderId, folderName: '', editFolderId: null })
-  openRenameFolderModal = (folder) => this.setState({ showFolderModal: true, folderModalParentId: folder.parentFolderId, folderName: folder.name, editFolderId: folder.id })
+  openNewFolderModal = () => this.setState({ showFolderModal: true, folderModalParentId: this.state.currentFolderId, folderName: '', editFolderId: null, folderError: '' })
+  openRenameFolderModal = (folder) => this.setState({ showFolderModal: true, folderModalParentId: folder.parentFolderId, folderName: folder.name, editFolderId: folder.id, folderError: '' })
   closeFolderModal = () => this.setState({ showFolderModal: false })
-  setFolderName = (e) => this.setState({ folderName: e.target.value })
+  setFolderName = (e) => this.setState({ folderName: e.target.value, folderError: '' })
+
+  // Nome de pasta é único nas Anotações inteiras (não só no mesmo nível). "Itaú", "itau " e "ITAU"
+  // contam como o mesmo nome. O Jarvis segue a mesma regra na jarvis-chat (foldName).
+  _folderNameKey = (name) => this._foldText(name).replace(/\s+/g, ' ').trim()
+  _findFolderByName = (name, exceptId) => {
+    const key = this._folderNameKey(name);
+    return this.state.noteFolders.find(f => f.id !== exceptId && this._folderNameKey(f.name) === key) || null;
+  }
 
   saveFolder = async () => {
     const s = this.state;
-    const name = s.folderName.trim();
+    const name = s.folderName.trim().replace(/\s+/g, ' ');
     if (!name) return;
+    const atual = s.editFolderId ? s.noteFolders.find(f => f.id === s.editFolderId) : null;
+    // Só confere quando o nome muda de verdade: ajustar maiúscula/acento da própria pasta (mesmo
+    // que ela já tenha uma gêmea antiga) continua permitido.
+    const mudouNome = !atual || this._folderNameKey(atual.name) !== this._folderNameKey(name);
+    const igual = mudouNome ? this._findFolderByName(name, s.editFolderId) : null;
+    if (igual) {
+      const onde = this._folderPath(igual.parentFolderId).map(f => f.name).join(' / ');
+      this.setState({ folderError: 'Já existe uma pasta chamada "' + igual.name + '"' + (onde ? ' dentro de ' + onde : '') + '. Escolha outro nome.' });
+      return;
+    }
     if (s.editFolderId) {
       this.setState({ noteFolders: s.noteFolders.map(f => f.id === s.editFolderId ? { ...f, name } : f), showFolderModal: false });
       await this._dbCheck(window._sb.from('note_folders').update({ name }).eq('id', s.editFolderId), 'Não foi possível renomear a pasta. Tente novamente.');
@@ -11397,6 +11418,7 @@ class Component extends DCLogic {
       showFolderModal: s.showFolderModal, closeFolderModal: this.closeFolderModal,
       folderModalTitle: s.editFolderId ? 'Renomear pasta' : 'Nova pasta',
       folderName: s.folderName, setFolderName: this.setFolderName, saveFolder: this.saveFolder,
+      folderError: s.folderError || '', hasFolderError: !!s.folderError,
       showMoveModal: s.showMoveModal, closeMoveModal: this.closeMoveModal, moveFolderOptions,
       newNote: this.newNote,
       editingNoteId: s.editingNoteId,

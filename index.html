@@ -62,6 +62,59 @@
     .note-body li { margin: 2px 0; }
     .note-body blockquote { margin: 8px 0; padding-left: 14px; border-left: 3px solid #334155; font-style: italic; color: #CBD5E1; }
     .note-body table { border-collapse: collapse; }
+    /* ═══ Abertura do cofre (~2s): combinação girando → travas recolhem e acende verde → as duas
+       folhas da porta correm pros lados. Tudo em CSS; tocar na tela pula. ═══ */
+    .tdv-vo { position: fixed; inset: 0; z-index: 290; overflow: hidden; cursor: pointer; }
+    .tdv-vo-door { position: absolute; top: 0; bottom: 0; width: calc(50% + 0.5px); background-color: #05070D;
+      background-image: linear-gradient(#38BDF80C 1px, transparent 1px), linear-gradient(90deg, #38BDF80C 1px, transparent 1px); background-size: 34px 34px;
+      animation: tdvDoorL 0.6s cubic-bezier(0.7, 0, 0.2, 1) 1.42s forwards; }
+    .tdv-vo-door.l { left: 0; border-right: 1px solid #38BDF8AA; box-shadow: 6px 0 30px #38BDF833; }
+    .tdv-vo-door.r { right: 0; border-left: 1px solid #38BDF8AA; box-shadow: -6px 0 30px #38BDF833; animation-name: tdvDoorR; }
+    @keyframes tdvDoorL { to { transform: translateX(-102%); } }
+    @keyframes tdvDoorR { to { transform: translateX(102%); } }
+    .tdv-vo-rain { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0.34; animation: tdvVoOut 0.3s ease 1.28s forwards; }
+    .tdv-vo-center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 22px;
+      animation: tdvCenterOut 0.34s ease-in 1.34s forwards; }
+    @keyframes tdvVoOut { to { opacity: 0; } }
+    @keyframes tdvCenterOut { to { opacity: 0; transform: scale(1.18); } }
+    .tdv-vo-dial { position: relative; width: 210px; height: 210px; animation: tdvDialIn 0.28s cubic-bezier(0.2, 0.9, 0.3, 1.3) both; }
+    @keyframes tdvDialIn { from { opacity: 0; transform: scale(0.7); } to { opacity: 1; transform: scale(1); } }
+    .tdv-vo-dial svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+    .tdv-vo-ring { fill: none; stroke: #38BDF8; transform-origin: 105px 105px; animation: tdvStroke 0.2s ease 1.0s forwards; }
+    @keyframes tdvStroke { to { stroke: #22C55E; } }
+    /* os giros param e voltam, como quem acerta uma combinação */
+    .tdv-vo-ticks { animation: tdvSpinA 1.05s cubic-bezier(0.65, 0, 0.35, 1) both, tdvStroke 0.2s ease 1.0s forwards; }
+    .tdv-vo-arcs { animation: tdvSpinB 1.05s cubic-bezier(0.65, 0, 0.35, 1) both, tdvStroke 0.2s ease 1.0s forwards; }
+    @keyframes tdvSpinA { 0% { transform: rotate(0deg); } 34% { transform: rotate(150deg); } 66% { transform: rotate(40deg); } 100% { transform: rotate(250deg); } }
+    @keyframes tdvSpinB { 0% { transform: rotate(0deg); } 34% { transform: rotate(-210deg); } 66% { transform: rotate(-90deg); } 100% { transform: rotate(-360deg); } }
+    .tdv-vo-bolt { position: absolute; left: 50%; top: 50%; width: 26px; height: 8px; margin: -4px 0 0 -13px; border-radius: 2px; background: #38BDF8; box-shadow: 0 0 10px #38BDF8;
+      animation: tdvBolt 0.24s cubic-bezier(0.6, 0, 0.2, 1) 1.02s both; }
+    @keyframes tdvBolt { from { transform: rotate(var(--a)) translateX(62px); } to { transform: rotate(var(--a)) translateX(40px); background: #22C55E; box-shadow: 0 0 12px #22C55E; } }
+    .tdv-vo-core { position: absolute; left: 50%; top: 50%; width: 76px; height: 76px; margin: -38px 0 0 -38px; border-radius: 50%; background: #0B1322; border: 1.5px solid #38BDF8; box-shadow: 0 0 22px #38BDF866, inset 0 0 18px #38BDF833;
+      animation: tdvCore 0.26s ease 1.04s forwards; }
+    @keyframes tdvCore { to { border-color: #22C55E; box-shadow: 0 0 30px #22C55E99, inset 0 0 20px #22C55E44; transform: scale(1.1); } }
+    .tdv-vo-core i { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 32px; }
+    .tdv-vo-closed { color: #7DD3FC; animation: tdvVoOut 0.1s linear 1.06s forwards; }
+    .tdv-vo-open { color: #4ADE80; opacity: 0; animation: tdvUnlock 0.3s cubic-bezier(0.2, 0.9, 0.3, 1.6) 1.1s forwards; }
+    @keyframes tdvUnlock { from { opacity: 0; transform: scale(0.5) rotate(-18deg); } to { opacity: 1; transform: scale(1) rotate(0); } }
+    .tdv-vo-pulse { position: absolute; left: 50%; top: 50%; width: 90px; height: 90px; margin: -45px 0 0 -45px; border-radius: 50%; border: 2px solid #22C55E; opacity: 0; animation: tdvPulse 0.5s ease-out 1.12s forwards; }
+    @keyframes tdvPulse { 0% { opacity: 0.9; transform: scale(0.9); } 100% { opacity: 0; transform: scale(2.9); } }
+    .tdv-vo-text { position: relative; height: 16px; width: 280px; text-align: center; font-size: 11px; letter-spacing: 4px; font-weight: 700; }
+    .tdv-vo-text span { position: absolute; left: 0; right: 0; white-space: nowrap; }
+    .tdv-vo-text .a { color: #7DD3FC; animation: tdvVoOut 0.1s linear 1.04s forwards; }
+    .tdv-vo-text .b { color: #4ADE80; opacity: 0; text-shadow: 0 0 12px #22C55E; animation: tdvVoIn 0.18s ease 1.1s forwards; }
+    @keyframes tdvVoIn { to { opacity: 1; } }
+    .tdv-vo-bar { width: 220px; height: 3px; border-radius: 2px; background: #101A2E; overflow: hidden; }
+    .tdv-vo-bar div { height: 100%; width: 100%; transform-origin: left; background: linear-gradient(90deg, #2563EB, #38BDF8); animation: tdvBar 1.04s cubic-bezier(0.5, 0.1, 0.3, 1) both, tdvBarOk 0.2s ease 1.04s forwards; }
+    @keyframes tdvBar { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+    @keyframes tdvBarOk { to { background: #22C55E; } }
+    /* As entradas do cofre sobem uma a uma enquanto a porta abre */
+    .tdv-vault-reveal > * { animation: tdvRise 0.42s cubic-bezier(0.2, 0.8, 0.2, 1) 1.62s both; }
+    .tdv-vault-reveal > *:nth-child(2) { animation-delay: 1.68s; } .tdv-vault-reveal > *:nth-child(3) { animation-delay: 1.74s; }
+    .tdv-vault-reveal > *:nth-child(4) { animation-delay: 1.8s; } .tdv-vault-reveal > *:nth-child(5) { animation-delay: 1.86s; }
+    .tdv-vault-reveal > *:nth-child(n+6) { animation-delay: 1.92s; }
+    @keyframes tdvRise { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: translateY(0); } }
+    @media (prefers-reduced-motion: reduce) { .tdv-vo { display: none; } .tdv-vault-reveal > * { animation: none !important; } }
     /* Menu lateral: uma curva só pra tudo (largura, textos, rodapé, botão), pra abrir e fechar como
        uma peça única. Os ícones não saem do lugar; os textos deslizam e esmaecem. */
     .tdv-side, .tdv-side-anim { transition-duration: 0.34s !important; transition-timing-function: cubic-bezier(0.32, 0.72, 0, 1) !important; }
@@ -940,7 +993,7 @@
               </sc-if>
 
               <sc-if value="{{ vaultHasRows }}" hint-placeholder-val="{{ false }}">
-                <div style="display: flex; flex-direction: column; gap: 8px;">
+                <div class="{{ vaultListClass }}" style="display: flex; flex-direction: column; gap: 8px;">
                   <sc-for list="{{ vaultRows }}" as="vr" hint-placeholder-count="4">
                     <sc-if value="{{ vr.isFolder }}" hint-placeholder-val="{{ false }}">
                       <div style="display: flex; align-items: center; gap: 12px; background: #111118; border: 1px solid #151525; border-radius: 12px; padding: 12px 14px;">
@@ -2332,6 +2385,32 @@
       </div>
     </sc-if>
 
+    <!-- ── Cofre: animação de abertura ── -->
+    <sc-if value="{{ vaultAnim }}" hint-placeholder-val="{{ false }}">
+      <div class="tdv-vo" onClick="{{ vaultSkipAnim }}">
+        <div class="tdv-vo-door l"></div>
+        <div class="tdv-vo-door r"></div>
+        <canvas id="vault-rain" class="tdv-vo-rain"></canvas>
+        <div class="tdv-vo-center">
+          <div class="tdv-vo-dial">
+            <svg viewBox="0 0 210 210">
+              <circle class="tdv-vo-ring" cx="105" cy="105" r="101" stroke-width="1" opacity="0.5"></circle>
+              <circle class="tdv-vo-ring tdv-vo-ticks" cx="105" cy="105" r="92" stroke-width="9" stroke-dasharray="1.5 8.13" opacity="0.85"></circle>
+              <circle class="tdv-vo-ring tdv-vo-arcs" cx="105" cy="105" r="78" stroke-width="3" stroke-dasharray="86 36 22 36 130 36 40 104" stroke-linecap="round"></circle>
+            </svg>
+            <span class="tdv-vo-bolt" style="--a: 0deg;"></span>
+            <span class="tdv-vo-bolt" style="--a: 90deg;"></span>
+            <span class="tdv-vo-bolt" style="--a: 180deg;"></span>
+            <span class="tdv-vo-bolt" style="--a: 270deg;"></span>
+            <span class="tdv-vo-pulse"></span>
+            <div class="tdv-vo-core"><i class="ph ph-lock-simple tdv-vo-closed"></i><i class="ph ph-lock-simple-open tdv-vo-open"></i></div>
+          </div>
+          <div class="jarvis-font-display tdv-vo-text"><span class="a">{{ vaultAnimWork }}</span><span class="b">{{ vaultAnimDone }}</span></div>
+          <div class="tdv-vo-bar"><div></div></div>
+        </div>
+      </div>
+    </sc-if>
+
     <!-- ── Cofre: nova/editar senha ── -->
     <sc-if value="{{ showVaultItemModal }}" hint-placeholder-val="{{ false }}">
       <div style="position: fixed; inset: 0; background: #00000099; z-index: 200; display: flex; align-items: center; justify-content: center; padding: 16px;">
@@ -2593,7 +2672,7 @@ class Component extends DCLogic {
     // Cofre de Senhas (nada disso persiste: tudo some ao trancar)
     vaultStatus: 'idle', // idle | checking | setup | locked | unlocked | error
     vaultMode: 'pw', vaultSetupStep: 'password', vaultPwInput: '', vaultRecInput: '', vaultError: '', vaultBusy: false,
-    vaultNewRecKey: '', vaultRecAck: false, vaultAutoLock: 5,
+    vaultNewRecKey: '', vaultRecAck: false, vaultAutoLock: 5, vaultAnim: false,
     vaultItems: [], vaultFolderId: null, vaultSearch: '', vaultRevealed: {},
     showVaultItemModal: false, vaultEditId: null, vFName: '', vFSite: '', vFUser: '', vFPass: '', vFNotes: '', vFFolder: '', vFShowPass: false,
     vGenLen: 20, vGenUpper: true, vGenDigits: true, vGenSymbols: true,
@@ -2792,6 +2871,7 @@ class Component extends DCLogic {
     this._syncAgendaMap();
     this._syncJarvisRain();
     this._syncJarvisLiveRain();
+    this._syncVaultRain();
     // O framework (support.js) chama componentDidUpdate(prevProps) — SÓ as props, nunca o estado
     // anterior. Esta função já foi escrita como (prevProps, prevState): prevState vinha sempre
     // undefined, "prevState.screen" estourava na primeira linha a cada atualização, o framework
@@ -3236,7 +3316,7 @@ class Component extends DCLogic {
       this._vaultFails = 0;
       this._vaultStartGuard();
       this.setState({
-        vaultStatus: 'unlocked', vaultItems: [], vaultFolderId: null, vaultBusy: false, vaultError: '',
+        vaultAnim: this._vaultStartOpening(), vaultStatus: 'unlocked', vaultItems: [], vaultFolderId: null, vaultBusy: false, vaultError: '',
         vaultPwInput: '', vaultNewRecKey: '', vaultRecAck: false, vaultAutoLock: 5, vaultSetupStep: 'password',
       });
       this._toast(this.tr('Cofre criado e aberto.'));
@@ -3263,7 +3343,7 @@ class Component extends DCLogic {
     this._vaultFails = 0;
     this._vaultStartGuard();
     this.setState({
-      vaultStatus: 'unlocked', vaultItems: items, vaultFolderId: null, vaultBusy: false, vaultError: '',
+      vaultAnim: this._vaultStartOpening(), vaultStatus: 'unlocked', vaultItems: items, vaultFolderId: null, vaultBusy: false, vaultError: '',
       vaultPwInput: '', vaultRecInput: '', vaultMode: 'pw', vaultSearch: '', vaultRevealed: {},
     });
     if (falhas) this._toast(this.tr('{n} item(ns) não puderam ser abertos (dados corrompidos).', { n: falhas }));
@@ -3327,6 +3407,25 @@ class Component extends DCLogic {
     }
   }
 
+  // Animação de abertura. Entra no MESMO setState que destranca, pra o conteúdo nunca piscar antes
+  // da porta. É só enfeite: o cofre já está aberto por baixo, e tocar na tela pula.
+  _VAULT_ANIM_MS = 2400
+  _vaultStartOpening = () => {
+    this._vaultStopOpening();
+    const calmo = typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (calmo) return false;
+    const sons = [[60, 1500, 0.025], [300, 1350, 0.025], [520, 1500, 0.025], [760, 1700, 0.025], [1080, 660, 0.12], [1190, 990, 0.2]];
+    this._vaultAnimTimers = sons.map(([quando, freq, dur]) => setTimeout(() => this._playHudTone(freq, dur, 'sine'), quando));
+    this._vaultAnimTimers.push(setTimeout(() => this.setState({ vaultAnim: false }), this._VAULT_ANIM_MS));
+    return true;
+  }
+  _vaultStopOpening = () => {
+    (this._vaultAnimTimers || []).forEach(clearTimeout);
+    this._vaultAnimTimers = [];
+  }
+  vaultSkipAnim = () => { this._vaultStopOpening(); this.setState({ vaultAnim: false }); }
+  _syncVaultRain = () => this._syncRainCanvas('vault-rain', () => !!this.state.vaultAnim)
+
   vaultUseRecovery = () => this.setState({ vaultMode: 'rec', vaultError: '' })
   vaultUsePassword = () => this.setState({ vaultMode: 'pw', vaultError: '', vaultRecInput: '' })
 
@@ -3336,10 +3435,11 @@ class Component extends DCLogic {
     this._vaultKey = null;
     this._vaultPending = null;
     this._vaultStopGuard();
+    this._vaultStopOpening();
     clearTimeout(this._vaultClipTimer);
     if (fim) this._vaultMeta = null;
     this.setState({
-      vaultStatus: fim ? 'idle' : (this._vaultMeta ? 'locked' : 'idle'),
+      vaultAnim: false, vaultStatus: fim ? 'idle' : (this._vaultMeta ? 'locked' : 'idle'),
       vaultItems: [], vaultFolderId: null, vaultSearch: '', vaultRevealed: {}, vaultPwInput: '', vaultRecInput: '',
       vaultMode: 'pw', vaultError: '', vaultBusy: false, vaultNewRecKey: '', vaultRecAck: false, vaultSetupStep: 'password',
       showVaultItemModal: false, showVaultFolderModal: false, showVaultSettings: false, showVaultRecKey: false, vaultConfirmDelete: null,
@@ -3621,6 +3721,8 @@ class Component extends DCLogic {
       vaultShowSetup: st === 'setup', vaultShowSetupPw: st === 'setup' && s.vaultSetupStep === 'password',
       vaultShowSetupKey: st === 'setup' && s.vaultSetupStep === 'showkey',
       vaultShowLocked: st === 'locked', vaultShowUnlocked: st === 'unlocked',
+      vaultAnim: !!s.vaultAnim, vaultSkipAnim: this.vaultSkipAnim, vaultListClass: s.vaultAnim ? 'tdv-vault-reveal' : '',
+      vaultAnimWork: this.tr('DECIFRANDO…'), vaultAnimDone: this.tr('COFRE ABERTO'),
       vaultModeIsPw: s.vaultMode !== 'rec', vaultModeIsRec: s.vaultMode === 'rec',
       vaultPwInput: s.vaultPwInput, vaultRecInput: s.vaultRecInput, vaultError: s.vaultError, hasVaultError: !!s.vaultError,
       vaultBusy: s.vaultBusy, vaultNotBusy: !s.vaultBusy,
@@ -3968,6 +4070,8 @@ class Component extends DCLogic {
   }
 
   _EN = {
+    "DECIFRANDO…": "DECRYPTING…",
+    "COFRE ABERTO": "VAULT OPEN",
     "Idioma do Jarvis": "Jarvis language",
     "falando…": "speaking…",
     "processando…": "processing…",

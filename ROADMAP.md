@@ -2,6 +2,12 @@
 
 Ideias e próximos passos discutidos, ainda não implementados.
 
+## Módulo financeiro — REMOVIDO (27/11, a pedido do Sr. Douglas)
+"Exclua totalmente o módulo financeiro, no futuro eu volto a mexer com isso" — saiu do app: as 4 telas (Dashboard, Lançamentos, Planejamento, Categorias), o cartão da Home, os modais, o perfil de moeda/meta de poupança, a exportação Excel, a "Zona de Perigo" e, no Jarvis, as 15 ferramentas e o resumo financeiro. A lista de **Ações da B3** na Home e as Notícias continuam. As seções antigas deste arquivo sobre finanças ficam só como histórico.
+- **Como voltar:** o último estado completo está na tag do Git `pre-remocao-financeiro`.
+- **Dados:** as tabelas `transactions`, `categories`, `goals`, `recurring_expenses` e `card_settings` **não foram apagadas** — o app só deixou de ler. Apagar é decisão separada do Sr. Douglas.
+- Caem da fila: reformulação do Dashboard (as 3 direções) e o reset financeiro.
+
 ## Fila atual (pedidos de 22/09)
 Feita depois do Sr. Douglas pedir explicitamente pra NÃO fazer tudo de uma vez ("se fizer vai ficar
 meia boca, eu quero tudo com excelência"). Por isso está quebrada em fases pequenas, cada uma

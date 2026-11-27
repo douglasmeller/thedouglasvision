@@ -62,6 +62,12 @@
     .note-body li { margin: 2px 0; }
     .note-body blockquote { margin: 8px 0; padding-left: 14px; border-left: 3px solid #334155; font-style: italic; color: #CBD5E1; }
     .note-body table { border-collapse: collapse; }
+    /* Menu lateral: uma curva só pra tudo (largura, textos, rodapé, botão), pra abrir e fechar como
+       uma peça única. Os ícones não saem do lugar; os textos deslizam e esmaecem. */
+    .tdv-side, .tdv-side-anim { transition-duration: 0.34s !important; transition-timing-function: cubic-bezier(0.32, 0.72, 0, 1) !important; }
+    .tdv-side { overflow: hidden; will-change: width, transform; }
+    .tdv-scrim { position: fixed; inset: 0; background: #00000099; z-index: 99; transition: opacity 0.34s cubic-bezier(0.32, 0.72, 0, 1), visibility 0.34s; }
+    @media (prefers-reduced-motion: reduce) { .tdv-side, .tdv-side-anim, .tdv-scrim { transition: none !important; } }
     /* Agenda: o item arrastado vira um "fantasma" que acompanha o ponteiro. */
     body.tdv-agenda-dragging, body.tdv-agenda-dragging * { cursor: grabbing !important; user-select: none !important; -webkit-user-select: none !important; }
     .tdv-agenda-ghost { position: fixed; margin: 0; z-index: 400; pointer-events: none; box-sizing: border-box; overflow: hidden; border-radius: 6px;
@@ -512,8 +518,8 @@
   <div style="display: flex; height: {{ appShellHeight }}; background: #0A0A0F; overflow: hidden; position: relative;">
 
     <!-- Overlay mobile -->
-    <sc-if value="{{ showOverlay }}" hint-placeholder-val="{{ false }}">
-      <div onClick="{{ closeSidebar }}" style="position: fixed; inset: 0; background: #00000099; z-index: 99;"></div>
+    <sc-if value="{{ isMobile }}" hint-placeholder-val="{{ false }}">
+      <div class="tdv-scrim" onClick="{{ closeSidebar }}" style="{{ scrimStyle }}"></div>
     </sc-if>
 
     <!-- Command palette (Ctrl/Cmd+K) — sem fechar ao clicar fora, igual a todos os outros modais do app. -->
@@ -541,21 +547,19 @@
     </sc-if>
 
     <!-- ── Sidebar ── -->
-    <nav style="{{ sidebarStyle }}">
-      <div style="{{ sidebarHeaderStyle }}">
+    <nav class="tdv-side" style="{{ sidebarStyle }}">
+      <div class="tdv-side-anim" style="{{ sidebarHeaderStyle }}">
         <div style="{{ logoRowStyle }}">
           <img src="/uploads/tdv-logo.png" alt="" style="width: 44px; height: 44px; flex-shrink: 0; object-fit: contain; filter: brightness(1.3) drop-shadow(0 0 6px #38BDF866);">
-          <sc-if value="{{ sidebarExpanded }}" hint-placeholder-val="{{ true }}">
-            <div>
+            <div class="tdv-side-anim" style="{{ sideTitleStyle }}">
               <div style="font-size: 13px; font-weight: 700; background: linear-gradient(135deg, #60A5FA, #22D3EE); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; letter-spacing: -0.3px;">TheDouglasVision</div>
               <div class="jarvis-font" style="display: flex; align-items: center; gap: 5px; font-size: 10px; color: #7C8AA0; letter-spacing: 1.5px; margin-top: 2px; font-weight: 500;">
                 <span class="hud-status-dot"></span>SISTEMA ONLINE
               </div>
             </div>
-          </sc-if>
         </div>
         <sc-if value="{{ isDesktop }}" hint-placeholder-val="{{ true }}">
-          <button onClick="{{ toggleSidebarCollapse }}" title="Recolher/expandir menu" style="{{ collapseToggleStyle }}">
+          <button class="tdv-side-anim" onClick="{{ toggleSidebarCollapse }}" title="Recolher/expandir menu" style="{{ collapseToggleStyle }}">
             <i class="{{ collapseToggleIcon }}" style="font-size: 13px;"></i>
           </button>
         </sc-if>
@@ -569,24 +573,18 @@
             <sc-if value="{{ nav.notJarvisIcon }}" hint-placeholder-val="{{ true }}">
               <i class="{{ nav.iconClass }}" style="font-size: 17px; flex-shrink: 0;"></i>
             </sc-if>
-            <sc-if value="{{ sidebarExpanded }}" hint-placeholder-val="{{ true }}">
-              <span>{{ nav.label }}</span>
-            </sc-if>
+            <span class="tdv-side-anim" style="{{ sideLabelStyle }}">{{ nav.label }}</span>
           </button>
         </sc-for>
       </div>
       <div style="{{ sidebarFooterStyle }}">
-        <sc-if value="{{ sidebarExpanded }}" hint-placeholder-val="{{ true }}">
-          <div class="jarvis-font" style="display: flex; flex-direction: column; gap: 4px; font-size: 10px; color: #7C8AA0; letter-spacing: 1px; margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px solid #1E2433;">
+          <div class="jarvis-font tdv-side-anim" style="{{ sideClockStyle }}">
             <div style="display: flex; justify-content: space-between;"><span>HORA LOCAL</span><span style="color: #CBD5E1;">{{ hudClockLabel }}</span></div>
             <div style="display: flex; justify-content: space-between;"><span>SYNC</span><span style="color: #CBD5E1;">{{ hudSyncLabel }}</span></div>
           </div>
-        </sc-if>
         <button onClick="{{ handleLogout }}" title="Sair" style="{{ logoutBtnStyle }}">
-          <i class="ph ph-sign-out" style="font-size: 13px;"></i>
-          <sc-if value="{{ sidebarExpanded }}" hint-placeholder-val="{{ true }}">
-            <span>Sair</span>
-          </sc-if>
+          <i class="ph ph-sign-out" style="font-size: 13px; flex-shrink: 0;"></i>
+          <span class="tdv-side-anim" style="{{ sideLabelStyle }}">Sair</span>
         </button>
       </div>
     </nav>
@@ -7366,29 +7364,47 @@ class Component extends DCLogic {
       position: 'fixed', left: 0, top: 0, bottom: 0, zIndex: 100, width: '240px',
       background: '#0D0D1A', borderRight: '1px solid #151525',
       transform: sidebarOpen ? 'translateX(0)' : 'translateX(-100%)',
-      transition: 'transform 0.25s cubic-bezier(.4,0,.2,1)',
+      transitionProperty: 'transform',
       display: 'flex', flexDirection: 'column', padding: '20px 0',
     } : {
       width: sidebarWidth, minWidth: sidebarWidth, background: '#0D0D1A', borderRight: '1px solid #151525',
       display: 'flex', flexDirection: 'column', padding: '20px 0', height: '100vh',
-      position: 'sticky', top: 0, transition: 'width 0.2s ease, min-width 0.2s ease',
+      position: 'sticky', top: 0, transitionProperty: 'width, min-width', flexShrink: 0,
     };
+    // Posições fixas nos dois estados: a logo fica no mesmo x, e o botão de recolher VIAJA da
+    // direita do cabeçalho pra baixo da logo, em vez de o cabeçalho trocar de linha pra coluna.
     const collapseToggleStyle = {
       display: 'flex', alignItems: 'center', justifyContent: 'center',
-      width: '26px', height: '26px', borderRadius: '7px', flexShrink: 0,
-      background: 'transparent', border: '1px solid #2A3A5C', color: '#94A3B8',
-      cursor: 'pointer', transition: 'all 0.15s',
+      width: '26px', height: '26px', borderRadius: '7px', flexShrink: 0, padding: 0,
+      background: 'transparent', border: '1px solid #2A3A5C', color: '#94A3B8', cursor: 'pointer',
+      position: 'absolute', left: sidebarCollapsed ? '23px' : '200px', top: sidebarCollapsed ? '52px' : '9px',
+      transitionProperty: 'left, top, filter',
     };
-    const logoRowStyle = { display: 'flex', alignItems: 'center', gap: '9px', justifyContent: sidebarCollapsed ? 'center' : 'flex-start' };
+    const logoRowStyle = { display: 'flex', alignItems: 'center', gap: '9px', height: '44px', whiteSpace: 'nowrap' };
     const sidebarHeaderStyle = {
-      padding: sidebarCollapsed ? '0 12px 18px' : '0 16px 18px',
-      borderBottom: '1px solid #151525',
-      display: 'flex', alignItems: 'center',
-      flexDirection: sidebarCollapsed ? 'column' : 'row',
-      justifyContent: sidebarCollapsed ? 'center' : 'space-between',
-      gap: '10px',
+      position: 'relative', flexShrink: 0, boxSizing: 'border-box',
+      padding: '0 0 0 14px', height: sidebarCollapsed ? '96px' : '62px',
+      borderBottom: '1px solid #151525', transitionProperty: 'height',
     };
-    const sidebarFooterStyle = { padding: sidebarCollapsed ? '14px 12px' : '14px 20px', borderTop: '1px solid #151525' };
+    const sideTitleStyle = {
+      opacity: sidebarCollapsed ? 0 : 1, transform: sidebarCollapsed ? 'translateX(-8px)' : 'translateX(0)',
+      pointerEvents: sidebarCollapsed ? 'none' : 'auto', transitionProperty: 'opacity, transform',
+    };
+    const sideLabelStyle = {
+      whiteSpace: 'nowrap', overflow: 'hidden', opacity: sidebarCollapsed ? 0 : 1, maxWidth: sidebarCollapsed ? '0px' : '170px',
+      transform: sidebarCollapsed ? 'translateX(-8px)' : 'translateX(0)', transitionProperty: 'opacity, max-width, transform',
+    };
+    const sideClockStyle = {
+      display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '10px', color: '#7C8AA0', letterSpacing: '1px',
+      whiteSpace: 'nowrap', overflow: 'hidden', width: '198px',
+      maxHeight: sidebarCollapsed ? '0px' : '60px', opacity: sidebarCollapsed ? 0 : 1,
+      marginBottom: sidebarCollapsed ? '0px' : '10px', paddingBottom: sidebarCollapsed ? '0px' : '10px',
+      borderBottom: '1px solid ' + (sidebarCollapsed ? 'transparent' : '#1E2433'),
+      transitionProperty: 'max-height, opacity, margin-bottom, padding-bottom, border-color',
+    };
+    const scrimStyle = { opacity: sidebarOpen ? 1 : 0, visibility: sidebarOpen ? 'visible' : 'hidden', pointerEvents: sidebarOpen ? 'auto' : 'none' };
+    // 29px à esquerda deixa o ícone de saída no mesmo x aberto ou fechado.
+    const sidebarFooterStyle = { padding: '14px 0 14px 21px', borderTop: '1px solid #151525', flexShrink: 0 };
     // Diagnóstico do rodapé da sidebar — relógio (atualiza a cada 30s via _clockTick, ver
     // _startHudClock) e há quanto tempo os dados foram sincronizados pela última vez.
     const hudClockDate = new Date();
@@ -7396,10 +7412,9 @@ class Component extends DCLogic {
     const syncDeltaMin = s.lastSyncAt ? Math.max(0, Math.floor((Date.now() - s.lastSyncAt) / 60000)) : null;
     const hudSyncLabel = syncDeltaMin === null ? '—' : (syncDeltaMin < 1 ? 'AGORA' : syncDeltaMin + 'min ATRÁS');
     const logoutBtnStyle = {
-      marginTop: sidebarCollapsed ? '0' : '10px', display: 'flex', alignItems: 'center',
-      justifyContent: sidebarCollapsed ? 'center' : 'flex-start',
+      display: 'flex', alignItems: 'center', justifyContent: 'flex-start', whiteSpace: 'nowrap',
       gap: '6px', background: 'none', border: 'none', color: '#A3B1C6', fontSize: '13px', fontWeight: 500,
-      cursor: 'pointer', fontFamily: 'inherit', padding: 0, transition: 'color 0.15s', width: '100%',
+      cursor: 'pointer', fontFamily: 'inherit', padding: '2px 6px 2px 8px', transition: 'color 0.15s',
     };
 
     const navDefs = [
@@ -7421,14 +7436,14 @@ class Component extends DCLogic {
       return {
         ...n, iconClass: 'ph ph-' + n.icon, title: n.label, isJarvisIcon: n.id === 'jarvis', notJarvisIcon: n.id !== 'jarvis',
         style: {
-          display: 'flex', alignItems: 'center', gap: '10px', padding: sidebarCollapsed ? '10px 0' : '10px 20px',
-          justifyContent: sidebarCollapsed ? 'center' : 'flex-start',
+          display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 0 10px 25px', minHeight: '38px',
+          justifyContent: 'flex-start', overflow: 'hidden',
           width: '100%', border: 'none', textAlign: 'left', cursor: 'pointer',
           fontFamily: 'inherit', fontSize: '14px', letterSpacing: '0.2px',
           background: active ? '#2563EB1F' : 'transparent',
           color: active ? '#93C5FD' : '#A3B1C6',
-          borderLeft: sidebarCollapsed ? 'none' : ('2px solid ' + (active ? '#2563EB' : 'transparent')),
-          borderRadius: sidebarCollapsed ? '8px' : '0 6px 6px 0', transition: 'all 0.15s', fontWeight: active ? '600' : '500',
+          borderLeft: '2px solid ' + (active ? '#2563EB' : 'transparent'),
+          borderRadius: '0 6px 6px 0', transition: 'background-color 0.15s, color 0.15s, filter 0.15s', fontWeight: active ? '600' : '500',
         },
         bottomNavStyle: {
           flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
@@ -8094,7 +8109,7 @@ class Component extends DCLogic {
        setCommandPaletteQuery: this.setCommandPaletteQuery, commandPaletteKeyDown: this.commandPaletteKeyDown,
       appShellHeight,
       isMobile,  sidebarStyle, navItems, mobilePrimaryNavItems, mobileMoreStyle,
- sidebarExpanded, collapseToggleStyle, logoRowStyle,
+sidebarExpanded, collapseToggleStyle, logoRowStyle, sideTitleStyle, sideLabelStyle, sideClockStyle, scrimStyle,
       sidebarHeaderStyle, sidebarFooterStyle, logoutBtnStyle, hudClockLabel, hudSyncLabel,
       collapseToggleIcon: sidebarCollapsed ? 'ph ph-caret-right' : 'ph ph-caret-left',
       toggleSidebarCollapse: () => this.setState(st => {
@@ -8102,7 +8117,6 @@ class Component extends DCLogic {
         this._save('sidebarCollapsed', next);
         return { sidebarCollapsed: next };
       }),
-      showOverlay: isMobile && sidebarOpen,
       toggleSidebar: () => this.setState(st => ({ sidebarOpen: !st.sidebarOpen })),
       closeSidebar: () => this.setState({ sidebarOpen: false }),
       // 72px reserva a altura da barra inferior (56px) + folga — mas em iPhones com home indicator

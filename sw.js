@@ -1,4 +1,4 @@
-const CACHE = 'tdv-v51';
+const CACHE = 'tdv-v52';
 
 const PRECACHE = [
   '/manifest.json',

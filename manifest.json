@@ -11,25 +11,25 @@
   "lang": "en",
   "icons": [
     {
-      "src": "uploads/tdv-round-192.png",
+      "src": "uploads/tdv-sq-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "uploads/tdv-round-512.png",
+      "src": "uploads/tdv-sq-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "uploads/tdv-icon-192.png",
+      "src": "uploads/tdv-sq-maskable-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "maskable"
     },
     {
-      "src": "uploads/tdv-icon-512.png",
+      "src": "uploads/tdv-sq-maskable-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
